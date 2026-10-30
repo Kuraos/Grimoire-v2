@@ -41,6 +41,7 @@ api/
 app/               React + TypeScript + Vite + Tailwind, empaquetado con Capacitor (fase 1+)
 scripts/           Python: migración de datos desde la v1 (más adelante)
 docs/adr/          Decisiones de arquitectura
+docs/DESIGN_SYSTEM.md  Sistema visual y adaptación a pantallas
 docs/tasks/        Tareas por fase, con criterio de terminado
 ```
 
@@ -67,6 +68,26 @@ docs/tasks/        Tareas por fase, con criterio de terminado
    no lo resuelvas pasando a un plan pago.
 9. Código, tablas y columnas en inglés. Interfaz, mensajes al usuario y docs en español
    de Colombia (tuteo).
+
+## Interfaz: se porta, no se recrea
+
+La identidad visual de la v1 (tokens, fuentes, ~60 componentes propios, la librería
+de gráficos `bklit`) se copia al repo **antes** de construir cualquier vista
+(`docs/tasks/fase-1-port-ui.md`). Reglas en `docs/DESIGN_SYSTEM.md`; léelo antes de
+tocar UI.
+
+1. **Antes de crear un componente, búscalo** en `app/src/components` y en la v1. Si
+   existe, se usa o se adapta. Un componente nuevo se justifica en el mensaje de commit.
+2. **Adaptar = layout, densidad e interacción.** Clases responsive (mobile-first,
+   escritorio detrás de `lg:`), áreas táctiles, hoja inferior en vez de modal. No se
+   cambian colores, tipografías, escalas ni la forma de un componente.
+3. **Nada de valores sueltos:** colores en `var(--gr-*)`, tamaños y radios de la escala.
+   Ni hexadecimales ni `text-[17px]`.
+4. **Componentes visuales sin datos.** Reciben props; no llaman a la API. La capa de
+   datos vive aparte (`app/src/api`, hooks), para no arrastrar el cliente de la v1
+   (IDs enteros, `127.0.0.1:8000`).
+5. **Una vista no está terminada sin capturas** en teléfono (≈393×852) y tablet
+   horizontal (≈1280×800).
 
 ## Comandos de verificación
 
