@@ -329,5 +329,12 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
     registran sin detalle. En `tail` quedan ruta, estado, CPU, tiempo y filas; la
     cabecera `authorization` sale como `REDACTED` y el cuerpo de la request no aparece.
     `tail` sí muestra la IP y el país de quien llama (`cf-connecting-ip`).
+    Verificado en local con `wrangler dev` y filas corruptas sembradas a mano: el log
+    dice `local_date inválida en la base` y `hábito con days inválido`, sin el UUID ni
+    la fecha. La rama de serde no se ejercitó.
+  - Trampa en Windows: los `wrangler dev` que se cierran mal dejan `workerd.exe`
+    huérfanos escuchando en el 8787, y Windows deja que varios compartan el puerto.
+    Una request puede caer en un servidor con código viejo o colgarse. Antes de
+    probar, revisar `Get-Process workerd`; si hay huérfanos, usar otro `--port`.
   - Al probar, todos los hábitos de la base remota salían «Hecho»: ya estaban marcados
     ese día por la 0.3. No era un fallo.
