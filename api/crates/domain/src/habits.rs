@@ -168,7 +168,9 @@ pub fn check_mark_day(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Completion {
-    /// Racha tras la marca.
+    /// Racha real tras la marca, a la fecha de `today`: la misma que da `GET /habits`.
+    /// La v1 respondía la previa + 1 aunque la marca no cerrara la semana
+    /// (caracterizacion-v1.md, «Diferencias permitidas», fila 6).
     pub streak: u32,
     /// XP que paga la marca, ya con multiplicador. Se suma con `xp::award_xp`.
     pub xp: i64,
@@ -179,6 +181,7 @@ pub fn mark(
     cadence: Cadence,
     marks: &Marks,
     on: NaiveDate,
+    today: NaiveDate,
     xp_reward: u32,
 ) -> Result<Completion, MarkRejected> {
     if marks.contains(&on) {
@@ -191,11 +194,34 @@ pub fn mark(
             return Err(MarkRejected::WeeklyTargetMet);
         }
     }
-    // la racha se lee ANTES de la marca: la que se está creando la sube a
-    // previa + 1, y es ese valor el que decide el multiplicador
-    let streak = current_streak(cadence, marks, on) + 1;
+    // el multiplicador sale de la racha ANTES de la marca: la que se está creando
+    // la sube a previa + 1 (v1), aunque en un semanal no cierre la semana
+    let paid_streak = current_streak(cadence, marks, on) + 1;
+    let mut after = marks.clone();
+    after.insert(on);
     Ok(Completion {
-        streak,
-        xp: apply_multiplier(xp_reward, streak_multiplier(streak)),
+        streak: current_streak(cadence, &after, today),
+        xp: apply_multiplier(xp_reward, streak_multiplier(paid_streak)),
     })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UndoRejected {
+    /// Diario: el día ya no está en la ventana de gracia, así que pudo asentarse
+    /// (ADR 0005). Semanal: la marca no es de la semana en curso (v1).
+    OutsideUndoWindow,
+}
+
+/// ¿Se puede deshacer hoy la marca del día `on`? El XP que se devuelve es el que
+/// concedió esa marca (caracterizacion-v1.md, fila 5); se resta con `xp::award_xp`.
+pub fn check_undo(cadence: Cadence, on: NaiveDate, today: NaiveDate) -> Result<(), UndoRejected> {
+    let ok = match cadence {
+        Cadence::Daily { .. } => (today - Days::new(GRACE_DAYS)..=today).contains(&on),
+        Cadence::Weekly { .. } => on <= today && week_monday(on) == week_monday(today),
+    };
+    if ok {
+        Ok(())
+    } else {
+        Err(UndoRejected::OutsideUndoWindow)
+    }
 }

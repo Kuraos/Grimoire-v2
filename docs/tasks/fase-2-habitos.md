@@ -204,3 +204,28 @@ perdida vuelve. Captura o registro en «Hallazgos».
 
 (Agregar aquí lo que se descubra: mediciones, APIs que no funcionaron como dicen los
 docs, decisiones tomadas sobre la marcha.)
+
+- **2.1.1** (2026-10-30, Bogotá):
+  - `api/crates/domain/tests/golden_habits.rs` reproduce los 7 goldens (168 pasos).
+    Para comprobar que no pasa en vacío, tres mutaciones lo hacen fallar en el paso
+    esperado: sin el residuo de la fila 5 (`deshacer`, paso 20), exigir que la racha de
+    la respuesta sea previa + 1 (`semanal_2x`, paso 1, fila 6) y mover el umbral del
+    multiplicador de 7 a 8 (`diario_lv`, paso 19).
+  - Los pasos de `evaluate-streaks` aplican la penalización que registró la v1 (filas
+    2 y 3), para que el XP de los pasos siguientes siga siendo comparable. Las vidas no
+    se comparan hasta la 2.1.2.
+  - `mark` recibe `today` y devuelve la racha real; el XP sigue saliendo de la racha
+    previa + 1 al día de la marca. Una marca tardía que tapa un hueco ahora responde la
+    racha de hoy (3 en vez de 2 en `late_mark_for_a_past_day`).
+  - `check_undo`: en un diario se puede deshacer dentro de la ventana de gracia (hoy,
+    ayer, anteayer). La v1 solo deshacía la de hoy, pero tampoco marcaba días pasados:
+    es una extensión, no una diferencia que muestre ningún golden. En un semanal, dentro
+    de la semana ISO en curso, como la v1.
+  - Worker: `complete` amplía el historial si la racha llega al borde en el día de la
+    marca **o** en hoy (ADR 0007), porque la respuesta usa la de hoy. Con `wrangler dev`
+    (puerto 8799), un semanal 2× creado el lunes: 1.ª marca (hoy) → `streak 0`;
+    2.ª marca (ayer) → `streak 1`; reintento de la 1.ª → `streak 1`, `xp_earned 0`;
+    `GET /habits` → `streak 1`. Para marcar «ayer» se adelantó el `created_at` del
+    hábito en la base **local**.
+  - Había 12 `workerd` huérfanos de sesiones anteriores (todos de las 00:33–00:54); no
+    los toqué. Los dos de esta sesión se cerraron.

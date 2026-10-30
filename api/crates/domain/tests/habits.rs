@@ -4,8 +4,8 @@
 use chrono::{Datelike, NaiveDate, Weekday};
 use grimoire_domain::cadence::{Cadence, InvalidWeeklyTarget, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{
-    MarkRejected, Marks, WindowedStreak, best_streak, check_mark_day, current_streak,
-    current_streak_since, history_window_start, mark,
+    MarkRejected, Marks, UndoRejected, WindowedStreak, best_streak, check_mark_day, check_undo,
+    current_streak, current_streak_since, history_window_start, mark,
 };
 use grimoire_domain::xp::{
     apply_multiplier, award_xp, streak_multiplier, title_for_level, xp_for_level, xp_to_level,
@@ -197,7 +197,8 @@ fn single_weekday_habit_previous_occasion_is_a_week_ago() {
     };
     let m = marks(&["2026-10-22"]);
     assert_eq!(current_streak(thursdays, &m, d("2026-10-29")), 1);
-    assert_eq!(mark(thursdays, &m, d("2026-10-29"), 20).unwrap().streak, 2);
+    let today = d("2026-10-29");
+    assert_eq!(mark(thursdays, &m, today, today, 20).unwrap().streak, 2);
 }
 
 /// v1 `test_weekly_target_needs_every_mark`.
@@ -213,17 +214,19 @@ fn weekly_target_needs_every_mark() {
     m.insert(d("2026-10-22"));
     assert_eq!(current_streak(twice, &m, today), 1);
 
-    assert!(mark(twice, &m, today, 20).is_ok());
+    // la marca de hoy no cierra la semana: la racha real sigue en 1, aunque el XP
+    // se pague con previa + 1 = 2 (caracterizacion-v1.md, fila 6)
+    assert_eq!(mark(twice, &m, today, today, 20).unwrap().streak, 1);
     m.insert(today);
     assert_eq!(
-        mark(twice, &m, today, 20),
+        mark(twice, &m, today, today, 20),
         Err(MarkRejected::AlreadyDoneToday)
     );
 
     m.insert(d("2026-10-27"));
     assert_eq!(current_streak(twice, &m, today), 2);
     assert_eq!(
-        mark(twice, &m, d("2026-10-30"), 20),
+        mark(twice, &m, d("2026-10-30"), d("2026-10-30"), 20),
         Err(MarkRejected::WeeklyTargetMet)
     );
 }
@@ -232,7 +235,7 @@ fn weekly_target_needs_every_mark() {
 fn marking_twice_same_day_is_rejected() {
     let m = marks(&["2026-10-29"]);
     assert_eq!(
-        mark(DAILY, &m, d("2026-10-29"), 20),
+        mark(DAILY, &m, d("2026-10-29"), d("2026-10-29"), 20),
         Err(MarkRejected::AlreadyDoneToday)
     );
 }
@@ -240,7 +243,7 @@ fn marking_twice_same_day_is_rejected() {
 #[test]
 fn first_mark_pays_base_xp() {
     // v1 `test_full_flow`
-    let c = mark(DAILY, &Marks::new(), d("2026-10-29"), 20).unwrap();
+    let c = mark(DAILY, &Marks::new(), d("2026-10-29"), d("2026-10-29"), 20).unwrap();
     assert_eq!((c.streak, c.xp), (1, 20));
 }
 
@@ -254,7 +257,7 @@ fn multiplier_uses_previous_streak_plus_one() {
         "2026-10-27",
         "2026-10-28",
     ]);
-    let c = mark(DAILY, &m, d("2026-10-29"), 15).unwrap();
+    let c = mark(DAILY, &m, d("2026-10-29"), d("2026-10-29"), 15).unwrap();
     assert_eq!((c.streak, c.xp), (7, 17)); // 15 × 1.10 = 16.5 → 17
 }
 
@@ -262,8 +265,10 @@ fn multiplier_uses_previous_streak_plus_one() {
 #[test]
 fn late_mark_for_a_past_day() {
     let m = marks(&["2026-10-27", "2026-10-29"]);
-    let c = mark(DAILY, &m, d("2026-10-28"), 20).unwrap();
-    assert_eq!(c.streak, 2);
+    // tapa el hueco: la racha real de hoy pasa a 3, pero el XP se paga con la
+    // racha del día de la marca, previa + 1 = 2 (sin multiplicador)
+    let c = mark(DAILY, &m, d("2026-10-28"), d("2026-10-29"), 20).unwrap();
+    assert_eq!((c.streak, c.xp), (3, 20));
 
     let mut m = m;
     m.insert(d("2026-10-28"));
@@ -442,4 +447,33 @@ fn windowed_exact_matches_full_history() {
     }
     // el generador cubre los dos resultados
     assert!(exact > 500 && edge > 500, "exact={exact} edge={edge}");
+}
+
+#[test]
+fn undo_window_daily_is_the_grace_window() {
+    let today = d("2026-10-29");
+    for on in ["2026-10-27", "2026-10-28", "2026-10-29"] {
+        assert_eq!(check_undo(DAILY, d(on), today), Ok(()), "{on}");
+    }
+    for on in ["2026-10-26", "2026-10-30"] {
+        assert_eq!(
+            check_undo(DAILY, d(on), today),
+            Err(UndoRejected::OutsideUndoWindow),
+            "{on}"
+        );
+    }
+}
+
+/// v1 `_completion_period`: en un semanal se deshace dentro de la semana ISO en curso.
+#[test]
+fn undo_window_weekly_is_the_current_week() {
+    let twice = Cadence::Weekly {
+        target: WeeklyTarget::new(2).unwrap(),
+    };
+    let thursday = d("2026-10-29");
+    assert_eq!(check_undo(twice, d("2026-10-26"), thursday), Ok(())); // lunes
+    assert_eq!(
+        check_undo(twice, d("2026-10-25"), thursday), // domingo anterior
+        Err(UndoRejected::OutsideUndoWindow)
+    );
 }

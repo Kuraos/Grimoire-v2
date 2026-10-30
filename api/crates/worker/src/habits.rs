@@ -398,7 +398,13 @@ async fn read_mark_state(
         Some(e) => parse_date(&e.local_date)?,
         None => on,
     };
-    if current_streak_since(st.habit.cadence()?, &st.marks, day, from) == WindowedStreak::AtEdge {
+    // la respuesta da la racha real de hoy (caracterizacion-v1.md, fila 6); el
+    // multiplicador, la del día de la marca: hacen falta exactas las dos
+    let cadence = st.habit.cadence()?;
+    if [day, today]
+        .into_iter()
+        .any(|d| current_streak_since(cadence, &st.marks, d, from) == WindowedStreak::AtEdge)
+    {
         st.marks = read_full_marks(s, "complete: ampliación", &[habit_id])
             .await?
             .remove(habit_id)
@@ -408,15 +414,17 @@ async fn read_mark_state(
 }
 
 /// Reintento de una marca ya guardada (ADR 0004): 200 con el estado actual y sin
-/// sumar XP. La racha es la del día de esa marca, la misma que se respondió la
-/// primera vez si nada cambió antes de ese día.
-fn replay(st: &MarkState, existing: &LogRow) -> Result<Json<CompleteOut>, AppError> {
+/// sumar XP. La racha es la real de hoy, como en la primera respuesta.
+fn replay(
+    st: &MarkState,
+    existing: &LogRow,
+    today: NaiveDate,
+) -> Result<Json<CompleteOut>, AppError> {
     if existing.habit_id != st.habit.id {
         return Err(AppError::Conflict(
             "Ese id de marca ya pertenece a otro hábito".into(),
         ));
     }
-    let on = parse_date(&existing.local_date)?;
     let xp = award_xp(st.user.xp, 0);
     Ok(Json(CompleteOut {
         xp_earned: 0,
@@ -424,7 +432,7 @@ fn replay(st: &MarkState, existing: &LogRow) -> Result<Json<CompleteOut>, AppErr
         new_level: xp.new_level,
         title: xp.title,
         leveled_up: false,
-        streak: current_streak(st.habit.cadence()?, &st.marks, on),
+        streak: current_streak(st.habit.cadence()?, &st.marks, today),
     }))
 }
 
@@ -448,13 +456,20 @@ pub async fn complete(
     let st = read_mark_state(&s, &habit_id, &log_id, on, today).await?;
     // antes de validar el día: un reintento de una marca vieja sigue siendo 200
     if let Some(existing) = &st.existing {
-        return replay(&st, existing);
+        return replay(&st, existing, today);
     }
 
     let reject = |r| AppError::Conflict(rejection_message(r, &st.habit));
     let created_on = local_date_of(&st.habit.created_at, &s.tz)?;
     check_mark_day(on, today, created_on).map_err(reject)?;
-    let done = mark(st.habit.cadence()?, &st.marks, on, st.habit.xp_reward).map_err(reject)?;
+    let done = mark(
+        st.habit.cadence()?,
+        &st.marks,
+        on,
+        today,
+        st.habit.xp_reward,
+    )
+    .map_err(reject)?;
     let xp = award_xp(st.user.xp, done.xp);
 
     let now = now_utc();
@@ -494,7 +509,7 @@ pub async fn complete(
                 // un reintento con el mismo ID ganó la carrera: responder como reintento
                 let st = read_mark_state(&s, &habit_id, &log_id, on, today).await?;
                 match &st.existing {
-                    Some(existing) => replay(&st, existing),
+                    Some(existing) => replay(&st, existing, today),
                     None => Err(AppError::Internal(msg)),
                 }
             } else if msg
