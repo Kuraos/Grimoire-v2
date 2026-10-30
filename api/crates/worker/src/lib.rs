@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use axum::Router;
-use axum::http::{StatusCode, header};
+use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use chrono::NaiveDate;
@@ -22,21 +22,58 @@ pub(crate) struct AppState {
 
 #[event(fetch)]
 async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Result<Response> {
-    if req.uri().path() != "/health"
+    // CORS solo para el origen de la APK (CORS_ORIGIN); la web la sirve el propio
+    // worker, así que es mismo origen y no lo necesita
+    let allowed = env.var("CORS_ORIGIN")?.to_string();
+    let origin = req
+        .headers()
+        .get(header::ORIGIN)
+        .filter(|o| o.as_bytes() == allowed.as_bytes())
+        .cloned();
+
+    // el preflight no lleva Authorization: se responde antes del chequeo de auth
+    let mut res = if req.method() == Method::OPTIONS {
+        let mut res = StatusCode::NO_CONTENT.into_response();
+        if origin.is_some() {
+            let h = res.headers_mut();
+            h.insert(
+                header::ACCESS_CONTROL_ALLOW_METHODS,
+                HeaderValue::from_static("GET, POST, OPTIONS"),
+            );
+            h.insert(
+                header::ACCESS_CONTROL_ALLOW_HEADERS,
+                HeaderValue::from_static("Authorization, Content-Type"),
+            );
+            h.insert(
+                header::ACCESS_CONTROL_MAX_AGE,
+                HeaderValue::from_static("86400"),
+            );
+        }
+        res
+    } else if req.uri().path() != "/health"
         && !authorized(&req, &env.secret("GRIMOIRE_TOKEN")?.to_string())
     {
-        return Ok(AppError::Unauthorized.into_response());
-    }
-    let state = AppState {
-        db: Arc::new(env.d1("DB")?),
-        tz: env.var("GRIMOIRE_TZ")?.to_string().into(),
+        AppError::Unauthorized.into_response()
+    } else {
+        let state = AppState {
+            db: Arc::new(env.d1("DB")?),
+            tz: env.var("GRIMOIRE_TZ")?.to_string().into(),
+        };
+        let router = Router::new()
+            .route("/health", get(|| async { "ok" }))
+            .route("/habits", get(habits::list).post(habits::create))
+            .route("/habits/{id}/complete", post(habits::complete))
+            .with_state(state);
+        router.into_service().call(req).await?
     };
-    let router = Router::new()
-        .route("/health", get(|| async { "ok" }))
-        .route("/habits", get(habits::list).post(habits::create))
-        .route("/habits/{id}/complete", post(habits::complete))
-        .with_state(state);
-    Ok(router.into_service().call(req).await?)
+
+    // también en 401 y errores: si no, la APK no puede leer el motivo
+    let h = res.headers_mut();
+    h.insert(header::VARY, HeaderValue::from_static("Origin"));
+    if let Some(origin) = origin {
+        h.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+    }
+    Ok(res)
 }
 
 /// `Authorization: Bearer <token>` comparado en tiempo constante. Un secreto vacío
@@ -53,16 +90,27 @@ fn authorized(req: &HttpRequest, secret: &str) -> bool {
     }
 }
 
-/// «Hoy» en la zona del usuario (ADR 0004), con `Intl` del runtime: no hace falta
-/// empaquetar la base de zonas horarias en el wasm.
+/// «Hoy» en la zona del usuario (ADR 0004).
 pub(crate) fn today(tz: &str) -> Result<NaiveDate, AppError> {
+    local_date(&js_sys::Date::new_0(), tz)
+}
+
+/// Día local de un instante RFC 3339 (p. ej. `habits.created_at`).
+pub(crate) fn local_date_of(instant: &str, tz: &str) -> Result<NaiveDate, AppError> {
+    local_date(&js_sys::Date::new(&instant.into()), tz)
+}
+
+/// Con `Intl` del runtime: no hace falta empaquetar la base de zonas en el wasm.
+fn local_date(date: &js_sys::Date, tz: &str) -> Result<NaiveDate, AppError> {
+    // con una fecha inválida toLocaleDateString lanza RangeError, que en wasm aborta
+    if date.get_time().is_nan() {
+        return Err(AppError::Internal("instante inválido".into()));
+    }
     let opts = Object::new();
     Reflect::set(&opts, &"timeZone".into(), &tz.into())
         .map_err(|_| AppError::Internal("no se pudo armar Intl".into()))?;
     // en-CA formatea como YYYY-MM-DD
-    let s: String = js_sys::Date::new_0()
-        .to_locale_date_string("en-CA", &opts)
-        .into();
+    let s: String = date.to_locale_date_string("en-CA", &opts).into();
     s.parse()
         .map_err(|_| AppError::Internal(format!("fecha local inesperada: {s}")))
 }

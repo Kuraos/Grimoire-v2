@@ -273,13 +273,36 @@ fn late_mark_for_a_past_day() {
 fn grace_window_is_today_yesterday_and_the_day_before() {
     let today = d("2026-10-29");
     for ok in ["2026-10-27", "2026-10-28", "2026-10-29"] {
-        assert_eq!(check_mark_day(d(ok), today), Ok(()), "{ok}");
+        assert_eq!(
+            check_mark_day(d(ok), today, d("2026-10-01")),
+            Ok(()),
+            "{ok}"
+        );
     }
     for bad in ["2026-10-26", "2026-10-30"] {
         assert_eq!(
-            check_mark_day(d(bad), today),
+            check_mark_day(d(bad), today, d("2026-10-01")),
             Err(MarkRejected::OutsideGraceWindow),
             "{bad}"
         );
     }
+}
+
+/// v1: «un hábito no cuenta antes de existir». Creado hoy, «ayer» está dentro de la
+/// ventana de gracia pero antes de que el hábito existiera.
+#[test]
+fn no_marks_before_the_habit_existed() {
+    let today = d("2026-10-29");
+    assert_eq!(
+        check_mark_day(d("2026-10-28"), today, today),
+        Err(MarkRejected::BeforeHabitCreated)
+    );
+    assert_eq!(check_mark_day(today, today, today), Ok(()));
+    // creado ayer: ayer y hoy sí, anteayer no
+    let created = d("2026-10-28");
+    assert_eq!(check_mark_day(d("2026-10-28"), today, created), Ok(()));
+    assert_eq!(
+        check_mark_day(d("2026-10-27"), today, created),
+        Err(MarkRejected::BeforeHabitCreated)
+    );
 }

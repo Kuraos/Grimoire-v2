@@ -98,13 +98,23 @@ pub enum MarkRejected {
     WeeklyTargetMet,
     /// Fuera de la ventana de gracia (ADR 0005), o en el futuro.
     OutsideGraceWindow,
+    /// Antes del día en que se creó el hábito: no cuenta antes de existir (v1).
+    BeforeHabitCreated,
 }
 
 /// Días hacia atrás en que se acepta una marca tardía: hoy, ayer y anteayer (ADR 0005).
 pub const GRACE_DAYS: u64 = 2;
 
-/// ¿Se acepta hoy una marca con día `on`?
-pub fn check_mark_day(on: NaiveDate, today: NaiveDate) -> Result<(), MarkRejected> {
+/// ¿Se acepta hoy una marca con día `on` para un hábito creado el día local
+/// `created_on`?
+pub fn check_mark_day(
+    on: NaiveDate,
+    today: NaiveDate,
+    created_on: NaiveDate,
+) -> Result<(), MarkRejected> {
+    if on < created_on {
+        return Err(MarkRejected::BeforeHabitCreated);
+    }
     let earliest = today - Days::new(GRACE_DAYS);
     if (earliest..=today).contains(&on) {
         Ok(())

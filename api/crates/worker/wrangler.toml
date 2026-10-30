@@ -7,6 +7,9 @@ command = "cargo install -q \"worker-build@^0.8\" && worker-build --release"
 
 [vars]
 GRIMOIRE_TZ = "America/Bogota"
+# Origen del WebView de la APK: Capacitor v8 en Android, androidScheme "https" +
+# hostname "localhost" por defecto. Un solo origen, sin comodín.
+CORS_ORIGIN = "https://localhost"
 
 # Sin database_id de producción todavía (tarea 0.3); basta con la base local.
 [[d1_databases]]

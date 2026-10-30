@@ -105,6 +105,12 @@ vez 409 → `/habits` muestra racha 1.
 - Repetir la secuencia de `curl` contra `*.workers.dev` **desde el celular con datos**.
 - Medir CPU por request en el dashboard (Workers → métricas) o con `wrangler tail`.
   Anotar en «Hallazgos» el valor de `POST /habits/{id}/complete` frente al límite de 10 ms.
+- Medir también `GET /habits` con un seed **sintético** (nada de datos reales, invariante 7):
+  ~10 hábitos activos (diarios, L–V y semanales) y ~3 años de marcas (≈ 10 000 filas de
+  `habit_logs`). Hoy esa ruta lee todas las marcas de los hábitos activos y calcula la
+  racha de cada uno, así que es la candidata a pasarse de los 10 ms. Anotar CPU y
+  tiempo de D1; si queda cerca del límite, acotar la lectura (p. ej. solo marcas desde
+  la mejor racha posible hacia atrás) antes de seguir.
 
 Terminado: números anotados. Si el CPU queda cerca de 10 ms, se para y se revisa el
 ADR 0002.
@@ -157,4 +163,46 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
     POST /habits/{id}/complete (otra)  → 409 {"detail":"Este hábito ya fue completado ese día"}
     GET  /habits                       → 200 [{…,"streak":1,"done_today":true}]
     semanal 2×: ayer 200, hoy 200, anteayer → 409 «ya alcanzó su meta de 2× esta semana»
+    ```
+- **Idempotencia, CORS y marcas antes de crear** (2026-10-29):
+  - `complete` lee primero si el `id` de la marca ya existe. Mismo hábito → 200 con el
+    estado actual y `xp_earned: 0` (la racha es la del día de esa marca). Otro hábito →
+    409. Se revisa antes que la ventana de gracia: reintentar una marca vieja sigue
+    dando 200.
+  - D1 distingue los dos choques en el mensaje: `UNIQUE constraint failed:
+    habit_logs.id: … SQLITE_CONSTRAINT_PRIMARYKEY` y `UNIQUE constraint failed:
+    habit_logs.habit_id, habit_logs.local_date: … SQLITE_CONSTRAINT_UNIQUE`. El primero
+    se trata como reintento (relee y responde 200); el segundo es `AlreadyDoneToday`.
+    En las carreras con `curl` en paralelo, todo salió consistente (XP de `users` =
+    suma de `xp_log`), pero no sé si alguna request llegó a la rama del PK o si D1
+    local las serializó todas antes del chequeo previo: esa rama no está ejercitada
+    de forma demostrable.
+  - Origen de Capacitor en Android: la documentación de Capacitor v8
+    (capacitorjs.com/docs/config) fija `server.androidScheme` en `"https"` y
+    `server.hostname` en `"localhost"` por defecto, así que el origen es
+    `https://localhost`. Es una deducción a partir de esos dos valores: la página no
+    escribe el origen literal. Hay que confirmarlo en la 0.4 con la APK real (cabecera
+    `Origin`). Configurable con `CORS_ORIGIN` en `wrangler.toml`.
+  - CORS no reemplaza la auth: un origen ajeno con token recibe 200 igual (fuera del
+    navegador no hay CORS). Solo impide que otra página use el token desde un navegador.
+  - Trampa en Windows: en Git Bash, `TZ=America/Bogota date` no entiende zonas IANA y
+    da UTC. Para fechas locales en pruebas, usar
+    `node -e 'new Date().toLocaleDateString("en-CA",{timeZone:"America/Bogota"})'`.
+  - Pruebas con `curl` contra `wrangler dev` (salida recortada; hoy = 2026-10-29 en Bogotá):
+    ```
+    complete (id M)                          → 200 {"xp_earned":20,"new_xp":100,…,"streak":1}
+    complete (mismo id M)                    → 200 {"xp_earned":0,"new_xp":100,…,"streak":1}
+    complete (otro id, mismo día)            → 409 «Este hábito ya fue completado ese día»
+    complete en otro hábito con id M         → 409 «Ese id de marca ya pertenece a otro hábito»
+    5 en paralelo, mismo id                  → 200 (xp 20) + 4 × 200 (xp 0)
+    5 en paralelo, ids distintos, mismo día  → 200 + 4 × 409
+    local_date=2026-10-28, hábito creado hoy → 409 «El hábito aún no existía ese día»
+    OPTIONS Origin https://localhost, sin token → 204
+      Access-Control-Allow-Origin: https://localhost
+      access-control-allow-headers: Authorization, Content-Type
+      access-control-allow-methods: GET, POST, OPTIONS
+    OPTIONS Origin https://evil.example      → 204 sin cabeceras CORS
+    GET /habits Origin https://localhost     → 200 con Access-Control-Allow-Origin
+    GET /habits Origin https://localhost, sin token → 401 con Access-Control-Allow-Origin
+    GET /habits Origin https://evil.example  → 200 sin Access-Control-Allow-Origin
     ```

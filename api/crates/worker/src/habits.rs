@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use worker::query;
 
-use crate::{AppError, AppState, now_utc, today};
+use crate::{AppError, AppState, local_date_of, now_utc, today};
 
 const HABIT_COLUMNS: &str = "id, name, category, frequency, days, target_per_week, \
      xp_reward, color, notes, tags, created_at";
@@ -262,25 +262,24 @@ fn rejection_message(r: MarkRejected, habit: &Habit) -> String {
         ),
         MarkRejected::WeeklyTargetMet => "Este hábito ya fue completado esta semana".into(),
         MarkRejected::OutsideGraceWindow => "Solo se puede marcar hoy, ayer o anteayer".into(),
+        MarkRejected::BeforeHabitCreated => "El hábito aún no existía ese día".into(),
     }
 }
 
-#[worker::send]
-pub async fn complete(
-    State(s): State<AppState>,
-    Path(habit_id): Path<String>,
-    json: Result<Json<CompleteBody>, JsonRejection>,
-) -> Result<Json<CompleteOut>, AppError> {
-    let b = body(json)?;
-    let log_id = parse_uuid(&b.id)?;
-    let today = today(&s.tz)?;
-    let on = match b.local_date.as_deref() {
-        None => today,
-        Some(d) => d
-            .parse()
-            .map_err(|_| AppError::Invalid(format!("Fecha inválida: «{d}» (YYYY-MM-DD)")))?,
-    };
+/// Lo que `complete` necesita leer, en un solo `batch`.
+struct MarkState {
+    habit: Habit,
+    marks: Marks,
+    user: UserRow,
+    /// La marca con el ID que manda el cliente, si ya existe (en cualquier hábito).
+    existing: Option<LogRow>,
+}
 
+async fn read_mark_state(
+    s: &AppState,
+    habit_id: &str,
+    log_id: &str,
+) -> Result<MarkState, AppError> {
     let res =
         s.db.batch(vec![
             query!(
@@ -294,26 +293,80 @@ pub async fn complete(
                 habit_id
             )?,
             s.db.prepare("SELECT id, xp FROM users LIMIT 1"),
+            query!(
+                &s.db,
+                "SELECT habit_id, local_date FROM habit_logs WHERE id = ?1",
+                log_id
+            )?,
         ])
         .await?;
-    let habit = res[0]
-        .results::<Habit>()?
-        .pop()
-        .ok_or(AppError::NotFound("Hábito no encontrado"))?;
-    let marks = res[1]
-        .results::<LogRow>()?
-        .iter()
-        .map(|r| parse_date(&r.local_date))
-        .collect::<Result<Marks, _>>()?;
-    let user = res[2]
-        .results::<UserRow>()?
-        .pop()
-        .ok_or_else(|| AppError::Internal("no hay usuario".into()))?;
+    Ok(MarkState {
+        habit: res[0]
+            .results::<Habit>()?
+            .pop()
+            .ok_or(AppError::NotFound("Hábito no encontrado"))?,
+        marks: res[1]
+            .results::<LogRow>()?
+            .iter()
+            .map(|r| parse_date(&r.local_date))
+            .collect::<Result<_, _>>()?,
+        user: res[2]
+            .results::<UserRow>()?
+            .pop()
+            .ok_or_else(|| AppError::Internal("no hay usuario".into()))?,
+        existing: res[3].results::<LogRow>()?.pop(),
+    })
+}
 
-    let reject = |r| AppError::Conflict(rejection_message(r, &habit));
-    check_mark_day(on, today).map_err(reject)?;
-    let done = mark(habit.cadence()?, &marks, on, habit.xp_reward).map_err(reject)?;
-    let xp = award_xp(user.xp, done.xp);
+/// Reintento de una marca ya guardada (ADR 0004): 200 con el estado actual y sin
+/// sumar XP. La racha es la del día de esa marca, la misma que se respondió la
+/// primera vez si nada cambió antes de ese día.
+fn replay(st: &MarkState, existing: &LogRow) -> Result<Json<CompleteOut>, AppError> {
+    if existing.habit_id != st.habit.id {
+        return Err(AppError::Conflict(
+            "Ese id de marca ya pertenece a otro hábito".into(),
+        ));
+    }
+    let on = parse_date(&existing.local_date)?;
+    let xp = award_xp(st.user.xp, 0);
+    Ok(Json(CompleteOut {
+        xp_earned: 0,
+        new_xp: xp.new_xp,
+        new_level: xp.new_level,
+        title: xp.title,
+        leveled_up: false,
+        streak: current_streak(st.habit.cadence()?, &st.marks, on),
+    }))
+}
+
+#[worker::send]
+pub async fn complete(
+    State(s): State<AppState>,
+    Path(habit_id): Path<String>,
+    json: Result<Json<CompleteBody>, JsonRejection>,
+) -> Result<Json<CompleteOut>, AppError> {
+    let b = body(json)?;
+    let habit_id = parse_uuid(&habit_id)?;
+    let log_id = parse_uuid(&b.id)?;
+    let today = today(&s.tz)?;
+    let on = match b.local_date.as_deref() {
+        None => today,
+        Some(d) => d
+            .parse()
+            .map_err(|_| AppError::Invalid(format!("Fecha inválida: «{d}» (YYYY-MM-DD)")))?,
+    };
+
+    let st = read_mark_state(&s, &habit_id, &log_id).await?;
+    // antes de validar el día: un reintento de una marca vieja sigue siendo 200
+    if let Some(existing) = &st.existing {
+        return replay(&st, existing);
+    }
+
+    let reject = |r| AppError::Conflict(rejection_message(r, &st.habit));
+    let created_on = local_date_of(&st.habit.created_at, &s.tz)?;
+    check_mark_day(on, today, created_on).map_err(reject)?;
+    let done = mark(st.habit.cadence()?, &st.marks, on, st.habit.xp_reward).map_err(reject)?;
+    let xp = award_xp(st.user.xp, done.xp);
 
     let now = now_utc();
     let mut writes = vec![
@@ -330,29 +383,37 @@ pub async fn complete(
             &s.db,
             "UPDATE users SET xp = MAX(0, xp + ?1) WHERE id = ?2",
             xp.applied,
-            user.id
+            st.user.id
         )?,
     ];
     if xp.applied != 0 {
         writes.push(query!(
             &s.db,
-            "INSERT INTO xp_log (id, source, source_id, amount, created_at) \
-             VALUES (?1, 'habit', ?2, ?3, ?4)",
+            "INSERT INTO xp_log (id, source, source_id, amount, created_at)              VALUES (?1, 'habit', ?2, ?3, ?4)",
             Uuid::now_v7().to_string(),
             habit_id,
             xp.applied,
             now
         )?);
     }
-    // batch = transacción: si el índice único rechaza la marca (otra llegó antes),
-    // no se suma XP
-    s.db.batch(writes).await.map_err(|e| {
-        if e.to_string().contains("UNIQUE constraint failed") {
-            reject(MarkRejected::AlreadyDoneToday)
+    // batch = transacción: si una restricción rechaza la marca, no se suma XP
+    if let Err(e) = s.db.batch(writes).await {
+        let msg = e.to_string();
+        return if msg.contains("UNIQUE constraint failed: habit_logs.id:") {
+            // un reintento con el mismo ID ganó la carrera: responder como reintento
+            let st = read_mark_state(&s, &habit_id, &log_id).await?;
+            match &st.existing {
+                Some(existing) => replay(&st, existing),
+                None => Err(AppError::Internal(msg)),
+            }
+        } else if msg
+            .contains("UNIQUE constraint failed: habit_logs.habit_id, habit_logs.local_date")
+        {
+            Err(reject(MarkRejected::AlreadyDoneToday))
         } else {
-            e.into()
-        }
-    })?;
+            Err(e.into())
+        };
+    }
 
     Ok(Json(CompleteOut {
         xp_earned: xp.applied,
