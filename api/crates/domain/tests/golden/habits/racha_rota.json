@@ -1,0 +1,326 @@
+{
+  "escenario": "racha_rota",
+  "descripcion": "Un hábito: marca, salto de un día, evaluación al día siguiente → vida perdida. Repetido hasta 0 vidas; el siguiente día roto cuesta 15 XP. Con la v1 los días marcados son días de evaluación y no se evalúan, así que no devuelven la vida. Al final, evaluaciones en días seguidos: el día roto entre ellas (03-11) no se cobra.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Lectura",
+        "category": "Otro",
+        "xp_reward": 50
+      },
+      "alias": "lectura",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 50,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 3,
+          "life_lost": false,
+          "lives_gained": 0,
+          "broken_habits": [],
+          "xp_penalty": 0,
+          "new_xp": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 50,
+          "new_xp": 50,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": "first_blood"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-04",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 2,
+          "life_lost": true,
+          "lives_gained": 0,
+          "broken_habits": [
+            "Lectura"
+          ],
+          "xp_penalty": 0,
+          "new_xp": 50
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-04",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 50,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-06",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 1,
+          "life_lost": true,
+          "lives_gained": 0,
+          "broken_habits": [
+            "Lectura"
+          ],
+          "xp_penalty": 0,
+          "new_xp": 100
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-06",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 50,
+          "new_xp": 150,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-08",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 0,
+          "life_lost": true,
+          "lives_gained": 0,
+          "broken_habits": [
+            "Lectura"
+          ],
+          "xp_penalty": 0,
+          "new_xp": 150
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-08",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 50,
+          "new_xp": 200,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-10",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 0,
+          "life_lost": false,
+          "lives_gained": 0,
+          "broken_habits": [
+            "Lectura"
+          ],
+          "xp_penalty": 15,
+          "new_xp": 185
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-10",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 50,
+          "new_xp": 235,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-10",
+      "llamada": "GET /habits/{lectura}",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 50,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 1,
+          "best_streak": 1,
+          "total_xp": 250,
+          "completion_rate": 55.6,
+          "done_today": true,
+          "last_completed": "2026-03-10T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-10",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 235,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 0,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 235,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-11",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 0,
+          "life_lost": false,
+          "lives_gained": 0,
+          "broken_habits": [],
+          "xp_penalty": 0,
+          "new_xp": 235
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-12",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 0,
+          "life_lost": false,
+          "lives_gained": 0,
+          "broken_habits": [],
+          "xp_penalty": 0,
+          "new_xp": 235
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-13",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 0,
+          "life_lost": false,
+          "lives_gained": 0,
+          "broken_habits": [],
+          "xp_penalty": 0,
+          "new_xp": 235
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-13",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 235,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 0,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 235,
+          "xp_span": 400
+        }
+      }
+    }
+  ]
+}

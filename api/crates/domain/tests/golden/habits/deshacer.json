@@ -1,0 +1,646 @@
+{
+  "escenario": "deshacer",
+  "descripcion": "DELETE /habits/{id}/complete. Piso en 0: dos hábitos de 10 XP marcados en días alternos del 02 al 15 sin evaluar; el 16 se marca uno y la primera evaluación cobra 13 días rotos (3 vidas + 10 × 15 XP), dejando menos XP que lo que devuelve el deshacer. Después, un hábito de 100 XP: deshacer devuelve el XP de la marca de hoy, sin marca hoy → 400, y deshacer a 400 XP baja de nivel.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Lectura",
+        "category": "Otro",
+        "xp_reward": 10
+      },
+      "alias": "lectura",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 10,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Agua",
+        "category": "Otro",
+        "xp_reward": 10
+      },
+      "alias": "agua",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "name": "Agua",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 10,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 10,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": "first_blood"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /habits/{agua}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 20,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-04",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 30,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-05",
+      "llamada": "POST /habits/{agua}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 40,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-06",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 50,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-07",
+      "llamada": "POST /habits/{agua}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 60,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-08",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 70,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-09",
+      "llamada": "POST /habits/{agua}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 80,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-10",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 90,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-11",
+      "llamada": "POST /habits/{agua}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-12",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 110,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-13",
+      "llamada": "POST /habits/{agua}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 120,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-14",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 130,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-15",
+      "llamada": "POST /habits/{agua}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 140,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-16",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 140,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 140,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-16",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 10,
+          "new_xp": 150,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-16",
+      "llamada": "POST /user/evaluate-streaks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "lives": 0,
+          "life_lost": true,
+          "lives_gained": 0,
+          "broken_habits": [
+            "Lectura",
+            "Agua"
+          ],
+          "xp_penalty": 150,
+          "new_xp": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-16",
+      "llamada": "DELETE /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 0,
+          "new_xp": 0,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 0,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-16",
+      "llamada": "GET /habits/{lectura}",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 10,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 1,
+          "total_xp": 80,
+          "completion_rate": 46.7,
+          "done_today": false,
+          "last_completed": "2026-03-14T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-16",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 0,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 0,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 0,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-17",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Estudio",
+        "category": "Otro",
+        "xp_reward": 100
+      },
+      "alias": "estudio",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 3,
+          "name": "Estudio",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 100,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-17T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-17",
+      "llamada": "POST /habits/{estudio}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-17",
+      "llamada": "DELETE /habits/{estudio}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": -100,
+          "new_xp": 0,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 0,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-17",
+      "llamada": "DELETE /habits/{estudio}/complete",
+      "esperado": {
+        "status": 400,
+        "cuerpo": {
+          "detail": "Este hábito no fue completado hoy"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-17",
+      "llamada": "POST /habits/{estudio}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-18",
+      "llamada": "POST /habits/{estudio}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 200,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 2,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-19",
+      "llamada": "POST /habits/{estudio}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 300,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 3,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-20",
+      "llamada": "POST /habits/{estudio}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 400,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": true,
+          "streak": 4,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-20",
+      "llamada": "DELETE /habits/{estudio}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": -100,
+          "new_xp": 300,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 3,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-20",
+      "llamada": "GET /habits/{estudio}",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 3,
+          "name": "Estudio",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 100,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-17T12:00:00",
+          "streak": 3,
+          "best_streak": 3,
+          "total_xp": 300,
+          "completion_rate": 75.0,
+          "done_today": false,
+          "last_completed": "2026-03-19T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-20",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 300,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 0,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 300,
+          "xp_span": 400
+        }
+      }
+    }
+  ]
+}

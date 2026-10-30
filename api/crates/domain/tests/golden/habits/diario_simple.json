@@ -1,0 +1,272 @@
+{
+  "escenario": "diario_simple",
+  "descripcion": "Diario, 10 días seguidos desde el lunes 2026-03-02, xp_reward 100: XP por marca con multiplicador desde el día 7, nivel y título. Segunda marca del mismo día → 400.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Lectura",
+        "category": "Otro",
+        "xp_reward": 100
+      },
+      "alias": "lectura",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 100,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": "first_blood"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 400,
+        "cuerpo": {
+          "detail": "Este hábito ya fue completado hoy"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 200,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 2,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-04",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 300,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 3,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-05",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 400,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": true,
+          "streak": 4,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-06",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 500,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 5,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-07",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 600,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 6,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-08",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 710,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 7,
+          "total_today_minutes": null,
+          "achievement_unlocked": "iron_constancy"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-09",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 820,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 8,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-10",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 930,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": true,
+          "streak": 9,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-11",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 1040,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": 10,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-11",
+      "llamada": "GET /habits/{lectura}",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 100,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 10,
+          "best_streak": 10,
+          "total_xp": 1040,
+          "completion_rate": 100.0,
+          "done_today": true,
+          "last_completed": "2026-03-11T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-11",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 1040,
+          "level": 3,
+          "title": "Escriba Errante",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 900,
+          "xp_for_next_level": 1600,
+          "xp_into_level": 140,
+          "xp_span": 700
+        }
+      }
+    }
+  ]
+}

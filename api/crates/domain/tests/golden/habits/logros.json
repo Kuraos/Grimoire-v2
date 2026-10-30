@@ -1,0 +1,747 @@
+{
+  "escenario": "logros",
+  "descripcion": "Logros que dispara marcar hábitos: first_blood (1.ª marca), iron_constancy y total_discipline (día 7, la respuesta solo informa uno), ascension (nivel 5), iron_month (racha 30) y polymath (4 categorías activas).",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Lectura",
+        "category": "Otro",
+        "xp_reward": 100
+      },
+      "alias": "lectura",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 100,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": "first_blood"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "first_blood"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 200,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 2,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-04",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 300,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 3,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-05",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 400,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": true,
+          "streak": 4,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-06",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 500,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 5,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-07",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 100,
+          "new_xp": 600,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 6,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-08",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 710,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 7,
+          "total_today_minutes": null,
+          "achievement_unlocked": "iron_constancy"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-08",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "first_blood",
+          "iron_constancy",
+          "total_discipline"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-09",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 820,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": 8,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-10",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 930,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": true,
+          "streak": 9,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-11",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 1040,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": 10,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-12",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 1150,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": 11,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-13",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 1260,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": 12,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-14",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 110,
+          "new_xp": 1370,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": 13,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-15",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 1490,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": 14,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-16",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 1610,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": true,
+          "streak": 15,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-17",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 1730,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": 16,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-18",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 1850,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": 17,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-19",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 1970,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": 18,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-20",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2090,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": 19,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-21",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2210,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": 20,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-22",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2330,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": 21,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-23",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2450,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": 22,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-24",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2570,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": true,
+          "streak": 23,
+          "total_today_minutes": null,
+          "achievement_unlocked": "ascension"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-25",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2690,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 24,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-26",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2810,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 25,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-27",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 2930,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 26,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-28",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 3050,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 27,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-29",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 3170,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 28,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-30",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 120,
+          "new_xp": 3290,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 29,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-31",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 135,
+          "new_xp": 3425,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 30,
+          "total_today_minutes": null,
+          "achievement_unlocked": "iron_month"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-31",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "ascension",
+          "first_blood",
+          "iron_constancy",
+          "iron_month",
+          "total_discipline"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-04-01",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Correr",
+        "category": "Físico"
+      },
+      "alias": "correr",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "name": "Correr",
+          "category": "Físico",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 20,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-04-01T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-04-01",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Alemán",
+        "category": "Idioma"
+      },
+      "alias": "aleman",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 3,
+          "name": "Alemán",
+          "category": "Idioma",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 20,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-04-01T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-04-01",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Derivadas",
+        "category": "Académico"
+      },
+      "alias": "derivadas",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 4,
+          "name": "Derivadas",
+          "category": "Académico",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 20,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-04-01T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-04-01",
+      "llamada": "POST /habits/{correr}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 20,
+          "new_xp": 3445,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": "polymath"
+        }
+      }
+    },
+    {
+      "hoy": "2026-04-01",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "ascension",
+          "first_blood",
+          "iron_constancy",
+          "iron_month",
+          "polymath",
+          "total_discipline"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-04-01",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 3445,
+          "level": 5,
+          "title": "Astrónomo Nocturno",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 2500,
+          "xp_for_next_level": 3600,
+          "xp_into_level": 945,
+          "xp_span": 1100
+        }
+      }
+    }
+  ]
+}
