@@ -1,0 +1,10 @@
+[workspace]
+resolver = "3"
+members = ["crates/domain"]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+# sin la feature `clock`: el dominio no puede leer el reloj ni aunque quiera
+chrono = { version = "0.4", default-features = false, features = ["std"] }

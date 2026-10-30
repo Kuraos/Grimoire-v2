@@ -127,3 +127,8 @@ notificación con la app cerrada.
 
 (Agregar aquí lo que se descubra: versiones fijadas, APIs que no funcionaron como dicen
 los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
+
+- **0.1** (2026-10-29): `chrono 0.4.45` sin la feature `clock` (el dominio no puede leer
+  el reloj). Paridad heredada de la v1, sin cambiar: en un semanal la marca paga con
+  racha previa + 1 aunque no cierre la semana (1.ª de 2), y en un diario L–V una marca
+  extra en sábado también paga con previa + 1. Revisar en la caracterización (fase 2).
