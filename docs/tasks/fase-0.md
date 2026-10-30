@@ -339,7 +339,11 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
   - Al probar, todos los hábitos de la base remota salían «Hecho»: ya estaban marcados
     ese día por la 0.3. No era un fallo.
   - Worker desplegado con el cambio de logs: versión `86dab17a` (2026-10-29 23:45).
-  - **Pendiente de Johan:** marcar un hábito desde el teléfono con datos móviles (el
-    resto del criterio de terminado de la 0.4 está cumplido).
+  - **Marcar desde el teléfono con datos móviles: hecho** (Johan, 2026-10-30 00:02,
+    Bogotá). Tres `POST …/complete` desde la APK contra la versión `86dab17a`, los tres
+    200, con `Origin: https://localhost`. CPU 10 / 4 / 3 ms, wall 86 / 79 / 63 ms. El
+    log solo trae filas (`complete: ventana rows_read=93`, `ampliación rows_read=1059`,
+    `escritura rows_read=1 rows_written=7`), sin cuerpos ni fechas, y `tail` oculta los
+    UUID de la ruta. Con esto la 0.4 queda cerrada.
   - **Pendiente de la tablet:** el caso Android 14+ de `SCHEDULE_EXACT_ALARM` (negado
     por defecto → «Permitir alarmas exactas» → inexacta si se niega).
