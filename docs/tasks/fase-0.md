@@ -59,6 +59,11 @@ Tests (en `crates/domain/tests/` o módulos `#[cfg(test)]`), mínimo:
 - Marcar dos veces el mismo día → `AlreadyDoneToday`.
 - Antes de escribir la implementación, mira `backend/tests/test_api.py` de la v1 y porta
   los casos de rachas/cadencias que encuentres.
+- Diseña la racha para que reciba marcas con `local_date` pasada (ADR 0005): marcar
+  «ayer» desde una cola offline es un caso normal, no un error. Vidas y penalización
+  (`evaluate_days`) **no** entran en esta tarea, pero que el diseño no las impida.
+- Los tests de caracterización completos (`docs/tasks/caracterizacion-v1.md`) se hacen
+  en la fase 2; aquí bastan los casos de arriba.
 
 Terminado: `cargo fmt --check`, `cargo clippy -D warnings` y `cargo test -p grimoire-domain`
 en verde. `grimoire-domain` no depende de `worker`.
@@ -110,7 +115,8 @@ ADR 0002.
   y botón «marcar» contra la API desplegada, token en almacenamiento seguro.
 - Una notificación local agendada a 2 minutos que suene con la app cerrada y la pantalla
   apagada. Manejar el permiso de alarmas exactas de Android 14 (ADR 0003).
-- APK debug instalada en el teléfono.
+- APK debug instalada en el teléfono (llave debug; el keystore de release se genera
+  después, siguiendo ADR 0006, y nunca entra al repo).
 
 Terminado: Johan marca un hábito desde el teléfono con datos móviles y recibe la
 notificación con la app cerrada.

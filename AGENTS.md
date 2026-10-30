@@ -31,7 +31,7 @@ Cloudflare Worker (Rust, workers-rs + axum)  ── sirve también la web estát
 D1 (SQLite)   respaldo: time travel 7 días + export programado
 ```
 
-Decisiones y su porqué en `docs/adr/`. No contradigas un ADR sin escribir otro que lo reemplace.
+Decisiones y su porqué en `docs/adr/` (0001–0006). Orden de trabajo en `docs/ROADMAP.md`. No contradigas un ADR sin escribir otro que lo reemplace.
 
 ```
 api/
@@ -42,6 +42,7 @@ app/               React + TypeScript + Vite + Tailwind, empaquetado con Capacit
 scripts/           Python: migración de datos desde la v1 (más adelante)
 docs/adr/          Decisiones de arquitectura
 docs/DESIGN_SYSTEM.md  Sistema visual y adaptación a pantallas
+docs/ROADMAP.md    Fases, mínimo para dejar la v1, congelamiento de la v1
 docs/tasks/        Tareas por fase, con criterio de terminado
 ```
 
@@ -66,7 +67,13 @@ docs/tasks/        Tareas por fase, con criterio de terminado
 8. **Plan gratis de Cloudflare.** 10 ms de CPU por request, 100 000 requests/día,
    50 subrequests por invocación (agrupa consultas con `batch`). Si algo no cabe, dilo;
    no lo resuelvas pasando a un plan pago.
-9. Código, tablas y columnas en inglés. Interfaz, mensajes al usuario y docs en español
+9. **Reglas temporales** (vidas, penalizaciones, todo lo que dependa de que pase un día):
+   función pura del dominio; lo irreversible solo se asienta tras 2 días de gracia;
+   nada de crons que decidan (ADR 0005).
+10. **Paridad con la v1 verificada:** cada módulo se porta contra tests de
+   caracterización (`docs/tasks/caracterizacion-v1.md`). Las diferencias permitidas
+   están listadas allí.
+11. Código, tablas y columnas en inglés. Interfaz, mensajes al usuario y docs en español
    de Colombia (tuteo).
 
 ## Interfaz: se porta, no se recrea
