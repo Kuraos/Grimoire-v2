@@ -1,6 +1,6 @@
 import { IconStarsFilled } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useApp } from "../../context";
+import type { LevelUp } from "../../types";
 import { motionTokens } from "../../theme-tokens";
 
 /* Doce motas de pan de oro que salen una vez del centro. Es el único estallido
@@ -12,8 +12,7 @@ const MOTAS = Array.from({ length: 12 }, (_, i) => {
   return { x: Math.cos(a) * r, y: Math.sin(a) * r, d: (i % 4) * 0.03 };
 });
 
-export function LevelUpOverlay() {
-  const { levelUp, dismissLevelUp } = useApp();
+export function LevelUpOverlay({ levelUp, dismissLevelUp }: { levelUp: LevelUp | null; dismissLevelUp: () => void }) {
   const t = motionTokens();
 
   return (

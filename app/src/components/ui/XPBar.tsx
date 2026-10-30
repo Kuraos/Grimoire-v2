@@ -1,15 +1,15 @@
 import { IconSkull, IconFlame } from "@tabler/icons-react";
 import NumberFlow from "@number-flow/react";
 import { motion } from "motion/react";
-import { useUser } from "../../context";
+import type { User } from "../../types";
 import { motionTokens } from "../../theme-tokens";
 
 /**
  * Ley del acento: aquí todo es recompensa —nivel, bonus de racha, XP del día—
  * así que todo va en dorado. El arcano no entra en esta card.
  */
-export function XPBar({ xpToday, streakBonus }: { xpToday?: number; streakBonus?: number }) {
-  const user = useUser();
+// TODO(fase-2): el usuario llega por props; antes salía de useUser()
+export function XPBar({ user, xpToday, streakBonus }: { user: User | null; xpToday?: number; streakBonus?: number }) {
   if (!user) {
     return <div className="card xp-section">Cargando…</div>;
   }

@@ -1,7 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
 import { IconTargetArrow } from "@tabler/icons-react";
-import { Api } from "../../api/endpoints";
-import { useApp } from "../../context";
 import { TablerIcon } from "../TablerIcon";
 import { Card } from "./Card";
 import { SectionBand } from "./SectionBand";
@@ -9,18 +6,9 @@ import { QuestRings } from "./QuestRings";
 import type { SigilName } from "./Sigil";
 import type { Quest } from "../../types";
 
-export function QuestsCard() {
-  const { handleXP } = useApp();
-  const [quests, setQuests] = useState<Quest[]>([]);
-
-  const load = useCallback(async () => {
-    try { setQuests(await Api.listQuests()); } catch { /* offline */ }
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const claim = async (q: Quest) => {
-    try { handleXP(await Api.claimQuest(q.id)); load(); } catch { /* */ }
-  };
+// TODO(fase-N): misiones y reclamarlas contra la API nueva (antes Api.listQuests /
+// Api.claimQuest + handleXP); quien use la card las pasa por props.
+export function QuestsCard({ quests, claim }: { quests: Quest[]; claim: (q: Quest) => void }) {
 
   const daily = quests.filter((q) => q.scope === "daily");
   const weekly = quests.filter((q) => q.scope === "weekly");

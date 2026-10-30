@@ -1,22 +1,21 @@
 import { useState } from "react";
 import { IconHexagon, IconHeartFilled, IconHeart, IconPencil, IconCheck, IconSettings } from "@tabler/icons-react";
 import { romanDate } from "../../utils";
-import { useApp, useUser } from "../../context";
-import { Api } from "../../api/endpoints";
-import { SettingsModal } from "./SettingsModal";
+import type { User } from "../../types";
 
 const MAX_LIVES = 3;
 
-export function TopBar() {
-  const user = useUser();
-  const { refreshUser } = useApp();
+// TODO(fase-2): guardar el nombre contra la API nueva (antes Api.updateUser + refreshUser).
+// TODO(fase-N): SettingsModal no se portó (Tauri, backups, vault); se rehace después.
+export function TopBar({ user, onRename, onOpenSettings }: {
+  user: User | null; onRename: (name: string) => Promise<void>; onOpenSettings: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const startEdit = () => { setName(user?.name ?? ""); setEditing(true); };
   const save = async () => {
-    if (name.trim()) { try { await Api.updateUser({ name: name.trim() }); await refreshUser(); } catch { /* */ } }
+    if (name.trim()) { try { await onRename(name.trim()); } catch { /* */ } }
     setEditing(false);
   };
 
@@ -66,14 +65,12 @@ export function TopBar() {
       </span>
 
       <button
-        onClick={() => setSettingsOpen(true)}
+        onClick={onOpenSettings}
         title="Ajustes"
         className="ml-3 text-[var(--text-faint)] hover:text-[var(--purple-main)]"
       >
         <IconSettings size={16} />
       </button>
-
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </header>
   );
 }

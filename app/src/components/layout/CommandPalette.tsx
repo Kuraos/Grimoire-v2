@@ -3,7 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { IconChevronRight, IconSearch } from "@tabler/icons-react";
 import { TablerIcon } from "../TablerIcon";
-import { usePomodoroCtx } from "../../pomodoro-context";
+import type { usePomodoro } from "../../hooks/usePomodoro";
+import type { Task } from "../../types";
+
+// TODO(fase-N): antes salía de usePomodoroCtx() (pomodoro-context, que llama a la API).
+export type CommandPalettePomodoro = Pick<ReturnType<typeof usePomodoro>, "running" | "pause" | "start"> & {
+  tasks: Task[];
+  startWithTask: (task: Task) => void;
+};
 import { fuzzyMatch } from "../../fuzzy";
 
 /**
@@ -42,9 +49,8 @@ const VIEWS: [string, string, string, string[]?][] = [
   ["/revision", "Revisión semanal", "notebook"],
 ];
 
-export function CommandPalette() {
+export function CommandPalette({ pomo }: { pomo: CommandPalettePomodoro }) {
   const nav = useNavigate();
-  const pomo = usePomodoroCtx();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);

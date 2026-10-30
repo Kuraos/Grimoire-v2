@@ -3,8 +3,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, type Transition } from "motion/react";
 import NumberFlow from "@number-flow/react";
 import { IconArrowUpRight, IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
-import { usePomodoroCtx } from "../../pomodoro-context";
-import type { Phase } from "../../hooks/usePomodoro";
+import type { Phase, usePomodoro } from "../../hooks/usePomodoro";
+import type { Task } from "../../types";
+
+// TODO(fase-N): antes salía de usePomodoroCtx() (pomodoro-context, que llama a la API).
+export type PomodoroIslandState = Pick<
+  ReturnType<typeof usePomodoro>,
+  "running" | "secondsLeft" | "totalSeconds" | "phase" | "progress" | "pause" | "start"
+> & { activeTask: Task | null };
 
 /**
  * El Pomodoro, visible desde cualquier vista. Adaptado de la «status island» de
@@ -23,8 +29,7 @@ const PHASE_LABEL: Record<Phase, string> = { work: "Foco", short: "Descanso", lo
 const R = 7;
 const C = 2 * Math.PI * R;
 
-export function PomodoroIsland() {
-  const pomo = usePomodoroCtx();
+export function PomodoroIsland({ pomo }: { pomo: PomodoroIslandState }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);

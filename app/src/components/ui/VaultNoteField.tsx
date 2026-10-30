@@ -1,10 +1,11 @@
 import { IconCopy } from "@tabler/icons-react";
-import { useApp } from "../../context";
+import type { Toast } from "../../types";
 
 /** Free-text pointer to an Obsidian note (no file picker, no existence check).
  *  Shows a copy-to-clipboard button when a path is present. */
-export function VaultNoteField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const { pushToast } = useApp();
+export function VaultNoteField({ value, onChange, pushToast }: {
+  value: string; onChange: (v: string) => void; pushToast: (t: Omit<Toast, "id">) => void;
+}) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);

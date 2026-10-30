@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-import { Api } from "../../api/endpoints";
 import { Card } from "../ui/Card";
 import { SectionBand } from "../ui/SectionBand";
 import { chartPalette } from "../../theme-tokens";
@@ -24,15 +22,12 @@ const X1 = 268;
 const Y0 = 18;
 const ROW = 24;
 
-export function DiaryVolume({ today }: { today: string }) {
+// TODO(fase-N): `points` viene de la API del diario (antes Api.diaryVolume); quien
+// use el gráfico lo recarga al guardar la entrada de hoy.
+export function DiaryVolume({ today, points }: {
+  today: string; points: { entry_date: string; length: number }[];
+}) {
   const c = chartPalette();
-  const [points, setPoints] = useState<{ entry_date: string; length: number }[]>([]);
-
-  useEffect(() => {
-    Api.diaryVolume().then(setPoints).catch(() => {});
-    // `today` en las dependencias: al guardar la entrada de hoy y volver, el
-    // volumen tiene que enterarse de la estrella nueva.
-  }, [today]);
 
   // Doce meses hacia atrás terminando en el mes actual, para que la fila de
   // abajo sea siempre "ahora" y el año se lea como una caída de arriba abajo.

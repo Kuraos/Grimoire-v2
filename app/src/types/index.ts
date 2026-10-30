@@ -552,3 +552,18 @@ export interface TrainingStats {
   total_sessions: number;
   total_volume_g: number;
 }
+
+// Antes en context.tsx (v1), que no se porta porque llama a la API.
+export interface Toast {
+  id: number;
+  achievement?: Achievement;
+  title: string;
+  body: string;
+  icon?: string;
+  variant?: "default" | "error";
+}
+
+export interface LevelUp {
+  level: number;
+  title: string;
+}

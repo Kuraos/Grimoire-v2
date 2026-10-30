@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import { IconX } from "@tabler/icons-react";
-import { useApp, type Toast } from "../../context";
+import type { Toast } from "../../types";
 import { TablerIcon } from "../TablerIcon";
 
 /**
@@ -19,8 +19,7 @@ const GAP = 8;
 const PEEK = 9;
 const BEHIND = 2;
 
-export function ToastAchievement() {
-  const { toasts, dismissToast } = useApp();
+export function ToastAchievement({ toasts, dismissToast }: { toasts: Toast[]; dismissToast: (id: number) => void }) {
   const [hover, setHover] = useState(false);
   const list = [...toasts].reverse(); // el más nuevo, delante
   const expanded = hover && list.length > 1;
