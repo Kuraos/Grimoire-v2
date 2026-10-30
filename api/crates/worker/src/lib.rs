@@ -115,14 +115,15 @@ fn local_date(date: &js_sys::Date, tz: &str) -> Result<NaiveDate, AppError> {
         .map_err(|_| AppError::Internal(format!("fecha local inesperada: {s}")))
 }
 
-/// Filas que D1 escaneó en un `batch` (cuota de 5 M/día del plan gratis, ADR 0007).
-/// Sale en `wrangler tail`.
-pub(crate) fn log_rows_read(what: &str, results: &[D1Result]) {
-    let rows: usize = results
-        .iter()
-        .filter_map(|r| r.meta().ok().flatten()?.rows_read)
-        .sum();
-    console_log!("{what} rows_read={rows}");
+/// Filas que D1 escaneó y escribió en un `batch` (cuotas del plan gratis: 5 M
+/// leídas y 100 000 escritas por día, ADR 0007). Sale en `wrangler tail`.
+pub(crate) fn log_d1(what: &str, results: &[D1Result]) {
+    let (mut read, mut written) = (0, 0);
+    for meta in results.iter().filter_map(|r| r.meta().ok().flatten()) {
+        read += meta.rows_read.unwrap_or(0);
+        written += meta.rows_written.unwrap_or(0);
+    }
+    console_log!("{what} rows_read={read} rows_written={written}");
 }
 
 /// Instante actual en UTC, RFC 3339.

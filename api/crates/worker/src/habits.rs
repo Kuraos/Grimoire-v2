@@ -21,7 +21,7 @@ use uuid::Uuid;
 use worker::wasm_bindgen::JsValue;
 use worker::{D1Result, query};
 
-use crate::{AppError, AppState, local_date_of, log_rows_read, now_utc, today};
+use crate::{AppError, AppState, local_date_of, log_d1, now_utc, today};
 
 const HABIT_COLUMNS: &str = "id, name, category, frequency, days, target_per_week, \
      xp_reward, color, notes, tags, created_at";
@@ -119,7 +119,7 @@ async fn read_full_marks(
         .bind(&params)?
         .all()
         .await?;
-    log_rows_read(what, std::slice::from_ref(&res));
+    log_d1(what, std::slice::from_ref(&res));
     marks_by_habit(&res)
 }
 
@@ -162,7 +162,7 @@ pub async fn list(State(s): State<AppState>) -> Result<Json<Vec<HabitWithStreak>
             )?,
         ])
         .await?;
-    log_rows_read("GET /habits: ventana", &res);
+    log_d1("GET /habits: ventana", &res);
     let habits: Vec<Habit> = res[0].results()?;
     let mut marks = marks_by_habit(&res[1])?;
 
@@ -374,7 +374,7 @@ async fn read_mark_state(
             )?,
         ])
         .await?;
-    log_rows_read("complete: ventana", &res);
+    log_d1("complete: ventana", &res);
     let mut st = MarkState {
         habit: res[0]
             .results::<Habit>()?
@@ -486,7 +486,7 @@ pub async fn complete(
     }
     // batch = transacción: si una restricción rechaza la marca, no se suma XP
     match s.db.batch(writes).await {
-        Ok(res) => log_rows_read("complete: escritura", &res),
+        Ok(res) => log_d1("complete: escritura", &res),
         Err(e) => {
             let msg = e.to_string();
             return if msg.contains("UNIQUE constraint failed: habit_logs.id:") {

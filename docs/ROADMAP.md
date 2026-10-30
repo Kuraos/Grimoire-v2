@@ -41,3 +41,14 @@ misiones, revisión semanal, etiquetas, exportación a Obsidian, widgets en Kotl
 
 Hasta que cada uno se porte, sus datos se migran igual (ADR 0006), aunque la v2 todavía
 no tenga pantalla para ellos: se migra todo, se muestra lo que haya.
+
+Pendientes técnicos que salieron de la fase 0:
+
+- **Ampliar la ventana de historial por duplicación** (90 → 180 → 360 días, ADR 0007)
+  si con los datos reales migrados hay rachas de más de 90 días. Hoy un hábito en el
+  borde lee su historial completo; en el seed de la 0.3 eso fue ~2 900 de 3 733 filas
+  por `GET /habits`.
+- **Vigilar errores 1102** (el worker excedió sus límites de recursos, CPU incluido) en
+  el dashboard de Workers durante el primer mes de uso real. En la fase 0 la mediana de
+  CPU quedó en 4,5–7 ms, pero hubo picos de 13–51 ms que no se explicaron (hipótesis:
+  arranque en frío). Si aparecen 1102, se mide de nuevo antes de portar más módulos.

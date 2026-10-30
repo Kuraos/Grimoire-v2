@@ -281,3 +281,25 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
     incluidos los que obligan a ampliar. En el dominio, una propiedad sobre 5 000
     historiales aleatorios comprueba que `Exact(n)` con la ventana = racha con todo el
     historial, y falla si se rompe la regla del borde (verificado con una mutación).
+- **Camino de escritura de `complete`** (2026-10-29, Bogotá; versión `1a2f11d2`, que
+  además registra `rows_written`). Diez hábitos nuevos `bench-escritura 1…10`, creados
+  con UUID nuevos por `POST /habits` desde el celular y marcados una vez cada uno:
+
+  | Request | n | CPU mediana | CPU mín–máx | > 10 ms | wall mediana | Filas leídas | Filas escritas |
+  |---|---|---|---|---|---|---|---|
+  | `POST …/complete` 200 | 10 | 5 ms | 3–8 ms | 0/10 | 68 ms | 4 | 7 |
+  | `POST /habits` 201 | 10 | 2,5 ms | 1–7 ms | 0/10 | 47,5 ms | sin medir* | sin medir* |
+
+  \* `create` no escribe el log de D1; el 0 del tail significa «no medido», no «cero».
+  - Las 7 filas escritas por marca, según D1 (que cuenta también las entradas de
+    índice): `habit_logs` con su PK y el índice único, `users`, y `xp_log` con su PK y
+    su índice. Con la cuota de 100 000 filas escritas al día, alcanza para ~14 000 marcas
+    diarias.
+  - Las 4 filas leídas: 3 en la lectura (el hábito, el usuario y la búsqueda del `id`
+    de la marca; sin historial, porque el hábito es nuevo) y 1 en la escritura (el
+    `UPDATE` de `users`). El costo de leer historial está medido en la tabla anterior
+    (mediana 90 filas).
+  - Antes de esta tanda hubo 20 `complete` con 404 (hábitos todavía no creados, por un
+    intento fallido en Termux): 2 filas leídas, 0 escritas, sin efecto en la base.
+  - Con esto la 0.3 queda cerrada. Pendientes que pasan al ROADMAP («Después del
+    cambio»): ampliar la ventana por duplicación y vigilar errores 1102.
