@@ -1,0 +1,15 @@
+name = "grimoire"
+main = "build/index.js"
+compatibility_date = "2026-10-29"
+
+[build]
+command = "cargo install -q \"worker-build@^0.8\" && worker-build --release"
+
+[vars]
+GRIMOIRE_TZ = "America/Bogota"
+
+# Sin database_id de producción todavía (tarea 0.3); basta con la base local.
+[[d1_databases]]
+binding = "DB"
+database_name = "grimoire"
+migrations_dir = "../../migrations"

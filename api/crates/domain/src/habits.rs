@@ -96,6 +96,21 @@ pub fn best_streak(cadence: Cadence, marks: &Marks) -> u32 {
 pub enum MarkRejected {
     AlreadyDoneToday,
     WeeklyTargetMet,
+    /// Fuera de la ventana de gracia (ADR 0005), o en el futuro.
+    OutsideGraceWindow,
+}
+
+/// Días hacia atrás en que se acepta una marca tardía: hoy, ayer y anteayer (ADR 0005).
+pub const GRACE_DAYS: u64 = 2;
+
+/// ¿Se acepta hoy una marca con día `on`?
+pub fn check_mark_day(on: NaiveDate, today: NaiveDate) -> Result<(), MarkRejected> {
+    let earliest = today - Days::new(GRACE_DAYS);
+    if (earliest..=today).contains(&on) {
+        Ok(())
+    } else {
+        Err(MarkRejected::OutsideGraceWindow)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

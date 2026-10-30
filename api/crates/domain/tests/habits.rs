@@ -3,7 +3,9 @@
 
 use chrono::{Datelike, NaiveDate, Weekday};
 use grimoire_domain::cadence::{Cadence, InvalidWeeklyTarget, WeekdaySet, WeeklyTarget};
-use grimoire_domain::habits::{MarkRejected, Marks, best_streak, current_streak, mark};
+use grimoire_domain::habits::{
+    MarkRejected, Marks, best_streak, check_mark_day, current_streak, mark,
+};
 use grimoire_domain::xp::{
     apply_multiplier, award_xp, streak_multiplier, title_for_level, xp_for_level, xp_to_level,
 };
@@ -265,4 +267,19 @@ fn late_mark_for_a_past_day() {
     let mut m = m;
     m.insert(d("2026-10-28"));
     assert_eq!(current_streak(DAILY, &m, d("2026-10-29")), 3);
+}
+
+#[test]
+fn grace_window_is_today_yesterday_and_the_day_before() {
+    let today = d("2026-10-29");
+    for ok in ["2026-10-27", "2026-10-28", "2026-10-29"] {
+        assert_eq!(check_mark_day(d(ok), today), Ok(()), "{ok}");
+    }
+    for bad in ["2026-10-26", "2026-10-30"] {
+        assert_eq!(
+            check_mark_day(d(bad), today),
+            Err(MarkRejected::OutsideGraceWindow),
+            "{bad}"
+        );
+    }
 }

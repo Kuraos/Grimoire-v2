@@ -132,3 +132,29 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
   el reloj). Paridad heredada de la v1, sin cambiar: en un semanal la marca paga con
   racha previa + 1 aunque no cierre la semana (1.ª de 2), y en un diario L–V una marca
   extra en sábado también paga con previa + 1. Revisar en la caracterización (fase 2).
+- **0.2** (2026-10-29): versiones fijadas en `Cargo.lock`: `worker` / `worker-macros` /
+  `worker-build` 0.8.7, `axum` 0.8.9; `wrangler` 4.156.0 como devDependency de
+  `crates/worker` (correr `npm install` ahí antes de `npx wrangler`). Partí de
+  `templates/axum` de workers-rs (commit `1d668cf`).
+  - D1 local funciona sin `database_id` en `wrangler.toml`.
+  - «Hoy» sale de `Intl` del runtime (`toLocaleDateString("en-CA", { timeZone })`), no
+    de `chrono-tz`: no hace falta meter la base de zonas en el wasm. Verificado: marca a
+    las `2026-10-30T00:49Z` → `local_date = 2026-10-29`.
+  - `uuid` 1.29 necesita `std` + `v7` + `js` para `now_v7()` en wasm; toma el reloj de
+    `Date.now`. Solo lo usa `xp_log`, que es un registro derivado en el servidor; las
+    marcas y los hábitos llevan el UUID del cliente.
+  - `POST /habits/{id}/complete` recibe `{ "id": <uuid de la marca>, "local_date"?: "YYYY-MM-DD" }`;
+    `local_date` fuera de hoy/ayer/anteayer → 409 (ADR 0005, `check_mark_day` en el dominio).
+  - Trampa en Windows: `curl -d '…Académico…'` desde Git Bash manda cp1252 y el worker
+    responde 422 (JSON no UTF-8). Con `--data-binary @archivo.json` en UTF-8, bien.
+  - Secuencia de `curl` contra `wrangler dev` (salida recortada):
+    ```
+    GET  /health                       → 200 ok
+    GET  /habits (sin token)           → 401 {"detail":"No autorizado"}
+    POST /habits                       → 201 {"id":"6136…","days":"0,4",…}
+    POST /habits (mismo id)            → 200 (mismo hábito, sin duplicar)
+    POST /habits/{id}/complete         → 200 {"xp_earned":20,"new_xp":20,"new_level":1,"title":"Iniciado","leveled_up":false,"streak":1}
+    POST /habits/{id}/complete (otra)  → 409 {"detail":"Este hábito ya fue completado ese día"}
+    GET  /habits                       → 200 [{…,"streak":1,"done_today":true}]
+    semanal 2×: ayer 200, hoy 200, anteayer → 409 «ya alcanzó su meta de 2× esta semana»
+    ```
