@@ -112,7 +112,7 @@ fn local_date(date: &js_sys::Date, tz: &str) -> Result<NaiveDate, AppError> {
     // en-CA formatea como YYYY-MM-DD
     let s: String = date.to_locale_date_string("en-CA", &opts).into();
     s.parse()
-        .map_err(|_| AppError::Internal(format!("fecha local inesperada: {s}")))
+        .map_err(|_| AppError::Internal("fecha local inesperada de Intl".into()))
 }
 
 /// Filas que D1 escaneó y escribió en un `batch` (cuotas del plan gratis: 5 M
@@ -142,7 +142,13 @@ pub(crate) enum AppError {
 
 impl From<worker::Error> for AppError {
     fn from(e: worker::Error) -> Self {
-        AppError::Internal(e.to_string())
+        // los errores de serde citan el valor que no encajó: no van al log
+        match e {
+            worker::Error::SerdeJsonError(_) | worker::Error::SerdeWasmBindgenError(_) => {
+                AppError::Internal("fila de D1 con forma inesperada".into())
+            }
+            e => AppError::Internal(e.to_string()),
+        }
     }
 }
 

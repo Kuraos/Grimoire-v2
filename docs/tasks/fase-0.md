@@ -303,3 +303,31 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
     intento fallido en Termux): 2 filas leídas, 0 escritas, sin efecto en la base.
   - Con esto la 0.3 queda cerrada. Pendientes que pasan al ROADMAP («Después del
     cambio»): ampliar la ventana por duplicación y vigilar errores 1102.
+- **0.4 — APK mínima** (2026-10-29, Bogotá). Infinix X6831, Android 13 (API 33), XOS.
+  - Versiones: Capacitor 8.6.0, `@capacitor/local-notifications` 8.3.1,
+    `@aparajita/capacitor-secure-storage` 8.0.1 (token en el Keystore de Android), Vite 8,
+    React 19, TypeScript 7. `appId` `dev.kuraos.grimoire`, `targetSdk` 36.
+  - Compilar con **JDK 21**: Gradle 8.14.3 (el que trae la plantilla de Capacitor) no
+    corre con el JDK 25 de Android Studio. En Git Bash, `JAVA_HOME` con ruta Windows:
+    `JAVA_HOME='C:\Program Files\Java\jdk-21' ./gradlew.bat assembleDebug` desde
+    `app/android`. `*.jks` y `*.keystore` quedan en su `.gitignore` (ADR 0006).
+  - **Origen real del WebView: `https://localhost`** (cabecera `Origin` en
+    `wrangler tail`, 4 de 4 requests). Confirma la deducción de la 0.2; `CORS_ORIGIN`
+    no cambia.
+  - Notificación a 2 minutos: sonó con la app cerrada desde Recientes y la pantalla
+    apagada. Canal propio con importancia 5. En API 33, `SCHEDULE_EXACT_ALARM` viene
+    concedido al instalar (`dumpsys package`: `granted=true`) y `POST_NOTIFICATIONS` se
+    pidió en tiempo de ejecución. Sin tocar ajustes de batería de XOS: la app no está en
+    la whitelist de `deviceidle` y `RUN_ANY_IN_BACKGROUND` está en `allow` (por defecto).
+  - **Android 14+ sin probar**: ahí `SCHEDULE_EXACT_ALARM` viene negado. La app lo
+    detecta con `checkExactNotificationSetting`, muestra «Permitir alarmas exactas»
+    (`changeExactNotificationSetting`) y, si sigue negado, el plugin agenda con
+    `setAndAllowWhileIdle` (inexacta) y la app lo dice. Probar en la tablet o en un
+    emulador API 34+.
+  - Logs del worker: quité el id del hábito y las fechas de los mensajes de
+    `console_error!`, y los errores de serde (que citan el valor que no encajó) se
+    registran sin detalle. En `tail` quedan ruta, estado, CPU, tiempo y filas; la
+    cabecera `authorization` sale como `REDACTED` y el cuerpo de la request no aparece.
+    `tail` sí muestra la IP y el país de quien llama (`cf-connecting-ip`).
+  - Al probar, todos los hábitos de la base remota salían «Hecho»: ya estaban marcados
+    ese día por la 0.3. No era un fallo.

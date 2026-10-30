@@ -43,7 +43,8 @@ pub struct Habit {
 
 impl Habit {
     fn cadence(&self) -> Result<Cadence, AppError> {
-        let corrupt = |what| AppError::Internal(format!("hábito {}: {what} inválido", self.id));
+        // sin el id: los logs llevan métricas, no datos
+        let corrupt = |what| AppError::Internal(format!("hábito con {what} inválido"));
         Ok(match self.frequency.as_str() {
             "weekly" => Cadence::Weekly {
                 target: WeeklyTarget::new(self.target_per_week)
@@ -78,7 +79,7 @@ struct UserRow {
 
 fn parse_date(s: &str) -> Result<NaiveDate, AppError> {
     s.parse()
-        .map_err(|_| AppError::Internal(format!("local_date inválida: {s}")))
+        .map_err(|_| AppError::Internal("local_date inválida en la base".into()))
 }
 
 /// `"2026-10-27,2026-10-28"` → conjunto de fechas. `None` (sin marcas) → vacío.

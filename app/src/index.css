@@ -1,0 +1,6 @@
+/* pantalla de prueba de la 0.4: el sistema visual de la v1 llega en la fase 1 */
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: system-ui, sans-serif;
+}
