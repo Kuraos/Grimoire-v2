@@ -206,3 +206,40 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
     GET /habits Origin https://localhost, sin token → 401 con Access-Control-Allow-Origin
     GET /habits Origin https://evil.example  → 200 sin Access-Control-Allow-Origin
     ```
+- **0.3 — despliegue y medición** (2026-10-29, hora de Bogotá):
+  - Desplegado en `https://grimoire.jbustosbriceno.workers.dev` (versión `fd313bec`).
+    D1 `grimoire` creada en la región ENAM (`database_id` en `wrangler.toml`; no es una
+    credencial). `GRIMOIRE_TOKEN` se guardó con `wrangler secret put` desde la terminal
+    de Johan: no está en ningún archivo ni en el historial del agente. El
+    `wrangler deploy` lo corrió Johan porque el modo automático de Claude Code bloquea
+    deploys a producción.
+  - Startup del worker: 6 ms; paquete de 723 KiB (242 KiB gzip).
+  - Secuencia de `curl` desde el celular (Termux, solo datos móviles), toda como se
+    esperaba: `/health` 200 → `/habits` sin token 401 → crear 201 → completar 200
+    (`streak 1`) → reintento con el mismo id 200 (`xp_earned 0`) → completar otra vez
+    409. Tiempo total por request: 0,27–0,38 s.
+  - CPU con `wrangler tail --format json` (campo `cpuTime`). `tail` reemplaza los UUID
+    de la ruta por `REDACTED`. Seed sintético: `scripts/bench_seed.py`, 10 hábitos y
+    9 388 marcas en 3 años. Medianas calculadas con `statistics.median`:
+
+    | Request | n | CPU mediana | CPU mín–máx | > 10 ms | wall mediana |
+    |---|---|---|---|---|---|
+    | `GET /habits` con seed | 20 | 25 ms | 17–91 ms | 20/20 | 74 ms |
+    | `GET /habits` con seed, sin las 5 primeras | 15 | 22 ms | 17–49 ms | 15/15 | 65 ms |
+    | `POST …/complete` 200 sobre seed (~1 000 marcas/hábito) | 10 | 6 ms | 4–12 ms | 2/10 | 79 ms |
+    | `POST …/complete` 409 sobre seed (misma lectura, sin escritura) | 10 | 4,5 ms | 3–12 ms | 1/10 | 25 ms |
+    | 401 (rechazo de auth) | 23 | 1 ms | 0–9 ms | 0/23 | 2 ms |
+    | `/health` en caliente | 8 | 1 ms | 1–2 ms | 0/8 | 2 ms |
+
+    Primera request de un camino de código en un isolate: 6–25 ms aun en `/health`
+    (hipótesis: compilación del wasm al primer uso; no verificada). Con la base casi
+    vacía, el primer `complete` marcó 14 ms y el primer reintento 25 ms.
+  - **Veredicto: `GET /habits` no cabe en 10 ms con 3 años de historial**, y `complete`
+    queda cerca (mediana 6 ms, máximo 12 ms). Ninguna request falló durante la medición,
+    pero eso no prueba que Cloudflare las tolere con más tráfico. El costo escala con
+    las filas leídas (~9 400 filas → ~22 ms; ~1 000 → ~6 ms), lo que apunta a la lectura
+    y deserialización del historial completo (`results::<T>()`, `serde_wasm_bindgen`
+    fila por fila) más que a la lógica del dominio. Según esta tarea: **se para y se
+    revisa el ADR 0002** antes de la 0.4.
+  - El seed sigue cargado en la base remota (junto con el hábito «Prueba celular»): no
+    hay datos reales; se vacía antes de migrar la v1.

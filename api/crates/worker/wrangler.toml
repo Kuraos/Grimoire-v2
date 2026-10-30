@@ -11,8 +11,9 @@ GRIMOIRE_TZ = "America/Bogota"
 # hostname "localhost" por defecto. Un solo origen, sin comodín.
 CORS_ORIGIN = "https://localhost"
 
-# Sin database_id de producción todavía (tarea 0.3); basta con la base local.
+# database_id no es una credencial: sin un token de API de la cuenta no da acceso.
 [[d1_databases]]
 binding = "DB"
 database_name = "grimoire"
+database_id = "7295c42d-71fa-4b6c-a25a-906119dca367"
 migrations_dir = "../../migrations"
