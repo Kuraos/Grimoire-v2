@@ -105,6 +105,7 @@ Una tarea solo está terminada si esto pasa. Corre lo que aplique y pega la sali
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test -p grimoire-domain
+cargo test -p grimoire-worker   # SQL de escrituras concurrentes contra SQLite (rusqlite)
 # el worker compila a wasm (target wasm32-unknown-unknown ya instalado)
 cd crates/worker && npx wrangler dev        # API local con D1 local en http://localhost:8787
 npx wrangler d1 migrations apply grimoire --local

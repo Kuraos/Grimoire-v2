@@ -2,4 +2,5 @@
 
 pub mod cadence;
 pub mod habits;
+pub mod lives;
 pub mod xp;

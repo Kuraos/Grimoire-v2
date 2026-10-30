@@ -229,3 +229,39 @@ docs, decisiones tomadas sobre la marcha.)
     hábito en la base **local**.
   - Había 12 `workerd` huérfanos de sesiones anteriores (todos de las 00:33–00:54); no
     los toqué. Los dos de esta sesión se cerraron.
+- **2.1.2** (2026-10-30, Bogotá):
+  - Dominio: `lives.rs` con `evaluate_days`, `settle_range` y `provisional_range`.
+    `SETTLE_LAG_DAYS = GRACE_DAYS + 1`, y un test comprueba que nunca se asienta un día
+    que todavía acepta marcas. Los 8 tests replican `racha_rota`, `dia_perfecto` y
+    `diario_lv` con evaluación diaria, con valores derivados a mano. Con un hábito
+    alternado, la v2 pierde y recupera la vida cada día y nunca llega a 0; la v1 llegaba
+    a 0 por el off-by-one.
+  - Migración `0002_lives.sql`: `users.lives` y `users.settled_through`.
+  - D1: «Batched statements are SQL transactions» y se ejecutan «sequentially,
+    non-concurrently» (developers.cloudflare.com/d1/worker-api/d1-database, consultado
+    el 2026-10-30). La página no define `meta.changes`. En vez de leerlo, el `UPDATE`
+    lleva `RETURNING xp`: sin fila devuelta, otro request asentó primero.
+  - Guarda en las dos sentencias (`settled_through IS <leído>`), con la penalización
+    **antes** del `UPDATE`. Test en `crates/worker/src/user.rs` con las sentencias
+    reales contra SQLite (`rusqlite` como `dev-dependency`; SQLite 3.50.2): vida,
+    penalización, `settled_through` NULL, piso en 0 y XP en 0. Si se quita la guarda del
+    `INSERT`, fallan los dos tests de penalización. Se agregó
+    `cargo test -p grimoire-worker` a la verificación de `AGENTS.md`.
+  - `wrangler dev` (puerto 8799, base local), hoy = 2026-10-30, se asienta hasta el 27:
+    - dos `GET /user` en paralelo, nunca asentado: con 3 vidas → 2, un solo evento
+      `life_lost` del 27; con 0 vidas → una sola fila `streak_penalty` (−15) y
+      `users.xp` = suma de `xp_log` (312).
+    - D1 local serializó los dos requests en las tres corridas: según los logs, el
+      segundo siempre leyó ya asentado y no intentó escribir. **La rama de conflicto
+      (`UPDATE` sin fila) no se ejercitó por HTTP**; la cubre el test contra SQLite.
+    - Marca tardía: con el 27 marcado y sin marcas el 28 ni el 29, `GET /user` → 2
+      vidas (28 `life_lost`, provisional). Marca del 28 → 29 `life_lost` provisional.
+      Marca del 29 → 3 vidas, sin eventos. Marca del 27 (ya asentado) → 409.
+  - Tiempo total de `GET /user` en local: mediana 25,5 ms (6–87 ms, n = 12). **CPU sin
+    medir**: las trazas locales de wrangler no lo traen (`spans.attributes` vacío). Se
+    mide con `wrangler tail` cuando se despliegue.
+  - Para aislar la prueba se archivaron en local los hábitos del seed y luego se
+    restauraron; el hábito de prueba «Lectura vidas» quedó archivado.
+  - `wrangler d1 execute --local` deja procesos `workerd` huérfanos: unos 10 de esta
+    tarea (01:06–01:07), además de los anteriores. El modo automático bloqueó
+    cerrarlos; quedan para Johan.

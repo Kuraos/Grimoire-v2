@@ -77,7 +77,7 @@ struct UserRow {
     xp: i64,
 }
 
-fn parse_date(s: &str) -> Result<NaiveDate, AppError> {
+pub(crate) fn parse_date(s: &str) -> Result<NaiveDate, AppError> {
     s.parse()
         .map_err(|_| AppError::Internal("local_date inválida en la base".into()))
 }
@@ -93,7 +93,7 @@ fn parse_marks(dates: Option<&str>) -> Result<Marks, AppError> {
 }
 
 /// Filas `MarksRow` → marcas por hábito.
-fn marks_by_habit(res: &D1Result) -> Result<HashMap<String, Marks>, AppError> {
+pub(crate) fn marks_by_habit(res: &D1Result) -> Result<HashMap<String, Marks>, AppError> {
     res.results::<MarksRow>()?
         .into_iter()
         .map(|r| Ok((r.habit_id, parse_marks(r.dates.as_deref())?)))

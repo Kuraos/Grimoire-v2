@@ -13,6 +13,7 @@ use worker::js_sys::{self, Object, Reflect};
 use worker::{D1Database, D1Result, Env, HttpRequest, console_error, console_log, event};
 
 mod habits;
+mod user;
 
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -63,6 +64,7 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
             .route("/health", get(|| async { "ok" }))
             .route("/habits", get(habits::list).post(habits::create))
             .route("/habits/{id}/complete", post(habits::complete))
+            .route("/user", get(user::read))
             .with_state(state);
         router.into_service().call(req).await?
     };
