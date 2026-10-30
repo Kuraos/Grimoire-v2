@@ -1,0 +1,288 @@
+/* ============================================================================
+   GRIMOIRE — Sistema visual gótico
+   ----------------------------------------------------------------------------
+   Única fuente de verdad de la paleta. tailwind.config.js y los gráficos leen
+   de aquí; no hay valores duplicados en ningún otro sitio.
+
+   TESIS DE DISEÑO
+   El gótico no está en "usar morado", está en la TENSIÓN TÉRMICA: un sustrato
+   violeta-frío y profundo contra dos acentos que se oponen —arcano frío para
+   el estado del sistema, dorado cálido para la recompensa (manuscrito
+   iluminado: pan de oro sobre vitela oscura).
+   El carácter vive en el sustrato y los bordes; la legibilidad, en la tinta.
+   Así el contraste sube en vez de bajar.
+
+   LA ESCALERA DE ELEVACIÓN
+   El sustrato tenía 1.09:1 entre card y fondo: la superficie no existía y toda
+   la profundidad recaía en un borde a 1.26:1, también invisible. Los cuatro
+   niveles se han separado hasta donde permite la tinta.
+
+     abismo → cromo → superficie → elevado    1.04 · 1.10 · 1.15
+     superficie vs abismo   1.09 → 1.18
+     borde vs superficie    1.26 → 1.48
+
+   No se puede subir más sin bajar ink-faint de AA: es el techo real, no una
+   preferencia. Por eso ink-faint sube también, y con él el resto de la escalera.
+
+   VERIFICACIÓN WCAG (computada, no estimada)
+   Los 12 colores de tinta/acento contra los 4 niveles de sustrato: todos
+   >= 4.5:1. Peor par: oxblood sobre surface-raised = 4.57:1.
+   Cada color de estado sobre su fondo `-deep`: todos >= 4.79:1.
+   ============================================================================ */
+
+:root {
+  /* --- Sustrato: violeta-negro frío, en pasos perceptibles --- */
+  --gr-void: #07060c;            /* fondo de la app — el abismo */
+  --gr-surface: #1e1830;         /* cards y paneles — vitela oscura */
+  --gr-surface-raised: #2b2340;  /* inputs, hover, dropdowns */
+  --gr-surface-sunken: #040308;  /* overlays de modal, pozos */
+
+  /* --- Tinta: cálida sobre tierra fría --- */
+  --gr-ink-bright: #f2ede6;      /* 15.1:1 s/surface — títulos */
+  --gr-ink: #d2cbdb;             /* 11.2:1 — cuerpo */
+  --gr-ink-dim: #a49db5;         /*  6.8:1 — metadata */
+  --gr-ink-faint: #a29ab3;       /*  6.1:1 — deshabilitado */
+
+  /* --- Acento ARCANO (frío): estado, foco, navegación activa --- */
+  --gr-arcane: #a98bf0;          /* 6.4:1 */
+  --gr-arcane-bright: #c6b0ff;   /* 9.3:1 */
+  --gr-arcane-deep: #2d1c56;     /* fondo de badge — elevado, no hundido */
+  --gr-arcane-deep-hover: #3d2670;
+
+  /* --- Acento DORADO (cálido): recompensa, XP, logros --- */
+  --gr-gilded: #dcae5c;          /* 8.6:1 */
+  --gr-gilded-bright: #f0cd8a;   /* 11.6:1 */
+  --gr-gilded-deep: #3a2a0c;
+
+  /* --- Estados semánticos, coherentes con la estética --- */
+  --gr-verdigris: #5aa885;       /* éxito — cobre envejecido, 6.2:1 */
+  --gr-verdigris-deep: #123422;
+  --gr-amber: #d4913c;           /* advertencia — 6.6:1 */
+  --gr-amber-deep: #3d290c;
+  --gr-oxblood: #dc6b84;         /* peligro — 5.4:1 */
+  --gr-oxblood-deep: #3f1522;
+
+  /* --- Bordes: neutro estructural; el acento sólo marca foco/estado --- */
+  --gr-edge: #3d3358;
+  --gr-edge-strong: #52456f;
+  --gr-edge-focus: #a98bf0;
+  --gr-edge-danger: #6e2c3f;
+  /* Filo interior: da volumen de objeto (piedra/vitela) sin sombras */
+  --gr-edge-inner: rgba(201, 180, 255, 0.09);
+  /* Regla teñida de arcano: marca la sección donde el sistema espera que
+     escribas, sin subir a `--gr-edge-focus`, que es foco de verdad. */
+  --gr-edge-arcane: rgba(169, 139, 240, 0.22);
+
+  /* --- Cromo de la app: sidebar y topbar, apenas elevados del abismo --- */
+  --gr-chrome: #100c1c;
+
+  /* ==========================================================
+     RADIOS — cuatro pasos, cada uno con un trabajo asignado.
+     Convivían seis valores (2, 3, 4, 6, 8, 10 y 12 vía Tailwind)
+     sin criterio: ninguno se notaba como error, pero juntos hacen
+     que la interfaz se sienta ensamblada en vez de diseñada.
+     `0` y `50%` no son peldaños: son formas (la marginalia sin
+     caja, el pulgar del deslizador).
+     ========================================================== */
+  --gr-radius-xs: 2px;    /* marcas de datos: celdas de heatmap, carriles */
+  --gr-radius-sm: 4px;    /* piezas pequeñas: casillas, días, foco */
+  --gr-radius-md: 6px;    /* controles: botón, input, select */
+  --gr-radius-lg: 10px;   /* superficies: card, modal, popover */
+  --gr-radius-pill: 9999px;
+
+  /* --- Barra de XP: del arcano al dorado = progreso hacia la recompensa --- */
+  --gr-xp-from: #3b2a6e;
+  --gr-xp-to: #dcae5c;
+
+  /* --- Paleta de CATEGORÍAS (datos) — fría y saturada, no pastel --- */
+  --gr-cat-fisico: #5aa885;
+  --gr-cat-academico: #a98bf0;
+  --gr-cat-idioma: #6f93e0;
+  --gr-cat-proyecto: #cf7ba6;
+  --gr-cat-tcg: #dcae5c;
+  --gr-cat-otro: #9a90b5;
+  --gr-cat-personal: #63a9c4;
+  --gr-cat-trabajo: #b8807f;
+
+  /* --- Paleta de RAREZA de logros: culmina en dorado --- */
+  --gr-tier-common: #a49db5;
+  --gr-tier-rare: #6f93e0;
+  --gr-tier-epic: #b57ded;
+  --gr-tier-legendary: #dcae5c;
+
+  /* ==========================================================
+     TIPOGRAFÍA
+     Cinzel: sólo encabezados y énfasis.
+     Inter: UI, datos, metadata.
+     Spectral: prosa extensa (diario, descripciones).
+     ========================================================== */
+  --gr-font-display: "Cinzel", Georgia, serif;
+  --gr-font-ui: "Inter", system-ui, sans-serif;
+  --gr-font-prose: "Spectral", Georgia, serif;
+
+  /* ==========================================================
+     MOVIMIENTO — duraciones y curvas con propósito
+     ========================================================== */
+  --gr-dur-state: 170ms;   /* hover / focus / active   (150-200ms) */
+  --gr-dur-enter: 240ms;   /* entrada de card o modal  (200-300ms) */
+  --gr-dur-reward: 420ms;  /* gamificación             (300-500ms) */
+  --gr-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --gr-ease-reward: cubic-bezier(0.34, 1.36, 0.5, 1); /* leve rebase */
+}
+
+/* ---------------- Roles tipográficos ----------------
+   La escala tenía techo en 20px y suelo en 12, con el 94% de los tamaños en
+   los dos peldaños inferiores: todo pesaba lo mismo. Cinzel a 12px además
+   estorbaba la legibilidad, que es por lo que ya se había retirado de las
+   etiquetas. Sube a donde una display serif hace su trabajo.
+
+     rótulo 11 · interfaz 13 · prosa 16 · cifra 34 · iluminación 24 · rúbrica 44
+   ------------------------------------------------------------------------- */
+
+/* Rúbrica: título de vista. El techo de la escala. */
+.gr-title-module {
+  font-family: var(--gr-font-display);
+  font-size: 44px;
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gr-ink-bright);
+  text-wrap: balance;
+}
+
+/* Rótulo: título de card. Se encoge para que el contenido pese más que su
+   etiqueta — la inversión que hace legible la jerarquía. */
+.gr-title-card {
+  font-family: var(--gr-font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gr-ink-dim);
+}
+
+/* Iluminación: nivel, nombre de logro, título de modal */
+.gr-emphasis {
+  font-family: var(--gr-font-display);
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  color: var(--gr-ink-bright);
+}
+
+/* Cifra: XP, racha, minutos de foco. Tabular, para que columnas y saltos
+   de valor no bailen. */
+.gr-figure {
+  font-family: var(--gr-font-ui);
+  font-size: 34px;
+  line-height: 1.05;
+  /* Las cifras no heredan tracking: el de las versalitas separa los dígitos.
+     Importa porque este rol se usa dentro de rótulos, que sí lo llevan. */
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  color: var(--gr-ink-bright);
+}
+
+.gr-body {
+  font-family: var(--gr-font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--gr-ink);
+}
+
+/* `.gr-prose` vivía aquí sin un solo uso, duplicando lo que ya hace
+   `.font-prose` en index.css. Dos formas de decir lo mismo es justo la deriva
+   que esta hoja existe para evitar. */
+
+.gr-meta {
+  font-family: var(--gr-font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--gr-ink-dim);
+}
+
+.gr-numeric {
+  font-family: var(--gr-font-ui);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* La superficie base vive en index.css como `.card`, con sus tres rangos.
+   `.gr-card` era una segunda definición idéntica salvo por el padding —que no
+   fijaba— y por un `transform` en la transición que nada llegaba a animar: el
+   único movimiento de esa card es `gr-reward`, y las animaciones no necesitan
+   transición. Dos definiciones de lo mismo es la deriva que esta hoja evita. */
+
+/* ---------------- Movimiento ---------------- */
+
+/* Entrada: fade + leve desplazamiento vertical */
+@keyframes gr-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.gr-enter {
+  animation: gr-enter var(--gr-dur-enter) var(--gr-ease-out) both;
+}
+
+/* Recompensa: scale + glow. Refuerza el feedback de logro. */
+@keyframes gr-reward {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(220, 174, 92, 0); }
+  40%  { transform: scale(1.04); box-shadow: 0 0 18px 3px rgba(220, 174, 92, 0.45); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(220, 174, 92, 0); }
+}
+.gr-reward {
+  animation: gr-reward var(--gr-dur-reward) var(--gr-ease-reward);
+}
+
+/* Marca de completado: el trazo se dibuja, no aparece de golpe.
+   El trazo mide 23.4 unidades; con dasharray 22 arrancaba con un 6% ya
+   pintado. 24 lo cubre entero. */
+@keyframes gr-seal {
+  from { stroke-dashoffset: 24; }
+  to   { stroke-dashoffset: 0; }
+}
+.gr-seal path {
+  stroke-dasharray: 24;
+  animation: gr-seal var(--gr-dur-state) var(--gr-ease-out) both;
+}
+
+/* Movimiento reducido. No pregunta al sistema: lee `data-motion`, que resuelve
+   motion-pref.ts a partir de la preferencia de la app («sistema» por defecto).
+   Cada hoja apaga su propio movimiento; index.css hace lo mismo con el suyo. */
+[data-motion="reduced"] :is(.gr-enter, .gr-reward, .gr-seal path) { animation: none; }
+
+/* ---------------- Puente para Bklit ----------------
+   Los gráficos de Bklit (components/bklit/) pintan con `--chart-*`. Aquí esos
+   nombres apuntan a la paleta y no tienen valor propio: si tuvieran uno, serían
+   una segunda paleta, justo la deriva que esta hoja existe para evitar.
+
+   Las series por defecto no incluyen el dorado. Una serie que de verdad sea
+   recompensa (XP) lo pide de forma explícita; una que no lo es no puede
+   heredarlo por ser la quinta. */
+:root {
+  --chart-1: var(--gr-arcane);
+  --chart-2: var(--gr-verdigris);
+  --chart-3: var(--gr-cat-idioma);
+  --chart-4: var(--gr-cat-proyecto);
+  --chart-5: var(--gr-ink-dim);
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-2);
+  --chart-background: var(--gr-surface-sunken);
+  --chart-foreground: var(--gr-ink);
+  --chart-foreground-muted: var(--gr-ink-dim);
+  --chart-label: var(--gr-ink-dim);
+  --chart-grid: var(--gr-edge);
+  --chart-crosshair: var(--gr-edge-strong);
+  --chart-brush-border: var(--gr-edge);
+  --chart-tooltip-background: var(--gr-surface-sunken);
+  --chart-tooltip-foreground: var(--gr-ink-bright);
+  --chart-tooltip-muted: var(--gr-ink-dim);
+  --chart-marker-background: var(--gr-surface-raised);
+  --chart-marker-border: var(--gr-edge-strong);
+  --chart-marker-foreground: var(--gr-ink-bright);
+  --chart-indicator-color: var(--gr-arcane);
+}

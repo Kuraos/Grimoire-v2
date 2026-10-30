@@ -1,6 +1,468 @@
-/* pantalla de prueba de la 0.4: el sistema visual de la v1 llega en la fase 1 */
-body {
+@import "./fonts.css";
+/* Sistema visual gótico: theme.css es la única fuente de verdad de los tokens. */
+@import "./theme.css";
+/* Capa de ornamento: cielo, nudo, cadena, rúbrica y capitular. Va después
+   porque consume los tokens de theme.css y no define ninguno propio. */
+@import "./styles/ornamento.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Los nombres heredados apuntan al sistema gótico (theme.css).
+   Así los 9 módulos adoptan la paleta sin reescribir cada componente,
+   y `gr-*` queda como única fuente de verdad. */
+:root {
+  --bg-base: var(--gr-void);
+  --bg-primary: var(--gr-void);
+  --bg-surface: var(--gr-surface);
+  --bg-elevated: var(--gr-surface-raised);
+  --bg-overlay: var(--gr-surface-sunken);
+  --bg-deep: var(--gr-surface-sunken);
+
+  --border: var(--gr-edge);
+  --border-strong: var(--gr-edge-strong);
+  --border-accent: var(--gr-edge-strong);
+  --border-focus: var(--gr-edge-focus);
+  --border-glow: var(--gr-edge-focus);
+
+  --text-primary: var(--gr-ink-bright);
+  --text-body: var(--gr-ink);
+  --text-muted: var(--gr-ink-dim);
+  --text-faint: var(--gr-ink-faint);
+
+  --accent: var(--gr-arcane);
+  --accent-strong: var(--gr-arcane-bright);
+  --accent-deep: var(--gr-arcane-deep);
+  --purple-main: var(--gr-arcane);
+  --purple-muted: var(--gr-ink-dim);
+  --purple-deep: var(--gr-arcane-deep);
+
+  --xp-from: var(--gr-xp-from);
+  --xp-to: var(--gr-xp-to);
+
+  --success: var(--gr-verdigris);
+  --success-bg: var(--gr-verdigris-deep);
+  --warning: var(--gr-amber);
+  --warning-bg: var(--gr-amber-deep);
+  --danger: var(--gr-oxblood);
+  --danger-bg: var(--gr-oxblood-deep);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
-  padding: 16px;
-  font-family: system-ui, sans-serif;
+}
+
+body {
+  background: var(--gr-void);
+  color: var(--text-primary);
+  /* Capa de trabajo: legible por defecto. La atmósfera vive en .font-display */
+  font-family: var(--gr-font-ui);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display ceremonial: títulos de página, nivel, cifras grandes, logo. */
+.font-display {
+  font-family: var(--gr-font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+/* Etiqueta pequeña: mantiene el carácter de versalita, pero en Inter.
+   Sustituye a Cinzel en labels de formulario y metadatos. */
+.font-label {
+  font-family: var(--gr-font-ui);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Prosa: Diario y Revisión semanal — donde de verdad se escribe.
+   Los selectores de elemento suben la especificidad por encima de `.input`
+   (que fija font-family: inherit y, por orden de cascada, ganaría). */
+.font-prose,
+.input.font-prose {
+  font-family: var(--gr-font-prose);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Foco visible y consistente en todo lo interactivo. */
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--gr-radius-sm);
+}
+
+@keyframes skeletonPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-surface), var(--bg-elevated), var(--bg-surface));
+  border: 1px solid var(--border);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+/* Etiqueta de sección: Inter, no Cinzel. Cuando todo es ceremonial,
+   nada destaca — Cinzel queda para títulos de página.
+   A 11px es un rótulo, no un título: lo que debe pesar es el contenido. */
+.section-title {
+  font-family: var(--gr-font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================================================
+   CAPA DE COMPONENTES
+   ----------------------------------------------------------------------------
+   `.card`, sus rangos, `.input` y `.btn` van dentro de `@layer components` para
+   que las utilidades de Tailwind puedan sobrescribirlas. Declaradas sueltas
+   —después de `@tailwind utilities`— ganaban por orden de cascada, y eso ya
+   habia mordido dos veces:
+
+     · los cuatro filtros de Tareas pedian `w-auto` y salian a 1162px cada uno,
+       porque `.input` fija `width: 100%`. El marcado siempre fue correcto.
+     · `.gr-card` existia como copia sin padding de `.card`, solo para que sus
+       dos consumidores pudieran poner el suyo con `p-4` y `p-5`.
+
+   Dentro de la capa, `w-auto` y `p-4` hacen lo que dicen. Es como Tailwind
+   espera que convivan componente y utilidad.
+   ============================================================================ */
+@layer components {
+
+.card {
+  position: relative;
+  background: var(--gr-surface);
+  border: 1px solid var(--gr-edge);
+  border-radius: var(--gr-radius-lg);
+  padding: 14px 16px;
+  /* filo interior: la card lee como objeto, no como rectángulo plano */
+  box-shadow: inset 0 1px 0 0 var(--gr-edge-inner);
+  transition: border-color var(--gr-dur-state) var(--gr-ease-out),
+              background-color var(--gr-dur-state) var(--gr-ease-out);
+}
+
+.card:hover {
+  border-color: var(--gr-edge-strong);
+  background: var(--gr-surface-raised);
+}
+
+/* ---------------- Rangos de superficie ----------------
+   Una card no puede significar tres cosas distintas. El Dashboard tenía ocho
+   con idéntico fondo, borde, radio y padding —seis de ellas de 444px exactos—
+   así que ningún elemento pesaba más que otro y el ojo no tenía por dónde
+   entrar.
+
+     rúbrica     lo que el día exige. Una por vista.
+     hoja        la card estándar. `.card` a secas.
+     marginalia  cifras de contexto: pierde la caja entera.
+
+   Los modificadores van aquí y no en theme.css porque `.card` vive aquí: a
+   igual especificidad gana el que se declara después, y `.card:hover` tiene
+   que quedar por encima de ellos para poder sobrescribirlo. */
+
+/* El degradado solo no bastaba: al lado del Pomodoro, con su cifra en arcano,
+   la rúbrica no se imponía. Se le alarga la zona elevada y se le pone un filo
+   de oro en el canto superior — pan de oro en el borde de ataque, que es lo que
+   distingue una página iluminada de una corriente. Es el único sitio donde el
+   oro toca una superficie en vez de un dato. */
+.card-rubric {
+  background: linear-gradient(152deg, var(--gr-surface-raised) 0%, var(--gr-surface) 78%);
+  border-color: var(--gr-edge-strong);
+  padding: 18px 20px;
+  box-shadow: inset 0 1px 0 0 rgba(220, 174, 92, 0.30);
+  overflow: hidden;
+}
+
+/* La orla parcial: dos filos de oro que bajan por los cantos laterales y se
+   apagan a los 120px. El filo superior solo marcaba el borde de ataque; con
+   los dos verticales la rúbrica queda enmarcada por arriba en tres lados y
+   deja de leerse como una card cualquiera con degradado.
+
+   Parcial y no entera a propósito: una orla completa de oro convertiría la
+   superficie en el objeto, y el oro tiene que seguir señalando el contenido. */
+.card-rubric::before,
+.card-rubric::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 120px;
+  background: linear-gradient(180deg, rgba(220, 174, 92, 0.30), rgba(220, 174, 92, 0));
+  pointer-events: none;
+}
+
+.card-rubric::before { left: 0; }
+.card-rubric::after { right: 0; }
+
+.card-rubric:hover {
+  border-color: var(--gr-gilded-deep);
+  background: linear-gradient(152deg, var(--gr-surface-raised) 0%, var(--gr-surface) 78%);
+}
+
+/* El título de la rúbrica sí es ceremonial: recupera Cinzel. En el resto de
+   las cards el rótulo se encoge para que pese el contenido.
+
+   Va sobre `.section-title-text` y no sobre la fila entera: la fila también
+   contiene el slot `right`, y ahí viven las cifras. Con la regla en el
+   contenedor, `0/1` salía en Cinzel con tracking de versalita en la rúbrica y
+   en Inter tabular en el pie — el mismo dato en dos caras distintas dentro de
+   la misma pantalla. */
+.card-rubric > .section-title > .section-title-text {
+  font-family: var(--gr-font-display);
+  font-size: 15px;
+  letter-spacing: 0.13em;
+  color: var(--text-primary);
+}
+
+.card-marginalia {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--gr-edge);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 14px 2px 2px;
+}
+
+.card-marginalia:hover {
+  background: transparent;
+  border-color: var(--gr-edge);
+}
+
+/* El pozo: paneles de gráfico y las piezas de dato dibujadas. No es un rango de
+   importancia sino de profundidad —hunde en vez de elevar—, y por eso pierde la
+   caja igual que la marginalia y se queda con un filo arriba.
+
+   Va aquí, con sus hermanos, por la misma razón que ellos: `.card` vive en esta
+   hoja, y `.card:hover` tiene que poder sobrescribirlo. Declarado en
+   ornamento.css perdía contra `.card:hover` por especificidad y el panel se
+   aclaraba al pasar el ratón — justo lo contrario de un hueco.
+
+   El campo estelar se repite aquí en vez de heredarse de `.gr-pozo`, y no es
+   duplicación gratuita: `.card` declara `background` en forma abreviada, que
+   resetea `background-image` a `none`, y al declararse después con la misma
+   especificidad se comía las estrellas del pozo. El panel salía negro liso.
+   `.gr-pozo` sigue sirviendo para los pozos que no son card. */
+.card-pozo {
+  background-color: var(--gr-surface-sunken);
+  background-image: var(--gr-estrellas-a);
+  border: 0;
+  border-top: 1px solid var(--gr-edge);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 18px 20px;
+}
+
+.card-pozo:hover {
+  background-color: var(--gr-surface-sunken);
+  border-color: var(--gr-edge);
+}
+
+/* El pozo no tiene rótulo propio: lo abre una `<SectionBand>`, que trae su
+   sigilo, su relleno y su rombo de remate. Un `title` en un pozo sería una
+   segunda forma de encabezar la misma sección. */
+
+/* Sólo `.input`: las variantes `textarea.input` y `select.input` no añadían
+   nada —una clase de autor ya gana a los estilos de usuario-agente— y en cambio
+   subían la especificidad a 0-1-1, por encima de cualquier utilidad. Por eso los
+   cuatro filtros de Tareas pedían `w-auto` y seguían saliendo a ancho completo
+   incluso dentro de la capa de componentes. */
+.input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--gr-radius-md);
+  color: var(--text-primary);
+  padding: 8px 11px;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  width: 100%;
+  outline: none;
+  transition: border-color var(--gr-dur-state) var(--gr-ease-out);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:focus {
+  border-color: var(--border-focus);
+}
+
+/* Un campo bloqueado tiene que parecerlo. Había `.btn:disabled` desde siempre y
+   esto no, así que un `<input disabled>` se veía idéntico a uno vivo e invitaba
+   a teclear en él; el hueco llegó a cambiar dos decisiones de diseño en el
+   erario —la moneda de un arca y el tipo de una partida— que acabaron
+   enseñándose como texto en vez de como control para esquivarlo.
+
+   Mismos valores que el botón, que es el precedente de la casa. El 0.4 baja el
+   texto de AA a propósito: WCAG exime a los controles inactivos del requisito
+   de contraste, y aquí la atenuación ES la señal de que no se puede escribir.
+
+   Sube la especificidad a 0-2-0 y gana a una utilidad de Tailwind, igual que
+   `.btn:disabled`. Es aceptable en un estado —no en una propiedad—: nadie
+   quiere sobrescribir con `opacity-100` el aspecto de un campo bloqueado. */
+.input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Deslizadores (energía, ánimo, XP de hábitos y tareas).
+   El carril nativo se pinta blanco puro: dos barras de 410px a 18:1 contra el
+   sustrato eran, con diferencia, los objetos más brillantes del Dashboard.
+   `accent-color` sólo teñía el pulgar, así que hay que dibujar el carril. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--gr-radius-xs);
+  background: var(--gr-surface-raised);
+  border: 1px solid var(--gr-edge);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  /* centra el pulgar sobre el carril: (alto de carril − alto de pulgar) / 2 */
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: var(--gr-arcane);
+  border: 1px solid var(--gr-arcane-bright);
+  transition: background-color var(--gr-dur-state) var(--gr-ease-out);
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  background: var(--gr-arcane-bright);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: var(--gr-radius-xs);
+  background: var(--gr-surface-raised);
+  border: 1px solid var(--gr-edge);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--gr-arcane);
+  border: 1px solid var(--gr-arcane-bright);
+}
+
+.btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--gr-radius-md);
+  color: var(--text-body);
+  font-family: var(--gr-font-ui);
+  /* Suelo de interfaz: un botón es un control que se lee y se pulsa, no un
+     rótulo. Era el último tamaño de la app fuera de la escala. */
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color var(--gr-dur-state) var(--gr-ease-out),
+              background var(--gr-dur-state) var(--gr-ease-out),
+              color var(--gr-dur-state) var(--gr-ease-out);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+}
+
+/* El acento morado se gana su lugar: solo la acción principal. */
+.btn-primary {
+  background: var(--accent-deep);
+  border-color: var(--border-focus);
+  color: var(--gr-arcane-bright);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--gr-arcane-deep-hover);
+  color: var(--gr-ink-bright);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+} /* fin de @layer components */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--gr-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-accent);
+}
+
+/* ---------------- Movimiento reducido ----------------
+   theme.css apagaba el suyo (`gr-enter`, `gr-reward`, `gr-seal`) pero esta hoja
+   no tenía bloque ninguno, así que su movimiento ignoraba la preferencia del
+   sistema — incluidos un giro y un pulso INFINITOS en el overlay de subida de
+   nivel, que ocupa la pantalla entera. (Ese overlay ya es de Motion.)
+
+   No es una media query: cuelga de `data-motion`, que resuelve motion-pref.ts
+   (ver la cabecera de ese archivo para el porqué).
+
+   El esqueleto conserva su degradado: sin el pulso sigue leyéndose como hueco
+   a la espera, que es su trabajo.
+
+   Quedan fuera a propósito las utilidades `transition-colors` y
+   `transition-opacity` de los componentes: sólo cambian color y opacidad, que
+   no son movimiento. La preferencia pide retirar desplazamiento, giro y
+   escalado —lo que dispara respuestas vestibulares—, no los fundidos que
+   ayudan a seguir un cambio de estado. Medido: 0 elementos transicionan
+   `transform` en toda la app. */
+[data-motion="reduced"] :is(.card, .card-rubric, .card-marginalia, .btn, .input),
+[data-motion="reduced"] input[type="range"]::-webkit-slider-thumb {
+  transition: none;
+}
+[data-motion="reduced"] .skeleton {
+  animation: none;
 }

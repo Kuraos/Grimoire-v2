@@ -1,0 +1,178 @@
+/* ============================================================================
+   ORNAMENTO — la capa que convierte el tablero en grimorio
+   ----------------------------------------------------------------------------
+   Se importa DESPUÉS de theme.css: usa sus tokens y no redefine ninguno.
+
+   Cinco piezas y las reglas que las gobiernan:
+
+     el cielo     campo estelar en el fondo de la app. Sólo se ve en las calles
+                  entre tarjetas — nunca detrás de texto.
+     el nudo      escuadra entrelazada en la esquina. Oro = la tarjeta principal
+                  de la vista, una por pantalla; tinta = las demás.
+     la cadena    filete de eslabones que rellena el hueco a la derecha de un
+                  rótulo. Separa secciones dentro de una tarjeta.
+     la rúbrica   versalitas Cinzel para rótulos de sección.
+     la capitular Spectral con inicial en oro. Sólo el Diario: es la única
+                  vista con prosa real, y repetida deja de significar nada.
+
+   Si una vista pide más ornamento del que cabe en estas reglas, la respuesta
+   es menos ornamento, no otra pieza.
+
+   LO QUE ESTE ARCHIVO NO TRAE, Y POR QUÉ
+   El paquete de diseño incluía además `.gr-tarjeta`, `.gr-titulo`,
+   `.gr-etiqueta`, `--gr-font-prose` y las `@font-face` de Spectral. Los cinco
+   ya existen en el repo —`.card`/`.card-rubric` en index.css, `.gr-title-module`
+   y el token de prosa en theme.css, Spectral en fonts.css— con los mismos
+   valores. Copiarlos habría dejado dos formas de decir cada cosa, que es
+   exactamente la deriva contra la que theme.css se escribió.
+   ============================================================================ */
+
+:root {
+  /* Teselas. El tamaño natural del SVG es el tamaño del mosaico:
+     nudo 24×24, cadena 24×10, estrellas 180×180 y 97×97 —primos entre sí,
+     para que la repetición no se vea. */
+  --gr-nudo-oro: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cg fill='none' stroke='%23dcae5c' stroke-width='1.2' stroke-linejoin='round'%3E%3Cpath d='M3 21V7Q3 3 7 3H21'/%3E%3Cpath d='M8 21V10Q8 8 10 8H21'/%3E%3Cpath d='M3 13H13V3'/%3E%3C/g%3E%3C/svg%3E");
+  --gr-nudo-tinta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cg fill='none' stroke='%2352456f' stroke-width='1.2' stroke-linejoin='round'%3E%3Cpath d='M3 21V7Q3 3 7 3H21'/%3E%3Cpath d='M8 21V10Q8 8 10 8H21'/%3E%3Cpath d='M3 13H13V3'/%3E%3C/g%3E%3C/svg%3E");
+  --gr-cadena-tinta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cg fill='none' stroke='%2352456f' stroke-width='1'%3E%3Cellipse cx='6' cy='5' rx='5.2' ry='3.4'/%3E%3Cellipse cx='18' cy='5' rx='5.2' ry='3.4'/%3E%3C/g%3E%3C/svg%3E");
+  --gr-estrellas-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='14' cy='22' r='.9' fill-opacity='.22'/%3E%3Ccircle cx='63' cy='48' r='.7' fill-opacity='.14'/%3E%3Ccircle cx='120' cy='15' r='1.1' fill-opacity='.28'/%3E%3Ccircle cx='168' cy='70' r='.6' fill-opacity='.10'/%3E%3Ccircle cx='35' cy='96' r='.8' fill-opacity='.18'/%3E%3Ccircle cx='96' cy='120' r='.6' fill-opacity='.12'/%3E%3Ccircle cx='150' cy='140' r='.9' fill-opacity='.20'/%3E%3Ccircle cx='22' cy='158' r='.7' fill-opacity='.13'/%3E%3Ccircle cx='128' cy='172' r='.6' fill-opacity='.10'/%3E%3Ccircle cx='75' cy='66' r='.5' fill-opacity='.08'/%3E%3C/g%3E%3C/svg%3E");
+  --gr-estrellas-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='97' height='97'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='10' cy='30' r='.6' fill-opacity='.10'/%3E%3Ccircle cx='48' cy='12' r='.5' fill-opacity='.08'/%3E%3Ccircle cx='80' cy='55' r='.7' fill-opacity='.13'/%3E%3Ccircle cx='30' cy='78' r='.5' fill-opacity='.07'/%3E%3Ccircle cx='66' cy='90' r='.6' fill-opacity='.09'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── El cielo ──────────────────────────────────────────────────────────────
+   Va en el contenedor raíz del layout, el que hasta ahora pintaba `--gr-void`
+   a secas. Blanco puro a 0.07–0.28 de opacidad: por debajo del contraste de
+   `--gr-edge`, así que una estrella nunca compite con un borde.
+
+   Sin parpadeo, a propósito. Animarlas obligaría a apagarlas bajo
+   `prefers-reduced-motion` y a sostener un bucle infinito en una app de
+   trabajo, que es justo lo que esa preferencia existe para detener. */
+.gr-cielo {
+  background-color: var(--gr-void);
+  background-image: var(--gr-estrellas-a), var(--gr-estrellas-b);
+  background-repeat: repeat, repeat;
+}
+
+/* El pozo: paneles hundidos de gráfico y las tres piezas de dato nuevas.
+   Una sola capa sobre la superficie hundida — a dos capas el pozo dejaba de
+   leerse como hueco y competía con el fondo de la app. */
+.gr-pozo {
+  background-color: var(--gr-surface-sunken);
+  background-image: var(--gr-estrellas-a);
+  border-top: 1px solid var(--gr-edge);
+}
+
+/* ── El nudo ───────────────────────────────────────────────────────────────
+   Escuadra de 24×24 anclada a 3px de la esquina. La tarjeta debe ser
+   `position: relative` —`.card` ya lo es— y la primera línea de contenido
+   lleva `.gr-sangrado` para no chocar con el trazo.
+
+   La regla del sistema es la misma que la de los rangos de superficie: el oro
+   marca la tarjeta que la vista existe para servir, y hay una por pantalla.
+   Por eso el nudo se deriva del `rank` de `<Card>` en vez de pedirse a mano:
+   una regla que hay que recordar en cada llamada es una regla que se rompe. */
+.gr-nudo {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+.gr-nudo--tinta { background-image: var(--gr-nudo-tinta); }
+.gr-nudo--oro   { background-image: var(--gr-nudo-oro); opacity: 0.55; }
+
+/* Contra-nudo: sólo la tarjeta principal cierra la caja por abajo. */
+.gr-nudo--contra {
+  top: auto;
+  left: auto;
+  bottom: 3px;
+  right: 3px;
+  transform: rotate(180deg);
+}
+
+/* En la cabecera de página el trazo baja: ahí el título ya pesa 44px. */
+.gr-nudo--cabecera { opacity: 0.45; }
+
+/* Hueco para el nudo en la primera línea de la tarjeta. */
+.gr-sangrado { padding-left: 30px; }
+
+/* ── La cadena ─────────────────────────────────────────────────────────────
+   Hijo flexible de una fila que empieza por un rótulo. Rellena lo que sobra
+   hasta el borde derecho: es el separador de secciones dentro de una tarjeta.
+   Una por sección, nunca una por fila. */
+.gr-cadena {
+  flex: 1;
+  height: 10px;
+  background-image: var(--gr-cadena-tinta);
+  background-repeat: repeat-x;
+  opacity: 0.7;
+}
+
+/* ── El filete ─────────────────────────────────────────────────────────────
+   La versión de diario de la cadena: una línea punteada de 1px que rellena el
+   mismo hueco. Es el separador de todos los días.
+
+   La cadena y el filete no son dos estilos del mismo objeto: la cadena es una
+   pieza de orfebrería y se gasta si se repite —una por vista, la de la sección
+   que manda—; el filete es tipografía, y puede aparecer diez veces sin que
+   ninguna pierda valor. Confundirlos fue lo que llenó Estadísticas de cinco
+   cadenas cuando el diseño pedía una. */
+.gr-filete {
+  flex: 1;
+  height: 1px;
+  background: repeating-linear-gradient(to right, var(--gr-edge) 0 2px, transparent 2px 7px);
+}
+
+/* Remate de filete: el punteado termina en un rombo en vez de cortarse contra
+   el margen. Es la diferencia entre una línea que acaba y una que se corta. */
+.gr-rombo {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  transform: rotate(45deg);
+  background: var(--gr-ink-faint);
+  opacity: 0.55;
+}
+
+/* ── La rúbrica ────────────────────────────────────────────────────────────
+   Rótulo de sección en versalitas Cinzel. Es el mismo tratamiento que
+   `.card-rubric` da a su título; aquí queda suelto para las secciones que no
+   son una card —los pozos, las bandas de la Reseña.
+
+   No sube a rótulo de card corriente: a 11px en Inter el rótulo se encoge para
+   que pese el contenido, y esa inversión es lo que hace legible la jerarquía.
+   Cuando todo es ceremonial, nada destaca. */
+.gr-rubrica {
+  font-family: var(--gr-font-display);
+  font-size: 15px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--gr-ink-bright);
+}
+
+/* ── La capitular ──────────────────────────────────────────────────────────
+   Spectral a 17px con inicial en Cinzel 62px de oro. Sólo el Diario:
+   la Reseña usa `.font-prose` a secas, y una capitular por vista repetida
+   diez veces deja de ser una capitular. */
+.gr-prosa {
+  font-family: var(--gr-font-prose);
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--gr-ink);
+  text-wrap: pretty;
+}
+
+/* La capitular va en tinta brillante, no en oro.
+   El oro señala lo que el usuario se ganó, y una inicial grande no premia
+   nada: es la primera letra de lo que acaba de escribir. Con la capitular
+   dorada, cada entrada del diario empezaba pareciendo una recompensa. */
+.gr-prosa::first-letter {
+  font-family: var(--gr-font-display);
+  font-size: 62px;
+  line-height: 0.78;
+  font-weight: 600;
+  color: var(--gr-ink-bright);
+  float: left;
+  margin: 4px 12px 0 0;
+}
+
