@@ -58,18 +58,33 @@ construye la herramienta; después solo se agregan escenarios.
 
 - `grimoire-domain` tiene un test que lee cada golden y reproduce la secuencia con las
   funciones puras, comparando campo por campo.
-- **Diferencias permitidas**, cada una documentada en el propio test con referencia al
-  ADR: redondeo de XP en mitades exactas (fase-0.md, tarea 0.1) y momento en que se
-  asienta una penalización (ADR 0005: la v2 la asienta con 2 días de gracia, la v1 al
-  día siguiente; se compara el estado ya asentado).
+- Los goldens graban la v1 tal cual, aunque haya bugs. Lo que la v2 hace distinto
+  está en la tabla de abajo; el test lo señala en el paso afectado, con referencia a
+  esta tabla, y no compara ese campo.
 - Cualquier otra diferencia es un bug de la v2, o un bug de la v1 que se decide
-  conscientemente no portar: en ese caso se anota en «Hallazgos» de la fase y en el test.
+  conscientemente no portar. En ese caso se agrega una fila a la tabla y se anota en el
+  test.
+
+### Diferencias permitidas
+
+Decididas por Johan el 2026-10-30, salvo las dos primeras, que vienen de fase-0 y del
+ADR 0005.
+
+| # | Diferencia | v1 (lo que graba el golden) | v2 | Motivo |
+|---|---|---|---|---|
+| 1 | Redondeo del multiplicador | `round()` de Python en float: mitades al par, con error binario (`25 × 1.10 → 28`, `30 × 1.35 → 40`) | Puntos básicos enteros, mitades hacia arriba (`40.5 → 41`) | ±1 XP solo en mitades exactas, a cambio de no depender de float (fase-0, 0.1). Ningún golden actual cae en una mitad. |
+| 2 | Cuándo se asienta un día (vidas y penalización) | Al día siguiente, de forma irreversible | Con 2 días de gracia (`hoy >= D + 2`); antes es provisional | Una marca sin conexión puede llegar tarde y debe contar (ADR 0005). Se compara el estado ya asentado. |
+| 3 | Día que se evalúa | El día en que corrió `evaluate-streaks` nunca se evalúa (`last_streak_eval + 1`) | Se asientan todos los días: el siguiente es `settled_through + 1` | Es un bug: con uso diario las vidas casi nunca cambiaban (ADR 0005, Consecuencias). Afecta a `racha_rota`, `dia_perfecto`, `diario_lv` y `deshacer`. |
+| 4 | Logros informados al marcar | `achievement_unlocked`: solo el primero desbloqueado | Lista de todos los logros desbloqueados por la marca | Los demás se desbloqueaban sin aviso (`logros`, 03-08: `total_discipline`). |
+| 5 | `total_xp` del hábito tras deshacer con XP en 0 | Se registra 0 en `xp_log` y la concesión original sigue sumando | Deshacer anula lo que concedió la marca, aunque el XP del usuario ya esté en 0 | El total del hábito contaba XP de una marca borrada (`deshacer`, 03-16: 80 con 70 de marcas vivas). |
+| 6 | `streak` en la respuesta de marcar | Racha previa + 1, la que decide el multiplicador, aunque la marca no cierre la semana | La racha real tras la marca, la misma que devuelve `GET` | La respuesta contradecía al `GET` en semanales (`semanal_2x`, 03-04 y 04-20). El **XP pagado no cambia**: sigue usando previa + 1, como en la v1. |
+| 7 | `iron_constancy` con hábitos semanales | Cuenta semanas, con la racha real | **Igual que la v1** | Se conserva. Va aquí para que no se «arregle» por error. |
 
 ## Hallazgos
 
-Comportamientos de la v1 grabados tal cual en los goldens (v1 en `f85381f`). Ninguno
-está corregido; portar o no cada uno es una decisión pendiente, que se anota aquí y en
-el test cuando se tome.
+Comportamientos de la v1 grabados tal cual en los goldens (v1 en `f85381f`). Lo que
+se decidió sobre cada uno está en «Diferencias permitidas»; lo que no aparece allí se
+porta igual.
 
 - **Hábitos** (2026-10-30): goldens en `api/crates/domain/tests/golden/habits/`.
   - **`evaluate-streaks` nunca evalúa el día en que corrió** (`routers/user.py:66-72`).

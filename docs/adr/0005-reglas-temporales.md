@@ -55,6 +55,17 @@ En la v1 eso no importaba: un solo dispositivo, siempre con su base. En la v2 s�
   10 ms de CPU.
 - Diferencia con la v1: allí el día se evaluaba en cuanto pasaba; aquí la penalización
   definitiva llega con un día de retraso. Es deliberado.
+- **En la v1, con uso diario, las vidas casi nunca funcionaban.** Lo encontró la
+  caracterización (`docs/tasks/caracterizacion-v1.md`, «Hallazgos», escenario
+  `racha_rota`). Al terminar, la v1 escribe `last_streak_eval = hoy`, que significa
+  «evaluado hasta ayer». La siguiente evaluación empieza en `last_streak_eval + 1`, así
+  que el día de una evaluación nunca se evalúa. Como la app evalúa al abrirse, todo
+  día en que se abrió quedaba sin evaluar: ni se perdía ni se recuperaba la vida. Solo
+  contaban los días en que no se abrió la app. **No se porta.** En la v2,
+  `settled_through` es el último día ya asentado, sin ambigüedad: el siguiente en
+  asentarse es `settled_through + 1`. Las vidas van a funcionar de verdad, y con uso
+  diario se van a perder y recuperar mucho más que en la v1. Los goldens de vidas
+  graban la v1 tal cual; el test de la v2 marca esa diferencia y no la compara.
 - Este diseño aplica a cualquier otra regla temporal que aparezca al portar (misiones,
   logros por días consecutivos, cierre de mes del Erario): asentar con gracia, calcular
   lo provisional al consultar.
