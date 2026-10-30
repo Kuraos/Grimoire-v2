@@ -1,0 +1,27 @@
+# Rust
+target/
+api/crates/worker/build/
+# Cloudflare / wrangler
+.wrangler/
+.dev.vars
+.dev.vars.*
+# Node
+node_modules/
+dist/
+# Android / Capacitor
+app/android/.gradle/
+app/android/app/build/
+app/android/local.properties
+*.keystore
+*.jks
+# Datos locales y secretos
+*.db
+*.db-*
+*.sqlite
+.env
+.env.*
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
