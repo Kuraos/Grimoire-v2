@@ -47,7 +47,7 @@ fn next_unit(cadence: Cadence, u: NaiveDate) -> Option<NaiveDate> {
 /// diario, semanas ISO que alcanzaron la meta si es semanal.
 pub fn current_streak(cadence: Cadence, marks: &Marks, today: NaiveDate) -> u32 {
     let (units, anchor) = match cadence {
-        Cadence::Weekly { target } => (met_weeks(marks, target), Some(week_monday(today))),
+        Cadence::Weekly { target } => (met_weeks(marks, target.get()), Some(week_monday(today))),
         Cadence::Daily { days } => (marks.clone(), last_scheduled(days, today)),
     };
     let Some(anchor) = anchor else { return 0 };
@@ -68,7 +68,7 @@ pub fn current_streak(cadence: Cadence, marks: &Marks, today: NaiveDate) -> u32 
 
 pub fn best_streak(cadence: Cadence, marks: &Marks) -> u32 {
     let units: Vec<NaiveDate> = match cadence {
-        Cadence::Weekly { target } => met_weeks(marks, target).into_iter().collect(),
+        Cadence::Weekly { target } => met_weeks(marks, target.get()).into_iter().collect(),
         // las marcas fuera de los días programados no son unidad: si contaran,
         // un extra en sábado partiría la racha de un hábito L–V
         Cadence::Daily { days } => marks
@@ -119,7 +119,7 @@ pub fn mark(
     if let Cadence::Weekly { target } = cadence {
         let monday = week_monday(on);
         let sunday = monday + Days::new(6);
-        if marks.range(monday..=sunday).count() >= usize::from(target) {
+        if marks.range(monday..=sunday).count() >= usize::from(target.get()) {
             return Err(MarkRejected::WeeklyTargetMet);
         }
     }

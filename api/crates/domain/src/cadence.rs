@@ -47,9 +47,33 @@ impl fmt::Display for WeekdaySet {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cadence {
     /// `None` = todos los días.
-    Daily { days: Option<WeekdaySet> },
-    /// Marcas por semana, 1..=7.
-    Weekly { target: u8 },
+    Daily {
+        days: Option<WeekdaySet>,
+    },
+    Weekly {
+        target: WeeklyTarget,
+    },
+}
+
+/// Marcas por semana, siempre en 1..=7. Con 0 toda semana estaría «cumplida» y
+/// `mark` rechazaría cualquier marca.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WeeklyTarget(u8);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InvalidWeeklyTarget(pub u8);
+
+impl WeeklyTarget {
+    pub fn new(n: u8) -> Result<Self, InvalidWeeklyTarget> {
+        match n {
+            1..=7 => Ok(Self(n)),
+            _ => Err(InvalidWeeklyTarget(n)),
+        }
+    }
+
+    pub fn get(self) -> u8 {
+        self.0
+    }
 }
 
 pub fn week_monday(d: NaiveDate) -> NaiveDate {

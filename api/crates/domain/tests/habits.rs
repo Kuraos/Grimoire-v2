@@ -2,7 +2,7 @@
 //! (`backend/tests/test_api.py`). Fechas fijas: 2026-10-26 es lunes.
 
 use chrono::{Datelike, NaiveDate, Weekday};
-use grimoire_domain::cadence::{Cadence, WeekdaySet};
+use grimoire_domain::cadence::{Cadence, InvalidWeeklyTarget, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{MarkRejected, Marks, best_streak, current_streak, mark};
 use grimoire_domain::xp::{
     apply_multiplier, award_xp, streak_multiplier, title_for_level, xp_for_level, xp_to_level,
@@ -122,6 +122,17 @@ fn days_are_validated_and_normalized() {
     }
 }
 
+/// v1 rechaza `target_per_week` 0 y 8 con 422; con 0, `mark` rechazaría toda marca.
+#[test]
+fn weekly_target_must_be_1_to_7() {
+    for bad in [0, 8, u8::MAX] {
+        assert_eq!(WeeklyTarget::new(bad), Err(InvalidWeeklyTarget(bad)));
+    }
+    for ok in 1..=7 {
+        assert_eq!(WeeklyTarget::new(ok).unwrap().get(), ok);
+    }
+}
+
 // ---------- rachas ----------
 
 #[test]
@@ -189,7 +200,9 @@ fn single_weekday_habit_previous_occasion_is_a_week_ago() {
 /// v1 `test_weekly_target_needs_every_mark`.
 #[test]
 fn weekly_target_needs_every_mark() {
-    let twice = Cadence::Weekly { target: 2 };
+    let twice = Cadence::Weekly {
+        target: WeeklyTarget::new(2).unwrap(),
+    };
     let today = d("2026-10-29");
 
     let mut m = marks(&["2026-10-19"]);
