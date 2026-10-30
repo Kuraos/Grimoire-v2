@@ -1,5 +1,7 @@
 //! Rutas de hábitos. Cada request hace una lectura y, si escribe, una escritura,
-//! ambas en `batch` (una sola subrequest a D1 cada una).
+//! ambas en `batch` (una sola subrequest a D1 cada una). El historial se lee en una
+//! ventana de 90 días; solo los hábitos cuya racha llega al borde piden una segunda
+//! lectura con su historial completo (ADR 0007).
 
 use std::collections::HashMap;
 
@@ -9,13 +11,17 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use chrono::NaiveDate;
 use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget};
-use grimoire_domain::habits::{MarkRejected, Marks, check_mark_day, current_streak, mark};
+use grimoire_domain::habits::{
+    MarkRejected, Marks, WindowedStreak, check_mark_day, current_streak, current_streak_since,
+    history_window_start, mark,
+};
 use grimoire_domain::xp::award_xp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use worker::query;
+use worker::wasm_bindgen::JsValue;
+use worker::{D1Result, query};
 
-use crate::{AppError, AppState, local_date_of, now_utc, today};
+use crate::{AppError, AppState, local_date_of, log_rows_read, now_utc, today};
 
 const HABIT_COLUMNS: &str = "id, name, category, frequency, days, target_per_week, \
      xp_reward, color, notes, tags, created_at";
@@ -57,6 +63,13 @@ struct LogRow {
     local_date: String,
 }
 
+/// Marcas de un hábito en una sola fila: `group_concat(local_date)` (ADR 0007).
+#[derive(Deserialize)]
+struct MarksRow {
+    habit_id: String,
+    dates: Option<String>,
+}
+
 #[derive(Deserialize)]
 struct UserRow {
     id: String,
@@ -66,6 +79,48 @@ struct UserRow {
 fn parse_date(s: &str) -> Result<NaiveDate, AppError> {
     s.parse()
         .map_err(|_| AppError::Internal(format!("local_date inválida: {s}")))
+}
+
+/// `"2026-10-27,2026-10-28"` → conjunto de fechas. `None` (sin marcas) → vacío.
+fn parse_marks(dates: Option<&str>) -> Result<Marks, AppError> {
+    dates
+        .unwrap_or("")
+        .split(',')
+        .filter(|d| !d.is_empty())
+        .map(parse_date)
+        .collect()
+}
+
+/// Filas `MarksRow` → marcas por hábito.
+fn marks_by_habit(res: &D1Result) -> Result<HashMap<String, Marks>, AppError> {
+    res.results::<MarksRow>()?
+        .into_iter()
+        .map(|r| Ok((r.habit_id, parse_marks(r.dates.as_deref())?)))
+        .collect()
+}
+
+/// Historial completo de los hábitos cuya racha llegó al borde de la ventana
+/// (ADR 0007). Una sola consulta para todos.
+// ponytail: un parámetro por hábito; D1 admite 100 por consulta, partir en bloques
+// si algún día hay más de 100 hábitos con rachas de más de 90 días
+async fn read_full_marks(
+    s: &AppState,
+    what: &str,
+    habit_ids: &[&str],
+) -> Result<HashMap<String, Marks>, AppError> {
+    let placeholders: Vec<String> = (1..=habit_ids.len()).map(|i| format!("?{i}")).collect();
+    let params: Vec<JsValue> = habit_ids.iter().map(|id| JsValue::from_str(id)).collect();
+    let res =
+        s.db.prepare(format!(
+            "SELECT habit_id, group_concat(local_date) AS dates FROM habit_logs \
+             WHERE habit_id IN ({}) GROUP BY habit_id",
+            placeholders.join(", ")
+        ))
+        .bind(&params)?
+        .all()
+        .await?;
+    log_rows_read(what, std::slice::from_ref(&res));
+    marks_by_habit(&res)
 }
 
 fn parse_uuid(s: &str) -> Result<String, AppError> {
@@ -92,27 +147,38 @@ pub struct HabitWithStreak {
 #[worker::send]
 pub async fn list(State(s): State<AppState>) -> Result<Json<Vec<HabitWithStreak>>, AppError> {
     let today = today(&s.tz)?;
+    let from = history_window_start(today);
     let res =
         s.db.batch(vec![
             s.db.prepare(format!(
                 "SELECT {HABIT_COLUMNS} FROM habits WHERE active = 1 ORDER BY created_at"
             )),
-            s.db.prepare(
-                "SELECT l.habit_id, l.local_date FROM habit_logs l \
-                 JOIN habits h ON h.id = l.habit_id WHERE h.active = 1",
-            ),
+            query!(
+                &s.db,
+                "SELECT habit_id, group_concat(local_date) AS dates FROM habit_logs \
+                 WHERE habit_id IN (SELECT id FROM habits WHERE active = 1) \
+                 AND local_date >= ?1 GROUP BY habit_id",
+                from.to_string()
+            )?,
         ])
         .await?;
+    log_rows_read("GET /habits: ventana", &res);
     let habits: Vec<Habit> = res[0].results()?;
-    let mut marks: HashMap<String, Marks> = HashMap::new();
-    for row in res[1].results::<LogRow>()? {
-        marks
-            .entry(row.habit_id)
-            .or_default()
-            .insert(parse_date(&row.local_date)?);
-    }
+    let mut marks = marks_by_habit(&res[1])?;
 
     let empty = Marks::new();
+    let mut at_edge = Vec::new();
+    for h in &habits {
+        let m = marks.get(&h.id).unwrap_or(&empty);
+        if current_streak_since(h.cadence()?, m, today, from) == WindowedStreak::AtEdge {
+            at_edge.push(h.id.as_str());
+        }
+    }
+    if !at_edge.is_empty() {
+        let full = read_full_marks(&s, "GET /habits: ampliación", &at_edge).await?;
+        marks.extend(full);
+    }
+
     habits
         .into_iter()
         .map(|habit| {
@@ -275,11 +341,17 @@ struct MarkState {
     existing: Option<LogRow>,
 }
 
+/// Lee la ventana de historial y la amplía si la racha del día que importa (`on`, o
+/// el de la marca existente en un reintento) llega al borde (ADR 0007).
 async fn read_mark_state(
     s: &AppState,
     habit_id: &str,
     log_id: &str,
+    on: NaiveDate,
+    today: NaiveDate,
 ) -> Result<MarkState, AppError> {
+    // la ventana cubre de sobra la semana de `on` (gracia de 2 días + 7)
+    let from = history_window_start(today);
     let res =
         s.db.batch(vec![
             query!(
@@ -289,8 +361,10 @@ async fn read_mark_state(
             )?,
             query!(
                 &s.db,
-                "SELECT habit_id, local_date FROM habit_logs WHERE habit_id = ?1",
-                habit_id
+                "SELECT habit_id, group_concat(local_date) AS dates FROM habit_logs \
+                 WHERE habit_id = ?1 AND local_date >= ?2 GROUP BY habit_id",
+                habit_id,
+                from.to_string()
             )?,
             s.db.prepare("SELECT id, xp FROM users LIMIT 1"),
             query!(
@@ -300,22 +374,36 @@ async fn read_mark_state(
             )?,
         ])
         .await?;
-    Ok(MarkState {
+    log_rows_read("complete: ventana", &res);
+    let mut st = MarkState {
         habit: res[0]
             .results::<Habit>()?
             .pop()
             .ok_or(AppError::NotFound("Hábito no encontrado"))?,
-        marks: res[1]
-            .results::<LogRow>()?
-            .iter()
-            .map(|r| parse_date(&r.local_date))
-            .collect::<Result<_, _>>()?,
+        marks: parse_marks(
+            res[1]
+                .results::<MarksRow>()?
+                .pop()
+                .and_then(|r| r.dates)
+                .as_deref(),
+        )?,
         user: res[2]
             .results::<UserRow>()?
             .pop()
             .ok_or_else(|| AppError::Internal("no hay usuario".into()))?,
         existing: res[3].results::<LogRow>()?.pop(),
-    })
+    };
+    let day = match &st.existing {
+        Some(e) => parse_date(&e.local_date)?,
+        None => on,
+    };
+    if current_streak_since(st.habit.cadence()?, &st.marks, day, from) == WindowedStreak::AtEdge {
+        st.marks = read_full_marks(s, "complete: ampliación", &[habit_id])
+            .await?
+            .remove(habit_id)
+            .unwrap_or_default();
+    }
+    Ok(st)
 }
 
 /// Reintento de una marca ya guardada (ADR 0004): 200 con el estado actual y sin
@@ -356,7 +444,7 @@ pub async fn complete(
             .map_err(|_| AppError::Invalid(format!("Fecha inválida: «{d}» (YYYY-MM-DD)")))?,
     };
 
-    let st = read_mark_state(&s, &habit_id, &log_id).await?;
+    let st = read_mark_state(&s, &habit_id, &log_id, on, today).await?;
     // antes de validar el día: un reintento de una marca vieja sigue siendo 200
     if let Some(existing) = &st.existing {
         return replay(&st, existing);
@@ -397,22 +485,25 @@ pub async fn complete(
         )?);
     }
     // batch = transacción: si una restricción rechaza la marca, no se suma XP
-    if let Err(e) = s.db.batch(writes).await {
-        let msg = e.to_string();
-        return if msg.contains("UNIQUE constraint failed: habit_logs.id:") {
-            // un reintento con el mismo ID ganó la carrera: responder como reintento
-            let st = read_mark_state(&s, &habit_id, &log_id).await?;
-            match &st.existing {
-                Some(existing) => replay(&st, existing),
-                None => Err(AppError::Internal(msg)),
-            }
-        } else if msg
-            .contains("UNIQUE constraint failed: habit_logs.habit_id, habit_logs.local_date")
-        {
-            Err(reject(MarkRejected::AlreadyDoneToday))
-        } else {
-            Err(e.into())
-        };
+    match s.db.batch(writes).await {
+        Ok(res) => log_rows_read("complete: escritura", &res),
+        Err(e) => {
+            let msg = e.to_string();
+            return if msg.contains("UNIQUE constraint failed: habit_logs.id:") {
+                // un reintento con el mismo ID ganó la carrera: responder como reintento
+                let st = read_mark_state(&s, &habit_id, &log_id, on, today).await?;
+                match &st.existing {
+                    Some(existing) => replay(&st, existing),
+                    None => Err(AppError::Internal(msg)),
+                }
+            } else if msg
+                .contains("UNIQUE constraint failed: habit_logs.habit_id, habit_logs.local_date")
+            {
+                Err(reject(MarkRejected::AlreadyDoneToday))
+            } else {
+                Err(e.into())
+            };
+        }
     }
 
     Ok(Json(CompleteOut {

@@ -10,7 +10,7 @@ use chrono::NaiveDate;
 use subtle::ConstantTimeEq;
 use tower_service::Service;
 use worker::js_sys::{self, Object, Reflect};
-use worker::{D1Database, Env, HttpRequest, console_error, event};
+use worker::{D1Database, D1Result, Env, HttpRequest, console_error, console_log, event};
 
 mod habits;
 
@@ -113,6 +113,16 @@ fn local_date(date: &js_sys::Date, tz: &str) -> Result<NaiveDate, AppError> {
     let s: String = date.to_locale_date_string("en-CA", &opts).into();
     s.parse()
         .map_err(|_| AppError::Internal(format!("fecha local inesperada: {s}")))
+}
+
+/// Filas que D1 escaneó en un `batch` (cuota de 5 M/día del plan gratis, ADR 0007).
+/// Sale en `wrangler tail`.
+pub(crate) fn log_rows_read(what: &str, results: &[D1Result]) {
+    let rows: usize = results
+        .iter()
+        .filter_map(|r| r.meta().ok().flatten()?.rows_read)
+        .sum();
+    console_log!("{what} rows_read={rows}");
 }
 
 /// Instante actual en UTC, RFC 3339.

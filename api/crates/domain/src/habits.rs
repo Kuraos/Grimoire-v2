@@ -46,24 +46,67 @@ fn next_unit(cadence: Cadence, u: NaiveDate) -> Option<NaiveDate> {
 /// Racha actual al día `today`, en unidades de la cadencia: días programados si es
 /// diario, semanas ISO que alcanzaron la meta si es semanal.
 pub fn current_streak(cadence: Cadence, marks: &Marks, today: NaiveDate) -> u32 {
+    match current_streak_since(cadence, marks, today, NaiveDate::MIN) {
+        WindowedStreak::Exact(n) => n,
+        WindowedStreak::AtEdge => unreachable!("ninguna unidad empieza antes de NaiveDate::MIN"),
+    }
+}
+
+/// Días hacia atrás que se leen de historial antes de ampliar (ADR 0007).
+pub const HISTORY_WINDOW_DAYS: u64 = 90;
+
+/// Primer día de la ventana de historial que se lee para `today`.
+pub fn history_window_start(today: NaiveDate) -> NaiveDate {
+    today - Days::new(HISTORY_WINDOW_DAYS)
+}
+
+/// Racha calculada solo con las marcas desde `from` (ADR 0007).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowedStreak {
+    /// La racha termina dentro de la ventana: es la misma que con todo el historial.
+    Exact(u32),
+    /// La racha llega al borde: la siguiente unidad hacia atrás empieza antes de
+    /// `from` y podría estar cumplida. Hay que leer más historial.
+    AtEdge,
+}
+
+/// Como `current_streak`, pero sabiendo que `marks` solo trae las de `from` en
+/// adelante. Una semana que empieza antes de `from` cuenta como fuera de la
+/// ventana aunque sus últimos días estén dentro: sus marcas pueden estar incompletas.
+pub fn current_streak_since(
+    cadence: Cadence,
+    marks: &Marks,
+    today: NaiveDate,
+    from: NaiveDate,
+) -> WindowedStreak {
     let (units, anchor) = match cadence {
         Cadence::Weekly { target } => (met_weeks(marks, target.get()), Some(week_monday(today))),
         Cadence::Daily { days } => (marks.clone(), last_scheduled(days, today)),
     };
-    let Some(anchor) = anchor else { return 0 };
+    let Some(anchor) = anchor else {
+        return WindowedStreak::Exact(0);
+    };
     // margen: la unidad en curso todavía se puede cumplir, así que la racha se
     // ancla en la anterior en vez de darse por rota
+    if anchor < from {
+        return WindowedStreak::AtEdge;
+    }
     let mut cursor = if units.contains(&anchor) {
         Some(anchor)
     } else {
         prev_unit(cadence, anchor)
     };
     let mut streak = 0;
-    while let Some(u) = cursor.filter(|u| units.contains(u)) {
-        streak += 1;
-        cursor = prev_unit(cadence, u);
+    loop {
+        match cursor {
+            Some(u) if u < from => return WindowedStreak::AtEdge,
+            Some(u) if units.contains(&u) => {
+                streak += 1;
+                cursor = prev_unit(cadence, u);
+            }
+            _ => return WindowedStreak::Exact(streak),
+        }
     }
-    streak
 }
 
 pub fn best_streak(cadence: Cadence, marks: &Marks) -> u32 {

@@ -1,6 +1,9 @@
 name = "grimoire"
 main = "build/index.js"
 compatibility_date = "2026-10-29"
+workers_dev = true
+# sin URLs por versión: la única URL pública es la de workers.dev
+preview_urls = false
 
 [build]
 command = "cargo install -q \"worker-build@^0.8\" && worker-build --release"

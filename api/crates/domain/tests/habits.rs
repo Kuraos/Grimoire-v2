@@ -4,7 +4,8 @@
 use chrono::{Datelike, NaiveDate, Weekday};
 use grimoire_domain::cadence::{Cadence, InvalidWeeklyTarget, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{
-    MarkRejected, Marks, best_streak, check_mark_day, current_streak, mark,
+    MarkRejected, Marks, WindowedStreak, best_streak, check_mark_day, current_streak,
+    current_streak_since, history_window_start, mark,
 };
 use grimoire_domain::xp::{
     apply_multiplier, award_xp, streak_multiplier, title_for_level, xp_for_level, xp_to_level,
@@ -305,4 +306,140 @@ fn no_marks_before_the_habit_existed() {
         check_mark_day(d("2026-10-27"), today, created),
         Err(MarkRejected::BeforeHabitCreated)
     );
+}
+
+// ---------- ventana de historial (ADR 0007) ----------
+
+fn days_back(today: NaiveDate, from_days: u64, to_days: u64) -> Marks {
+    (to_days..=from_days)
+        .map(|i| today - chrono::Days::new(i))
+        .collect()
+}
+
+#[test]
+fn window_starts_90_days_back() {
+    assert_eq!(history_window_start(d("2026-10-29")), d("2026-07-31"));
+}
+
+#[test]
+fn short_streak_inside_window_is_exact() {
+    let today = d("2026-10-29");
+    let m = days_back(today, 5, 1); // ayer y los 4 días anteriores
+    assert_eq!(
+        current_streak_since(DAILY, &m, today, d("2026-07-31")),
+        WindowedStreak::Exact(5)
+    );
+}
+
+#[test]
+fn streak_reaching_window_start_is_at_edge() {
+    let today = d("2026-10-29");
+    let from = d("2026-10-20");
+    // marcado todos los días desde `from`: el día anterior podría estar marcado
+    let m = days_back(today, 9, 1);
+    assert_eq!(
+        current_streak_since(DAILY, &m, today, from),
+        WindowedStreak::AtEdge
+    );
+    // si `from` mismo no está marcado, la racha terminó dentro: es exacta
+    let m = days_back(today, 8, 1);
+    assert_eq!(
+        current_streak_since(DAILY, &m, today, from),
+        WindowedStreak::Exact(8)
+    );
+}
+
+#[test]
+fn margin_unit_before_window_is_at_edge() {
+    // hoy sin marcar y la ventana empieza hoy: no se sabe si ayer se marcó
+    let today = d("2026-10-29");
+    assert_eq!(
+        current_streak_since(DAILY, &Marks::new(), today, today),
+        WindowedStreak::AtEdge
+    );
+}
+
+#[test]
+fn weekly_week_partially_outside_window_is_at_edge() {
+    let once = Cadence::Weekly {
+        target: WeeklyTarget::new(1).unwrap(),
+    };
+    let today = d("2026-10-29"); // jueves
+    // una marca cada martes desde el 2026-10-06; la ventana empieza el miércoles
+    // 2026-10-08, así que la semana del 10-05 queda partida
+    let m = marks(&["2026-10-06", "2026-10-13", "2026-10-20", "2026-10-27"]);
+    let window: Marks = m
+        .iter()
+        .copied()
+        .filter(|&x| x >= d("2026-10-08"))
+        .collect();
+    assert_eq!(
+        current_streak_since(once, &window, today, d("2026-10-08")),
+        WindowedStreak::AtEdge
+    );
+    // sin marca la semana del 10-12, la racha termina dentro de la ventana
+    let m = marks(&["2026-10-06", "2026-10-20", "2026-10-27"]);
+    let window: Marks = m
+        .iter()
+        .copied()
+        .filter(|&x| x >= d("2026-10-08"))
+        .collect();
+    assert_eq!(
+        current_streak_since(once, &window, today, d("2026-10-08")),
+        WindowedStreak::Exact(2)
+    );
+}
+
+/// Propiedad: con las marcas recortadas a la ventana, una respuesta `Exact(n)` es la
+/// misma racha que con todo el historial. Generador determinista (LCG), sin
+/// dependencias.
+#[test]
+fn windowed_exact_matches_full_history() {
+    let mut seed: u64 = 20261029;
+    let mut next = move |n: u64| {
+        seed = seed
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        (seed >> 33) % n
+    };
+    let cadences = [
+        DAILY,
+        weekdays_only(),
+        Cadence::Daily {
+            days: WeekdaySet::parse("1,4").unwrap(),
+        },
+        Cadence::Weekly {
+            target: WeeklyTarget::new(1).unwrap(),
+        },
+        Cadence::Weekly {
+            target: WeeklyTarget::new(3).unwrap(),
+        },
+    ];
+    let base = d("2026-10-29");
+    let (mut exact, mut edge) = (0, 0);
+    for case in 0..5000 {
+        let cadence = cadences[case % cadences.len()];
+        let today = base - chrono::Days::new(next(14));
+        // densidad alta para que haya rachas largas que crucen la ventana
+        let keep = 70 + next(30);
+        let all: Marks = (0..200u64)
+            .map(|i| today - chrono::Days::new(i))
+            .filter(|_| next(100) < keep)
+            .collect();
+        let from = today - chrono::Days::new(next(40));
+        let window: Marks = all.iter().copied().filter(|&x| x >= from).collect();
+        match current_streak_since(cadence, &window, today, from) {
+            WindowedStreak::Exact(n) => {
+                exact += 1;
+                assert_eq!(
+                    n,
+                    current_streak(cadence, &all, today),
+                    "caso {case}: {cadence:?} hoy={today} from={from}"
+                );
+            }
+            WindowedStreak::AtEdge => edge += 1,
+        }
+    }
+    // el generador cubre los dos resultados
+    assert!(exact > 500 && edge > 500, "exact={exact} edge={edge}");
 }

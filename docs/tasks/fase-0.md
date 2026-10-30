@@ -243,3 +243,41 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
     revisa el ADR 0002** antes de la 0.4.
   - El seed sigue cargado en la base remota (junto con el hábito «Prueba celular»): no
     hay datos reales; se vacía antes de migrar la v1.
+- **Lectura acotada del historial (ADR 0007)** (2026-10-29, Bogotá). Medido en
+  producción sobre el seed de la 0.3: 10 hábitos, ~9 400 marcas; tres hábitos tienen
+  rachas que cruzan los 90 días (dos de más de 400 días, uno L–V de 67 días hábiles).
+  CPU de `wrangler tail` (`cpuTime`). Filas leídas = suma de `meta.rows_read` de cada
+  `batch`, que el worker escribe en el log (`… rows_read=N`). La línea base de filas
+  salió de correr las consultas viejas con `wrangler d1 execute --remote`.
+  `complete` da 409 en las tres mediciones, porque los hábitos ya estaban marcados ese
+  día: mide la lectura y el dominio, no la escritura.
+
+  | Versión | Request | n | CPU mediana | CPU mín–máx | > 10 ms | wall mediana | Filas leídas |
+  |---|---|---|---|---|---|---|---|
+  | 0.3 (fila por marca, `JOIN`) | `GET /habits` | 20 | 25 ms | 17–91 | 20/20 | 74 ms | ≈ 18 820 |
+  | paso 1: `group_concat` | `GET /habits` | 20 | 7 ms | 4–42 | 5/20 | 28,5 ms | 9 453 |
+  | paso 2: + ventana 90 días | `GET /habits` | 20 | 6,5 ms | 3–51 | 7/20 | 40,5 ms | 3 733 (823 ventana + ~2 900 ampliación) |
+  | 0.3 | `complete` 409 | 10 | 4,5 ms | 3–12 | 1/10 | 25 ms | ≈ 1 061 |
+  | paso 1 | `complete` 409 | 10 | 4,5 ms | 2–13 | 2/10 | 22,5 ms | 593–1 078 |
+  | paso 2 | `complete` 409 | 20 | 4,5 ms | 2–18 | 3/20 | 24 ms | mediana 90 (50–1 170) |
+
+  - **El CPU lo resolvió la lectura compacta** (25 → 7 ms de mediana en `GET /habits`).
+    La ventana casi no movió el CPU, pero sí las filas: −61 % en `GET /habits` y −91 %
+    en la mediana de `complete`.
+  - **Cuota de D1** (5 M filas/día): `GET /habits` pasa de ~266 consultas al día (0.3) a
+    ~529 (paso 1) y ~1 339 (paso 2). Si ningún hábito llegara al borde, serían ~6 075.
+    Con este seed, la **ampliación al historial completo** pesa más que la ventana
+    (~2 900 de 3 733 filas): es el techo anotado en el ADR 0007. La salida es ampliar
+    por duplicación (90 → 180 → …). No se hizo.
+  - La segunda consulta de la ampliación sube el wall time de `GET /habits` (28,5 →
+    40,5 ms de mediana).
+  - **Siguen quedando requests por encima de 10 ms** (5–7 de 20 en `GET /habits`, 2–3
+    en `complete`), con medianas de 4,5–7 ms. Por el patrón (máximos de 13–51 ms
+    sueltos, como los 6–25 ms de `/health` en frío), parecen el costo de arranque del
+    isolate o de compilar el wasm, no la lectura. Es una hipótesis: no está verificada y
+    no sé cómo aplica Cloudflare el límite a esos picos. Ninguna request falló.
+  - Correctitud: en local, las rachas de `GET /habits` y de `complete` (previa + 1)
+    coinciden con un cálculo independiente en Python para los 10 hábitos del seed,
+    incluidos los que obligan a ampliar. En el dominio, una propiedad sobre 5 000
+    historiales aleatorios comprueba que `Exact(n)` con la ventana = racha con todo el
+    historial, y falla si se rompe la regla del borde (verificado con una mutación).

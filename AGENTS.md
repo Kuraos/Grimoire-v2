@@ -31,7 +31,7 @@ Cloudflare Worker (Rust, workers-rs + axum)  ── sirve también la web estát
 D1 (SQLite)   respaldo: time travel 7 días + export programado
 ```
 
-Decisiones y su porqué en `docs/adr/` (0001–0006). Orden de trabajo en `docs/ROADMAP.md`. No contradigas un ADR sin escribir otro que lo reemplace.
+Decisiones y su porqué en `docs/adr/` (0001–0007). Orden de trabajo en `docs/ROADMAP.md`. No contradigas un ADR sin escribir otro que lo reemplace.
 
 ```
 api/
