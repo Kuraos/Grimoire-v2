@@ -6,7 +6,7 @@ import {
 } from "@tabler/icons-react";
 import { motion } from "motion/react";
 
-const NAV = [
+export const NAV = [
   { to: "/", icon: IconLayoutDashboard, label: "Dashboard" },
   { to: "/habitos", icon: IconRepeat, label: "Hábitos" },
   { to: "/tareas", icon: IconListCheck, label: "Tareas" },

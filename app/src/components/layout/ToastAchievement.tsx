@@ -26,7 +26,7 @@ export function ToastAchievement({ toasts, dismissToast }: { toasts: Toast[]; di
   const height = list.length === 0 ? 0 : expanded ? list.length * (H + GAP) - GAP : H + Math.min(list.length - 1, BEHIND) * PEEK;
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[100] w-72">
+    <div className="pointer-events-none fixed right-4 top-[calc(1rem+env(safe-area-inset-top))] z-[100] w-72">
       <motion.div
         className="pointer-events-auto relative"
         animate={{ height }}

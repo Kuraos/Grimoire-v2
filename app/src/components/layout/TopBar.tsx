@@ -43,7 +43,7 @@ export function TopBar({ user, onRename, onOpenSettings }: {
         ) : (
           <span className="group ml-3 flex items-center gap-1 text-xs italic text-[var(--text-body)]">
             {user.name} · {user.title}
-            <button onClick={startEdit} title="Editar nombre" className="text-[var(--text-faint)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--purple-main)]">
+            <button onClick={startEdit} title="Editar nombre" className="-m-3 p-3 text-[var(--text-faint)] transition-opacity hover:text-[var(--purple-main)] lg:opacity-0 lg:group-hover:opacity-100">
               <IconPencil size={12} />
             </button>
           </span>
@@ -67,7 +67,8 @@ export function TopBar({ user, onRename, onOpenSettings }: {
       <button
         onClick={onOpenSettings}
         title="Ajustes"
-        className="ml-3 text-[var(--text-faint)] hover:text-[var(--purple-main)]"
+        aria-label="Ajustes"
+        className="-my-3 -mr-3 ml-0 p-3 text-[var(--text-faint)] hover:text-[var(--purple-main)]"
       >
         <IconSettings size={16} />
       </button>

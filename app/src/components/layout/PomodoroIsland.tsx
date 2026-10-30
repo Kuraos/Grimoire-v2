@@ -54,7 +54,9 @@ export function PomodoroIsland({ pomo }: { pomo: PomodoroIslandState }) {
   const label = PHASE_LABEL[pomo.phase];
 
   return (
-    <div className="pointer-events-none fixed bottom-5 right-5 z-[80] flex justify-end">
+    /* En teléfono va anclada encima de la barra inferior (3.5rem + el borde de
+       gestos); desde lg:, donde no hay barra, vuelve a su esquina de la v1. */
+    <div className="pointer-events-none fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-5 z-[80] flex justify-end lg:bottom-5">
       <AnimatePresence>
         {visible && (
           <motion.div

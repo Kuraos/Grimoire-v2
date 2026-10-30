@@ -8,6 +8,7 @@ import { BudgetRail } from "./components/ui/BudgetRail";
 import { Sigil } from "./components/ui/Sigil";
 import { Modal } from "./components/ui/Modal";
 import { XPBarChart } from "./components/charts/XPBarChart";
+import { PomodoroIsland } from "./components/layout/PomodoroIsland";
 import { chartPalette } from "./theme-tokens";
 import type { Habit, User } from "./types";
 
@@ -36,7 +37,7 @@ const xpDays = Array.from({ length: 14 }, (_, i) => ({
 export default function Muestrario() {
   const [modal, setModal] = useState(false);
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4">
       <XPBar user={user} xpToday={85} streakBonus={1.1} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card rank="rubric" title="Rango rubric" icon={<IconFlame size={14} />}>Contenido de ejemplo.</Card>
@@ -65,7 +66,10 @@ export default function Muestrario() {
         <HoldButton completeLabel="Borrado" onComplete={() => {}}>Mantén para borrar</HoldButton>
         <button className="btn" onClick={() => setModal(true)}>Abrir modal</button>
       </div>
+      {/* pomodoro en curso inventado: la isla debe quedar encima de la barra inferior */}
+      <PomodoroIsland pomo={{ running: true, secondsLeft: 1234, totalSeconds: 1500, phase: "work",
+        progress: 0.18, pause: () => {}, start: () => {}, activeTask: null }} />
       {modal && <Modal title="Modal de ejemplo" onClose={() => setModal(false)}>Contenido del modal.</Modal>}
-    </main>
+    </div>
   );
 }

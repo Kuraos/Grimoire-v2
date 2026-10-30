@@ -6,6 +6,11 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useChart, useChartStable } from "./chart-context";
 
+/* Ancho mínimo por etiqueta: «16 oct» en 13px mide ~40px, más aire entre una y
+   otra. Con esto la densidad baja sola en pantallas angostas (DESIGN_SYSTEM →
+   «Gráficos: mismo componente, menos densidad»). */
+const MIN_LABEL_PX = 56;
+
 export interface BarXAxisProps {
   /** Width of the date ticker box for fade calculation. Default: 50 */
   tickerHalfWidth?: number;
@@ -93,7 +98,7 @@ const BarXAxisInner = memo(function BarXAxisInner({
   maxLabels = 12,
   container,
 }: BarXAxisProps & { container: HTMLDivElement }) {
-  const { margin, tooltipData, barScale, bandWidth, barXAccessor, data } =
+  const { margin, tooltipData, barScale, bandWidth, barXAccessor, data, innerWidth } =
     useChart();
 
   // Generate labels for each bar
@@ -110,13 +115,16 @@ const BarXAxisInner = memo(function BarXAxisInner({
       return { label, x };
     });
 
-    // If showAllLabels is true or we have fewer than maxLabels, show all
-    if (showAllLabels || allLabels.length <= maxLabels) {
+    // maxLabels es un techo; el ancho disponible puede bajarlo
+    const fit = Math.max(2, Math.min(maxLabels, Math.floor(innerWidth / MIN_LABEL_PX)));
+
+    // If showAllLabels is true or we have fewer than fit, show all
+    if (showAllLabels || allLabels.length <= fit) {
       return allLabels;
     }
 
     // Otherwise, skip some labels to avoid crowding
-    const step = Math.ceil(allLabels.length / maxLabels);
+    const step = Math.ceil(allLabels.length / fit);
     return allLabels.filter((_, i) => i % step === 0);
   }, [
     barScale,
@@ -124,6 +132,7 @@ const BarXAxisInner = memo(function BarXAxisInner({
     barXAccessor,
     data,
     margin.left,
+    innerWidth,
     showAllLabels,
     maxLabels,
   ]);
