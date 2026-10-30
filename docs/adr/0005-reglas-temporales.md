@@ -32,7 +32,10 @@ En la v1 eso no importaba: un solo dispositivo, siempre con su base. En la v2 s�
    `VidaPerdida`, `VidaRecuperada`, `PenalizaciónXP` con su día y hábitos. Mismas
    reglas que la v1, portadas con tests de caracterización.
 2. **Un día solo se asienta cuando ya no pueden llegar marcas tardías.** Ventana de
-   gracia: el día `D` se asienta cuando `hoy >= D + 2` (en `America/Bogota`). Los días
+   gracia: el día `D` se asienta cuando `hoy >= D + 3` (en `America/Bogota`), es
+   decir, `settled_through <= hoy − 3`. Con `D + 2` (redacción original, corregida el
+   2026-10-30) el día `hoy − 2` podía asentarse el mismo día en que todavía se aceptan
+   marcas para él (decisión 5), y el resultado dependía del orden de llegada. Los días
    asentados se guardan (vidas en el punto de control, `settled_through`, y la
    penalización de XP se escribe en `xp_log` solo al asentar). Es lo único irreversible.
 3. **Los días no asentados se calculan al consultar**, partiendo del último punto de
@@ -53,8 +56,8 @@ En la v1 eso no importaba: un solo dispositivo, siempre con su base. En la v2 s�
   el día no se asiente.
 - El cálculo provisional cubre como máximo 2 días más el que corre: barato dentro de los
   10 ms de CPU.
-- Diferencia con la v1: allí el día se evaluaba en cuanto pasaba; aquí la penalización
-  definitiva llega con un día de retraso. Es deliberado.
+- Diferencia con la v1: allí el día se evaluaba en cuanto pasaba (`D + 1`); aquí la
+  penalización definitiva llega dos días después (`D + 3`). Es deliberado.
 - **En la v1, con uso diario, las vidas casi nunca funcionaban.** Lo encontró la
   caracterización (`docs/tasks/caracterizacion-v1.md`, «Hallazgos», escenario
   `racha_rota`). Al terminar, la v1 escribe `last_streak_eval = hoy`, que significa
