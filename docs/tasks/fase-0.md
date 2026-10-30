@@ -338,3 +338,8 @@ los docs, mediciones de CPU, decisiones tomadas sobre la marcha.)
     probar, revisar `Get-Process workerd`; si hay huérfanos, usar otro `--port`.
   - Al probar, todos los hábitos de la base remota salían «Hecho»: ya estaban marcados
     ese día por la 0.3. No era un fallo.
+  - Worker desplegado con el cambio de logs: versión `86dab17a` (2026-10-29 23:45).
+  - **Pendiente de Johan:** marcar un hábito desde el teléfono con datos móviles (el
+    resto del criterio de terminado de la 0.4 está cumplido).
+  - **Pendiente de la tablet:** el caso Android 14+ de `SCHEDULE_EXACT_ALARM` (negado
+    por defecto → «Permitir alarmas exactas» → inexacta si se niega).

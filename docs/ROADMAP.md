@@ -19,6 +19,13 @@ solo arreglos de bugs mientras siga en uso. Cualquier idea nueva se anota aquí,
 
 La fase 3 puede ir en paralelo con la 2, pero **la 4 no empieza sin la 3**.
 
+Pendientes de la fase 1 (salieron de la 1.1):
+
+- **Migrar react-router 6 → 7** (`npm audit`, severidad moderada) como tarea propia,
+  después de la navegación.
+- **Configurar `manualChunks` como en la v1** (react, gráficos, iconos): hoy Vite avisa
+  de un bloque de más de 500 kB.
+
 ## Mínimo para dejar la v1 (día 1)
 
 Lo que tiene que funcionar en la v2, en el teléfono, la tablet y el PC, antes de migrar:
