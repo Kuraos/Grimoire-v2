@@ -59,6 +59,13 @@ function noise(a: number, b: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
+/** FNV-1a del id: los UUID no son enteros, y `noise` se encarga de la avalancha. */
+function hashId(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return h;
+}
+
 export function HabitConstellation({ habits }: { habits: Habit[] }) {
   const c = chartPalette();
 
@@ -96,8 +103,8 @@ export function HabitConstellation({ habits }: { habits: Habit[] }) {
 
     const points = cat.items.map((h, i) => ({
       habit: h,
-      x: x0 + ((i % sc) + 0.5 + (noise(h.id, 1) - 0.5) * 0.5) * slotW,
-      y: y0 + (Math.floor(i / sc) + 0.5 + (noise(h.id, 2) - 0.5) * 0.5) * slotH,
+      x: x0 + ((i % sc) + 0.5 + (noise(hashId(h.id), 1) - 0.5) * 0.5) * slotW,
+      y: y0 + (Math.floor(i / sc) + 0.5 + (noise(hashId(h.id), 2) - 0.5) * 0.5) * slotH,
     }));
     // La línea recorre las estrellas de izquierda a derecha: unir en orden de
     // id producía cruces que sugerían una relación que no existe.

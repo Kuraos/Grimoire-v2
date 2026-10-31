@@ -11,7 +11,6 @@ import { PageHeader } from "./components/layout/PageHeader";
 import { useIsDesktop } from "./hooks/useMediaQuery";
 import { motionTokens } from "./theme-tokens";
 import Prueba04 from "./Prueba04";
-import Muestrario from "./Muestrario";
 
 /* Entrada de cada vista, como en la v1: solo opacidad, sin transform (ver Modal.tsx). */
 function viewEnter() {
@@ -73,7 +72,6 @@ export default function App() {
                   <Route key={path} path={path} element={<Pendiente titulo={titulo} />} />
                 ))}
                 <Route path="/habitos" element={<Prueba04 />} />
-                <Route path="/_muestrario" element={<Muestrario />} />
               </Routes>
             </motion.div>
           </ErrorBoundary>

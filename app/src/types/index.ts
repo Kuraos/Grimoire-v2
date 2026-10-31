@@ -1,19 +1,29 @@
+export interface UserEvent {
+  day: string;
+  kind: "life_lost" | "life_regained" | "xp_penalty";
+  habits: string[];
+  xp_penalty: number;
+  /** Día aún sin asentar: puede cambiar si llega una marca tardía (ADR 0005). */
+  provisional: boolean;
+}
+
 export interface User {
-  id: number;
+  id: string;
   name: string;
   xp: number;
   level: number;
   title: string;
   lives: number;
-  obsidian_vault_path: string | null;
+  settled_through: string | null;
   xp_for_current_level: number;
   xp_for_next_level: number;
   xp_into_level: number;
   xp_span: number;
+  events: UserEvent[];
 }
 
 export interface Habit {
-  id: number;
+  id: string;
   name: string;
   category: string;
   frequency: string;
@@ -28,25 +38,55 @@ export interface Habit {
   tags: string | null;
   created_at: string;
   streak: number;
-  best_streak: number;
-  total_xp: number;
+  /** Constancia de los últimos 90 días, en porcentaje. */
   completion_rate: number;
   done_today: boolean;
+  /** La última marca, para deshacerla. */
+  last_mark: { id: string; local_date: string } | null;
+}
+
+/** Lo que se edita de un hábito. */
+export type HabitInput = Pick<
+  Habit,
+  "name" | "category" | "frequency" | "days" | "target_per_week" | "xp_reward" | "color" | "notes" | "tags"
+>;
+
+export interface HabitMark {
+  id: string;
+  local_date: string;
+  completed_at: string;
+}
+
+export interface HabitDetail extends Habit {
+  best_streak: number;
+  total_xp: number;
   last_completed: string | null;
+  marks: HabitMark[];
+  xp_series: { date: string; xp: number }[];
 }
 
 export interface HabitCategory {
-  id: number;
+  id: string;
   name: string;
   color: string;
   habit_count: number;
 }
 
-export interface HabitLog {
-  id: number;
-  habit_id: number;
-  completed_at: string;
-  notes: string | null;
+export interface UnlockedAchievement {
+  key: string;
+  name: string;
+  icon: string;
+}
+
+/** Respuesta de marcar y de deshacer. */
+export interface CompleteOut {
+  xp_earned: number;
+  new_xp: number;
+  new_level: number;
+  title: string;
+  leveled_up: boolean;
+  streak: number;
+  achievements_unlocked: UnlockedAchievement[];
 }
 
 export interface Project {

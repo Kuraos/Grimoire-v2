@@ -688,18 +688,26 @@ pub struct CompleteOut {
     title: &'static str,
     leveled_up: bool,
     streak: u32,
-    /// Claves de los logros que desbloqueó esta marca (fila 4 de las diferencias).
-    achievements_unlocked: Vec<String>,
+    /// Los logros que desbloqueó esta marca (fila 4 de las diferencias), con lo que el
+    /// toast necesita: el catálogo vive en la base.
+    achievements_unlocked: Vec<UnlockedAchievement>,
 }
 
 /// ?1 instante · ?2 claves cumplidas (arreglo JSON). Devuelve solo las nuevas; así, dos
 /// marcas concurrentes no informan el mismo logro.
 pub(crate) const UNLOCK_ACHIEVEMENTS: &str = "UPDATE achievements SET unlocked_at = ?1 \
-     WHERE unlocked_at IS NULL AND key IN (SELECT value FROM json_each(?2)) RETURNING key";
+     WHERE unlocked_at IS NULL AND key IN (SELECT value FROM json_each(?2)) RETURNING key, name, icon";
 
 #[derive(Deserialize)]
 struct AchievementRow {
     key: String,
+}
+
+#[derive(Deserialize, Serialize)]
+struct UnlockedAchievement {
+    key: String,
+    name: String,
+    icon: String,
 }
 
 #[derive(Deserialize)]
@@ -1014,13 +1022,13 @@ pub async fn complete(
     }
     // batch = transacción: si una restricción rechaza la marca, no se suma XP ni se
     // desbloquea nada
-    let new = match s.db.batch(writes).await {
+    let mut new = match s.db.batch(writes).await {
         Ok(res) => {
             log_d1("complete: escritura", &res);
             if earned.is_empty() {
                 Vec::new()
             } else {
-                res.last().unwrap().results::<AchievementRow>()?
+                res.last().unwrap().results::<UnlockedAchievement>()?
             }
         }
         Err(e) => {
@@ -1052,8 +1060,10 @@ pub async fn complete(
         // RETURNING no garantiza orden: se conserva el del dominio
         achievements_unlocked: earned
             .into_iter()
-            .filter(|k| new.iter().any(|r| r.key == *k))
-            .map(str::to_owned)
+            .filter_map(|k| {
+                let i = new.iter().position(|r| r.key == k)?;
+                Some(new.swap_remove(i))
+            })
             .collect(),
     }))
 }

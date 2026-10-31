@@ -12,12 +12,12 @@ import type { Habit } from "../../types";
  * pierda, que el anillo de cierre aparezca a 13/14— y eso sí se ve en el `d`.
  */
 
-function habit(id: number, category: string, done: boolean): Habit {
+function habit(n: number, category: string, done: boolean): Habit {
   return {
-    id, name: `h${id}`, category, frequency: "daily", days: null, target_per_week: 0,
+    id: `h${n}`, name: `h${n}`, category, frequency: "daily", days: null, target_per_week: 0,
     xp_reward: 10, color: "#a98bf0", active: true, notes: null, tags: null,
-    created_at: "2026-01-01", streak: 3, best_streak: 3, total_xp: 0,
-    completion_rate: 0, done_today: done, last_completed: null,
+    created_at: "2026-01-01", streak: 3,
+    completion_rate: 0, done_today: done, last_mark: null,
   };
 }
 

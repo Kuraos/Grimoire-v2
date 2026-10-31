@@ -10,12 +10,13 @@ import type { Habit } from "../../types";
  * habría cazado. Este test es lo que lo caza.
  */
 
-function habit(id: number, category: string, streak = 0): Habit {
+// como los reales: UUID v7 de un mismo momento, que solo difieren al final
+function habit(n: number, category: string, streak = 0): Habit {
   return {
-    id, name: `h${id}`, category, frequency: "daily", days: null, target_per_week: 0,
+    id: `019a1b2c-3d4e-7f00-8000-${String(n).padStart(12, "0")}`, name: `h${n}`, category, frequency: "daily", days: null, target_per_week: 0,
     xp_reward: 10, color: "#a98bf0", active: true, notes: null, tags: null,
-    created_at: "2026-01-01", streak, best_streak: streak, total_xp: 0,
-    completion_rate: 0, done_today: false, last_completed: null,
+    created_at: "2026-01-01", streak,
+    completion_rate: 0, done_today: false, last_mark: null,
   };
 }
 
