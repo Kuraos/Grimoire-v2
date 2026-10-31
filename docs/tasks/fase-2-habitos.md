@@ -457,7 +457,7 @@ docs, decisiones tomadas sobre la marcha.)
     deshacer, detalle, editar, categoría nueva, categoría en uso rechazada, borrar categoría,
     archivar, restaurar. Evento provisional en toast y sin repetirse al recargar. Un token
     malo vuelve a la pantalla del token. Arrastrar la hoja por la cabecera la cierra (con
-    mouse; el gesto táctil falta probarlo en el teléfono). Capturas en
+    mouse; el táctil, en la prueba del teléfono, abajo). Capturas en
     `docs/capturas/fase-2.1.5-*`, con los datos inventados del seed.
   - Defectos que solo salieron al mirar las capturas: las tarjetas se salían de la pantalla
     (`grid-cols-[28px_1fr]` en `SectionBand`, ahora `minmax(0,1fr)`), la fecha de `TopBar` se
@@ -471,4 +471,7 @@ docs, decisiones tomadas sobre la marcha.)
     cada 30 s de la v1: se refresca al volver a la app y después de cada escritura.
   - Un toast de racha rota puede cortar el nombre del hábito («Provisional · −1 vida · Be…»):
     58 px de alto no dan para más. Es lo único que se ve truncado.
-  - **Falta para cerrar la 2.1.5:** deploy y prueba desde el teléfono (Johan).
+  - **Prueba en el teléfono** (2026-10-31, Bogotá; Infinix X6831, APK contra la versión
+    `294d0b4a`): Johan confirmó que todo funciona: marcar y deshacer, detalle, crear con la
+    hoja inferior, arrastrarla, botón atrás y scroll del historial. La 2.1.5 queda cerrada.
+    La captura a 1280 × 800 es de navegador; no se probó en la tablet.
