@@ -1,0 +1,46 @@
+-- Catálogo de logros de la v1 (`PREDEFINED_ACHIEVEMENTS`, commit f85381f), completo: los
+-- módulos que disparan el resto llegan después. unlocked_at: instante UTC; NULL = bloqueado.
+CREATE TABLE achievements (
+    key         TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    description TEXT NOT NULL,
+    icon        TEXT NOT NULL,
+    tier        TEXT NOT NULL CHECK (tier IN ('common', 'rare', 'epic', 'legendary')),
+    unlocked_at TEXT
+);
+
+INSERT INTO achievements (key, name, description, icon, tier) VALUES
+    ('first_blood', 'Primera sangre', 'Completa tu primer hábito.', 'droplet', 'common'),
+    ('iron_constancy', 'Constancia de hierro', 'Mantén una racha de 7 días en cualquier hábito.', 'flame', 'common'),
+    ('iron_month', 'Mes de hierro', 'Mantén una racha de 30 días en cualquier hábito.', 'calendar-stats', 'rare'),
+    ('streak_60', 'Voluntad inquebrantable', 'Mantén una racha de 60 días.', 'flame', 'epic'),
+    ('streak_centurion', 'Llama eterna', 'Mantén una racha de 100 días.', 'torch', 'legendary'),
+    ('focus_centurion', 'Centurión del foco', 'Completa 100 sesiones Pomodoro.', 'swords', 'rare'),
+    ('focus_legend', 'Leyenda del foco', 'Completa 250 sesiones Pomodoro.', 'sword', 'legendary'),
+    ('ascension', 'Ascenso', 'Alcanza el nivel 5.', 'stairs-up', 'common'),
+    ('contemplator', 'El contemplador', 'Alcanza el nivel 10.', 'eye', 'rare'),
+    ('archon', 'Arconte de la voluntad', 'Alcanza el nivel 15.', 'crown', 'epic'),
+    ('ether_being', 'Ente del éter', 'Alcanza el nivel 20.', 'sparkles', 'legendary'),
+    ('archivist', 'Archivista', 'Escribe 30 entradas de diario.', 'book', 'common'),
+    ('diary_century', 'Cronista perpetuo', 'Escribe 100 entradas de diario.', 'books', 'epic'),
+    ('task_centurion', 'Verdugo de tareas', 'Completa 100 tareas.', 'checkbox', 'epic'),
+    ('total_discipline', 'Disciplina total', 'Completa todos los hábitos del día durante 7 días seguidos.', 'shield-check', 'rare'),
+    ('project_master', 'Proyectista', 'Cierra un proyecto completo.', 'checklist', 'common'),
+    ('introspection', 'Introspección', 'Registra check-in de energía 14 días seguidos.', 'mood-smile', 'rare'),
+    ('great_review', 'Gran revisión', 'Completa 4 revisiones semanales.', 'notebook', 'common'),
+    ('polymath', 'Polímata', 'Ten hábitos activos en al menos 4 categorías distintas.', 'atom', 'rare'),
+    ('quest_devotee', 'Buscador de designios', 'Reclama 10 misiones.', 'target-arrow', 'rare'),
+    ('first_entry', 'Primer asiento', 'Anota tu primer movimiento en el erario.', 'feather', 'common'),
+    ('ledger_30', 'Escriba del erario', 'Anota algo en 30 días distintos.', 'receipt', 'common'),
+    ('ledger_180', 'Tenedor de libros', 'Anota algo en 180 días distintos.', 'books', 'epic'),
+    ('closed_books', 'Cuentas cuadradas', 'Cierra 3 meses del erario.', 'scale', 'rare'),
+    ('full_ledger', 'Nada sin partida', 'Cierra un mes sin asientos sin clasificar.', 'tags', 'epic'),
+    ('first_relic', 'Primera reliquia', 'Alcanza una meta de ahorro.', 'diamond', 'rare'),
+    ('relic_hoard', 'Tesoro', 'Alcanza tres metas de ahorro.', 'diamond', 'legendary'),
+    ('first_session', 'Primer asalto', 'Asienta tu primera sesión de entrenamiento.', 'barbell', 'common'),
+    ('training_50', 'Veterano de la palestra', 'Asienta 50 sesiones.', 'swords', 'rare'),
+    ('training_200', 'Cuerpo forjado', 'Asienta 200 sesiones.', 'shield-bolt', 'legendary'),
+    ('training_month', 'Mes en la palestra', 'Entrena en 12 días distintos dentro de un mismo mes.', 'calendar-heart', 'rare'),
+    ('triathlete', 'Las tres armas', 'Asienta fuerza, HEMA y cardio en una misma semana.', 'atom', 'epic'),
+    ('first_strength_goal', 'Marca fijada', 'Alcanza una meta de fuerza que declaraste.', 'target-arrow', 'rare'),
+    ('strength_goal_hoard', 'Tres marcas', 'Alcanza tres metas de fuerza.', 'trophy', 'legendary');

@@ -9,24 +9,26 @@
 //! Lo que este test todavía no cubre, y dónde se cubre:
 //! - vidas y `evaluate-streaks` (2.1.2): el XP de la penalización de la v1 se inyecta
 //!   desde el golden para seguir comparando los pasos siguientes (filas 2 y 3);
-//! - logros: `achievement_unlocked` y `GET /achievements` (2.1.3);
 //! - `completion_rate` (2.1.4, agregado en SQL) y los campos de la barra de XP de
 //!   `GET /user` (2.1.2);
 //! - los mensajes de rechazo, que son del worker.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::path::Path;
 
 use chrono::NaiveDate;
+use grimoire_domain::achievements::{MarkFacts, earned_on_mark, total_discipline};
 use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget, week_monday};
 use grimoire_domain::habits::{
     MarkRejected, Marks, best_streak, check_mark_day, check_undo, current_streak, mark,
 };
+use grimoire_domain::lives::DailyHabit;
 use grimoire_domain::xp::{award_xp, title_for_level, xp_to_level};
 use serde_json::Value;
 
 struct Habit {
+    category: String,
     cadence: Cadence,
     xp_reward: u32,
     created: NaiveDate,
@@ -47,6 +49,9 @@ impl Habit {
 struct Sim {
     habits: HashMap<String, Habit>,
     xp: i64,
+    achievements: BTreeSet<&'static str>,
+    /// Cada desbloqueo: día y lista completa, en orden.
+    unlocks: Vec<(NaiveDate, Vec<&'static str>)>,
 }
 
 fn date(v: &Value) -> NaiveDate {
@@ -84,6 +89,42 @@ fn check_xp_event(got: &grimoire_domain::xp::XpChange, want: &Value) {
 }
 
 impl Sim {
+    /// Los logros nuevos tras una marca aceptada, con el criterio del worker.
+    fn unlock(&mut self, today: NaiveDate, streak: u32, level: u32) -> Vec<&'static str> {
+        let marks: Vec<(&Habit, Marks)> = self.habits.values().map(|h| (h, h.marks())).collect();
+        let daily: Vec<DailyHabit> = marks
+            .iter()
+            .filter_map(|(h, m)| match h.cadence {
+                Cadence::Daily { days } => Some(DailyHabit {
+                    id: "",
+                    days,
+                    created_on: h.created,
+                    marks: m,
+                }),
+                Cadence::Weekly { .. } => None,
+            })
+            .collect();
+        let new: Vec<&'static str> = earned_on_mark(MarkFacts {
+            level,
+            // fila 8: solo la del hábito marcado; la de otro hábito no sube con esta marca
+            streak,
+            active_categories: marks
+                .iter()
+                .map(|(h, _)| h.category.as_str())
+                .collect::<BTreeSet<_>>()
+                .len(),
+            total_discipline: total_discipline(&daily, today),
+        })
+        .into_iter()
+        .filter(|k| !self.achievements.contains(k))
+        .collect();
+        self.achievements.extend(&new);
+        if !new.is_empty() {
+            self.unlocks.push((today, new.clone()));
+        }
+        new
+    }
+
     fn step(&mut self, today: NaiveDate, call: &str, step: &Value) {
         let want = &step["esperado"];
         let status = int(&want["status"]);
@@ -98,6 +139,7 @@ impl Sim {
                 assert_eq!(status, 201);
                 let req = &step["cuerpo"];
                 let h = Habit {
+                    category: req["category"].as_str().unwrap().into(),
                     cadence: cadence(req),
                     xp_reward: req["xp_reward"].as_u64().unwrap_or(20) as u32,
                     created: today,
@@ -138,6 +180,13 @@ impl Sim {
                         }
                         self.xp = xp.new_xp;
                         h.grants.insert(today, xp.applied);
+                        // fila 4: la v1 informa el primero; la v2, la lista entera
+                        let new = self.unlock(today, c.streak, xp.new_level);
+                        assert_eq!(
+                            body["achievement_unlocked"].as_str(),
+                            new.first().copied(),
+                            "achievement_unlocked"
+                        );
                     }
                 }
             }
@@ -206,13 +255,21 @@ impl Sim {
                 );
                 self.xp = xp.new_xp;
             }
-            ("GET", "/achievements") => {} // 2.1.3
+            ("GET", "/achievements") => {
+                let want: BTreeSet<&str> = body
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|k| k.as_str().unwrap())
+                    .collect();
+                assert_eq!(self.achievements, want, "logros desbloqueados");
+            }
             _ => panic!("llamada sin traducir: {call}"),
         }
     }
 }
 
-fn run(path: &Path) -> usize {
+fn run(path: &Path) -> Sim {
     let golden: Value = serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
     let mut sim = Sim::default();
     let steps = golden["pasos"].as_array().unwrap();
@@ -232,7 +289,7 @@ fn run(path: &Path) -> usize {
             panic!("{ctx}: {msg}");
         }
     }
-    steps.len()
+    sim
 }
 
 #[test]
@@ -241,11 +298,20 @@ fn goldens_v1_habits() {
     let mut ran = Vec::new();
     for entry in fs::read_dir(&dir).unwrap() {
         let path = entry.unwrap().path();
-        let n = run(&path);
-        ran.push((path.file_stem().unwrap().to_string_lossy().into_owned(), n));
+        let sim = run(&path);
+        let name = path.file_stem().unwrap().to_string_lossy().into_owned();
+        if name == "logros" {
+            // fila 4: el 03-08 la v1 solo informaba iron_constancy
+            let day: NaiveDate = "2026-03-08".parse().unwrap();
+            assert!(
+                sim.unlocks
+                    .contains(&(day, vec!["iron_constancy", "total_discipline"]))
+            );
+        }
+        ran.push(name);
     }
     ran.sort();
-    let names: Vec<&str> = ran.iter().map(|(n, _)| n.as_str()).collect();
+    let names: Vec<&str> = ran.iter().map(String::as_str).collect();
     assert_eq!(
         names,
         [

@@ -43,6 +43,11 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
   para D1. Asigna UUID a cada fila, guarda un mapa id-viejo → UUID para mantener las
   relaciones, convierte las fechas naive (hora de Bogotá) a UTC y rellena `local_date`
   con la fecha local original (ADR 0004). El XP histórico se copia, no se recalcula.
+- **Backfill de logros:** además de copiar los ya desbloqueados, la migración calcula la
+  racha actual de cada hábito activo y desbloquea los logros de racha que falten. En la
+  v2, `complete` solo mira la racha del hábito que se marca
+  (`docs/tasks/caracterizacion-v1.md`, fila 8), así que un logro pendiente no saltaría
+  al marcar otro hábito.
 - **Repetible:** se prueba contra una copia fresca de los datos reales cada vez que
   cambie el esquema, en una base D1 local, con verificación de conteos por tabla y de
   totales (XP, saldos). Los datos reales y el SQL generado nunca se commitean.

@@ -23,7 +23,7 @@ una tarea revela que una decisión no se sostiene, se para y se anota, en vez de
    con `D + 2`, el día `hoy − 2` podía asentarse el mismo día en que todavía se aceptan
    marcas para él.
 2. **Logros: solo backend y toast.** Se portan los que dispara marcar (2.1.3); la vista
-   de Logros sigue en la fase 5+. El catálogo completo (27) se siembra igual, para que
+   de Logros sigue en la fase 5+. El catálogo completo (34) se siembra igual, para que
    la migración de la fase 4 tenga dónde caer.
 3. **Cola sin conexión en la 2.1.6, limitada a hábitos**, pero diseñada como cola
    genérica de mutaciones (id del cliente + idempotencia del servidor), para que
@@ -114,18 +114,17 @@ vidas esperadas, y la salida va en «Hallazgos». CPU de `GET /user` medido en l
 
 ## 2.1.3 — Logros que dispara marcar
 
-- Dominio: reglas de `first_blood`, racha máxima actual entre los hábitos activos
-  (7/30/60/100), `polymath` (4 categorías activas), `total_discipline` (7 días con todo
+- Dominio: reglas de `first_blood`, racha del hábito marcado (7/30/60/100, dif. 8), `polymath` (4 categorías activas), `total_discipline` (7 días con todo
   lo programado hecho y un hábito que lleve la ventana entera) y nivel (5/10/15/20).
   Devuelve **todos** los que se desbloquean (dif. 4). `iron_constancy` cuenta semanas
   en los semanales (dif. 7, se conserva).
-- Migración: tabla `achievements` (`key` como PK, `unlocked_at`), sembrada con el
-  catálogo de 27 de la v1.
-- `complete` devuelve `achievements_unlocked`. La racha máxima entre los hábitos
-  activos usa la **lectura acotada del ADR 0007** (ventana de 90 días, ampliada solo en
-  el borde), no el historial completo. Los umbrales de 60 y 100 pueden caer en el borde
-  y ampliar: es el mismo techo de `GET /habits`. Se mide el CPU de `complete` igual,
-  porque ya estaba cerca de 10 ms (fase 0, 0.3).
+- Migración: tabla `achievements` (`key` como PK, `unlocked_at` y los textos del
+  catálogo), sembrada con los 34 de la v1.
+- `complete` devuelve `achievements_unlocked`. Lee los ya desbloqueados en su `batch` de
+  lectura y no los vuelve a evaluar. La racha es la que ya calculó para el hábito
+  marcado. `polymath` y `total_discipline` solo leen si siguen bloqueados: el conteo de
+  categorías y 7 días de marcas. Se mide el CPU de `complete`, porque ya estaba cerca de
+  10 ms (fase 0, 0.3).
 
 Terminado: el golden `logros` pasa (con la dif. 4 afirmada). CPU de `complete` con el
 seed sintético anotado en «Hallazgos».
@@ -265,3 +264,61 @@ docs, decisiones tomadas sobre la marcha.)
   - `wrangler d1 execute --local` deja procesos `workerd` huérfanos: unos 10 de esta
     tarea (01:06–01:07), además de los anteriores. El modo automático bloqueó
     cerrarlos; quedan para Johan.
+  - **CPU de `GET /user` en producción** (2026-10-30, Bogotá; versión `d1e8cb69`, seed de
+    la 0.3 más «Prueba celular» y `bench-escritura`, 20 hábitos diarios activos).
+    `cpuTime` de `wrangler tail`. Cada muestra con pendientes se preparó con un `UPDATE`
+    remoto de `settled_through` y `lives = 0`. El máximo es de 12 días asentados
+    (de hoy − 14 a hoy − 3, por `SCAN_WINDOW_DAYS` y `SETTLE_LAG_DAYS`).
+
+    | Caso | n | CPU mediana | CPU mín–máx | > 10 ms | wall mediana | Filas leídas / escritas |
+    |---|---|---|---|---|---|---|
+    | Sin días pendientes | 20 | 8,5 ms | 3–38 | 7/20 | 29 ms | 292 / 0 |
+    | 1 día pendiente | 10 | 7 ms | 5–10 | 0/10 | 69 ms | 294 / 1 |
+    | 12 días pendientes | 10 | 6,5 ms | 4–20 | 1/10 | 70,5 ms | 294 / 1 |
+
+    - Asentar no sube el CPU de forma visible: el costo es la escritura, que se ve en el
+      wall. Las 40 requests dieron 200.
+    - Los picos (25–38 ms) salen en la tanda sin pausas. Parecen los de la fase 0; sigue
+      sin verificarse la causa.
+    - **La penalización no se ejercitó en producción:** con este seed los días perfectos
+      devuelven vidas antes de cada día roto (máximo: 5 `life_regained`, 2 `life_lost`,
+      XP constante). Ese `INSERT` solo lo cubre el test contra SQLite.
+- **2.1.3** (2026-10-30, Bogotá):
+  - **El plan de leer la racha de todos los hábitos no cupo.** Versión `51806629`, con
+    `_max_current_streak` de la v1 sobre la lectura acotada: `complete` 200, n = 3,
+    **48–53 ms de CPU** (mediana 52), ~3 800 filas leídas (2 897 de la ampliación de los
+    otros hábitos). Muestra corta y justo después del deploy, pero se tomó como suficiente:
+    Johan rediseñó la revisión en vez de ampliar la medición.
+  - **Rediseño:** los logros ya desbloqueados se leen en el `batch` de lectura y no se
+    reevalúan. La racha es la del hábito marcado. `polymath` y `total_discipline` solo
+    leen mientras estén bloqueados: el conteo de categorías y 7 días de marcas. La
+    diferencia es la fila 8 de `caracterizacion-v1.md`, y la cubre el backfill del ADR 0006.
+  - **Sin tope de racha para logros:** la ampliación del hábito marcado la pide el `streak`
+    real de la respuesta (fila 6), no el logro. Un tope no ahorra lectura sin cambiar esa
+    respuesta.
+  - **CPU del rediseño** (versión `942fe533`; `polymath` y `total_discipline` bloqueados,
+    el camino más caro):
+
+    | Request | n | CPU mediana | CPU mín–máx | > 10 ms | wall mediana | Filas leídas |
+    |---|---|---|---|---|---|---|
+    | `complete` 200 (marca nueva) | 10 | 9 ms | 6–14 | 2/10 | 92,5 ms | ~215 (38 + ~176 + 1); 7 escritas |
+    | `complete` 409 | 30 | 3,5 ms | 2–39 | 6/30 | 22 ms | 84–128, más 757–1 077 si amplía |
+
+    - Las 10 marcas son de los `bench-escritura`, con poco historial propio: los hábitos
+      `Bench` ya tenían hoy, ayer y anteayer ocupados. **No hay medición de un 200 cuyo
+      propio hábito amplíe.** Lo más cercano son los 409 que amplían: 3–6 ms en caliente,
+      con 13–39 ms en los tres primeros, tras el deploy.
+    - La mediana de 9 ms queda justo debajo del límite mientras `total_discipline` siga
+      bloqueado, que puede ser mucho tiempo. No se aisló qué parte gasta más.
+  - **Sin explicar:** en la primera tanda, 6 de los 10 hábitos `Bench` ya estaban marcados
+    ese día, y no sé por qué.
+  - Catálogo: la v1 tiene **34** logros, no 27 como decía este plan, porque no contaba los
+    7 de entrenamiento. Se siembran los 34 con `name`, `description`, `icon` y `tier`.
+  - `UPDATE … WHERE unlocked_at IS NULL … RETURNING key`: dos marcas concurrentes no
+    informan el mismo logro. Si no hay logros nuevos, la sentencia no se manda.
+  - El primer `wrangler d1 migrations apply --remote` de la `0003` falló con el código 7403
+    («account is not valid or is not authorized»). `migrations list` funcionó enseguida y
+    el reintento aplicó la migración. Parece transitorio; no se investigó más.
+  - Local: con los logros reiniciados y un hábito del seed con racha larga, marcar un
+    hábito nuevo da `[first_blood, polymath]`, sin logros de racha (fila 8). El reintento
+    da lista vacía y otra marca del mismo día, 409.

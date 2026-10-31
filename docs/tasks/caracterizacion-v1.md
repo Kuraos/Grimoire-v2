@@ -79,6 +79,7 @@ ADR 0005.
 | 5 | `total_xp` del hábito tras deshacer con XP en 0 | Se registra 0 en `xp_log` y la concesión original sigue sumando | Deshacer anula lo que concedió la marca, aunque el XP del usuario ya esté en 0 | El total del hábito contaba XP de una marca borrada (`deshacer`, 03-16: 80 con 70 de marcas vivas). |
 | 6 | `streak` en la respuesta de marcar | Racha previa + 1, la que decide el multiplicador, aunque la marca no cierre la semana | La racha real tras la marca, la misma que devuelve `GET` | La respuesta contradecía al `GET` en semanales (`semanal_2x`, 03-04 y 04-20). El **XP pagado no cambia**: sigue usando previa + 1, como en la v1. |
 | 7 | `iron_constancy` con hábitos semanales | Cuenta semanas, con la racha real | **Igual que la v1** | Se conserva. Va aquí para que no se «arregle» por error. |
+| 8 | Racha que dispara los logros de racha | La más larga entre **todos** los hábitos activos, recalculada en cada marca (`_max_current_streak`) | La del hábito que se marca | Marcar un hábito no cambia la racha de los demás, y leerlas todas costó 48–53 ms de CPU por marca (`docs/tasks/fase-2-habitos.md`, 2.1.3). Solo difiere si otro hábito ya tiene la racha y el logro sigue bloqueado; lo cubre el backfill del ADR 0006. Ningún golden lo muestra. |
 
 ## Hallazgos
 

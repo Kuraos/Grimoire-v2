@@ -3,18 +3,23 @@
 //! ventana de 90 días; solo los hábitos cuya racha llega al borde piden una segunda
 //! lectura con su historial completo (ADR 0007).
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use axum::Json;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use chrono::NaiveDate;
+use grimoire_domain::achievements::{
+    MarkFacts, POLYMATH, TOTAL_DISCIPLINE, discipline_window_start, earned_on_mark,
+    total_discipline as discipline_met,
+};
 use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{
     MarkRejected, Marks, WindowedStreak, check_mark_day, current_streak, current_streak_since,
     history_window_start, mark,
 };
+use grimoire_domain::lives::DailyHabit;
 use grimoire_domain::xp::award_xp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -318,6 +323,30 @@ pub struct CompleteOut {
     title: &'static str,
     leveled_up: bool,
     streak: u32,
+    /// Claves de los logros que desbloqueó esta marca (fila 4 de las diferencias).
+    achievements_unlocked: Vec<String>,
+}
+
+/// ?1 instante · ?2 claves cumplidas (arreglo JSON). Devuelve solo las nuevas; así, dos
+/// marcas concurrentes no informan el mismo logro.
+pub(crate) const UNLOCK_ACHIEVEMENTS: &str = "UPDATE achievements SET unlocked_at = ?1 \
+     WHERE unlocked_at IS NULL AND key IN (SELECT value FROM json_each(?2)) RETURNING key";
+
+#[derive(Deserialize)]
+struct AchievementRow {
+    key: String,
+}
+
+#[derive(Deserialize)]
+struct CountRow {
+    n: usize,
+}
+
+#[derive(Deserialize)]
+struct DisciplineRow {
+    id: String,
+    days: Option<String>,
+    created_at: String,
 }
 
 fn rejection_message(r: MarkRejected, habit: &Habit) -> String {
@@ -340,6 +369,8 @@ struct MarkState {
     user: UserRow,
     /// La marca con el ID que manda el cliente, si ya existe (en cualquier hábito).
     existing: Option<LogRow>,
+    /// Logros ya desbloqueados: no se vuelven a evaluar.
+    unlocked: BTreeSet<String>,
 }
 
 /// Lee la ventana de historial y la amplía si la racha del día que importa (`on`, o
@@ -373,6 +404,7 @@ async fn read_mark_state(
                 "SELECT habit_id, local_date FROM habit_logs WHERE id = ?1",
                 log_id
             )?,
+            s.db.prepare("SELECT key FROM achievements WHERE unlocked_at IS NOT NULL"),
         ])
         .await?;
     log_d1("complete: ventana", &res);
@@ -393,6 +425,11 @@ async fn read_mark_state(
             .pop()
             .ok_or_else(|| AppError::Internal("no hay usuario".into()))?,
         existing: res[3].results::<LogRow>()?.pop(),
+        unlocked: res[4]
+            .results::<AchievementRow>()?
+            .into_iter()
+            .map(|r| r.key)
+            .collect(),
     };
     let day = match &st.existing {
         Some(e) => parse_date(&e.local_date)?,
@@ -433,7 +470,82 @@ fn replay(
         title: xp.title,
         leveled_up: false,
         streak: current_streak(st.habit.cadence()?, &st.marks, today),
+        achievements_unlocked: Vec::new(),
     }))
+}
+
+/// Los logros nuevos que deja la marca del día `on`. Solo corre para una marca aceptada.
+/// La racha es la del hábito marcado, ya calculada: marcar H no cambia la de los demás
+/// (caracterizacion-v1.md, fila 8). `polymath` y `total_discipline` solo leen mientras
+/// estén bloqueados, y lo justo: el conteo de categorías y 7 días de marcas (ADR 0007).
+async fn earned_achievements(
+    s: &AppState,
+    st: &MarkState,
+    on: NaiveDate,
+    today: NaiveDate,
+    streak: u32,
+    level: u32,
+) -> Result<Vec<&'static str>, AppError> {
+    let check_polymath = !st.unlocked.contains(POLYMATH);
+    let check_discipline = !st.unlocked.contains(TOTAL_DISCIPLINE);
+    let mut reads = Vec::new();
+    if check_polymath {
+        reads.push(
+            s.db.prepare("SELECT COUNT(DISTINCT category) AS n FROM habits WHERE active = 1"),
+        );
+    }
+    if check_discipline {
+        reads.push(s.db.prepare(
+            "SELECT id, days, created_at FROM habits WHERE active = 1 AND frequency = 'daily'",
+        ));
+        reads.push(query!(
+            &s.db,
+            "SELECT habit_id, group_concat(local_date) AS dates FROM habit_logs              WHERE habit_id IN (SELECT id FROM habits WHERE active = 1 AND frequency = 'daily')              AND local_date >= ?1 GROUP BY habit_id",
+            discipline_window_start(today).to_string()
+        )?);
+    }
+    let res = if reads.is_empty() {
+        Vec::new()
+    } else {
+        s.db.batch(reads).await?
+    };
+    log_d1("complete: logros", &res);
+    let mut res = res.into_iter();
+
+    let active_categories = if check_polymath {
+        let counted = res.next().unwrap().results::<CountRow>()?.pop();
+        counted.map_or(0, |c| c.n)
+    } else {
+        0
+    };
+    let total_discipline = if check_discipline {
+        let habits = res.next().unwrap().results::<DisciplineRow>()?;
+        let mut marks = marks_by_habit(&res.next().unwrap())?;
+        marks.entry(st.habit.id.clone()).or_default().insert(on);
+        let empty = Marks::new();
+        let mut daily = Vec::new();
+        for h in &habits {
+            daily.push(DailyHabit {
+                id: &h.id,
+                days: WeekdaySet::parse(h.days.as_deref().unwrap_or(""))
+                    .map_err(|_| AppError::Internal("hábito con days inválido".into()))?,
+                created_on: local_date_of(&h.created_at, &s.tz)?,
+                marks: marks.get(&h.id).unwrap_or(&empty),
+            });
+        }
+        discipline_met(&daily, today)
+    } else {
+        false
+    };
+
+    let mut earned = earned_on_mark(MarkFacts {
+        level,
+        streak,
+        active_categories,
+        total_discipline,
+    });
+    earned.retain(|k| !st.unlocked.contains(*k));
+    Ok(earned)
 }
 
 #[worker::send]
@@ -471,6 +583,7 @@ pub async fn complete(
     )
     .map_err(reject)?;
     let xp = award_xp(st.user.xp, done.xp);
+    let earned = earned_achievements(&s, &st, on, today, done.streak, xp.new_level).await?;
 
     let now = now_utc();
     let mut writes = vec![
@@ -500,9 +613,22 @@ pub async fn complete(
             now
         )?);
     }
-    // batch = transacción: si una restricción rechaza la marca, no se suma XP
-    match s.db.batch(writes).await {
-        Ok(res) => log_d1("complete: escritura", &res),
+    if !earned.is_empty() {
+        let earned_json =
+            serde_json::to_string(&earned).map_err(|e| AppError::Internal(e.to_string()))?;
+        writes.push(query!(&s.db, UNLOCK_ACHIEVEMENTS, now, earned_json)?);
+    }
+    // batch = transacción: si una restricción rechaza la marca, no se suma XP ni se
+    // desbloquea nada
+    let new = match s.db.batch(writes).await {
+        Ok(res) => {
+            log_d1("complete: escritura", &res);
+            if earned.is_empty() {
+                Vec::new()
+            } else {
+                res.last().unwrap().results::<AchievementRow>()?
+            }
+        }
         Err(e) => {
             let msg = e.to_string();
             return if msg.contains("UNIQUE constraint failed: habit_logs.id:") {
@@ -520,7 +646,7 @@ pub async fn complete(
                 Err(e.into())
             };
         }
-    }
+    };
 
     Ok(Json(CompleteOut {
         xp_earned: xp.applied,
@@ -529,5 +655,47 @@ pub async fn complete(
         title: xp.title,
         leveled_up: xp.leveled_up,
         streak: done.streak,
+        // RETURNING no garantiza orden: se conserva el del dominio
+        achievements_unlocked: earned
+            .into_iter()
+            .filter(|k| new.iter().any(|r| r.key == *k))
+            .map(str::to_owned)
+            .collect(),
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    //! La sentencia real de desbloquear y el catálogo sembrado, contra SQLite.
+    use super::UNLOCK_ACHIEVEMENTS;
+    use rusqlite::{Connection, params};
+
+    fn unlock(c: &Connection, keys: &str) -> Vec<String> {
+        let mut q = c.prepare(UNLOCK_ACHIEVEMENTS).unwrap();
+        q.query_map(params!["2026-03-05T12:00:00Z", keys], |r| r.get(0))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect()
+    }
+
+    #[test]
+    fn unlocks_only_what_is_still_locked() {
+        let c = Connection::open_in_memory().unwrap();
+        c.execute_batch(include_str!("../../../migrations/0003_achievements.sql"))
+            .unwrap();
+        let locked: i64 = c
+            .query_row(
+                "SELECT COUNT(*) FROM achievements WHERE unlocked_at IS NULL",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(locked, 34, "catálogo completo de la v1");
+
+        assert_eq!(unlock(&c, r#"["first_blood"]"#), ["first_blood"]);
+        let mut second = unlock(&c, r#"["first_blood","polymath","no_existe"]"#);
+        second.sort();
+        assert_eq!(second, ["polymath"]);
+        assert!(unlock(&c, r#"["first_blood","polymath"]"#).is_empty());
+    }
 }
