@@ -1,8 +1,8 @@
-import { ReactNode } from "react";
+import { ReactNode, type PointerEvent } from "react";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { createPortal } from "react-dom";
 import { IconX } from "@tabler/icons-react";
-import { motion } from "motion/react";
+import { motion, useDragControls } from "motion/react";
 import { motionTokens } from "../../theme-tokens";
 
 /**
@@ -45,12 +45,35 @@ export function Overlay({ onClose, children, align = "center" }: {
 }
 
 /**
+ * Hoja inferior que se cierra deslizándola hacia abajo, desde su cabecera. Si el gesto
+ * saliera de toda la hoja, `drag` le quitaría el scroll táctil al contenido.
+ */
+export function useSheetDrag(onClose: () => void) {
+  const desktop = useIsDesktop();
+  const controls = useDragControls();
+  return {
+    sheet: {
+      drag: desktop ? false : ("y" as const),
+      dragListener: false,
+      dragControls: controls,
+      dragConstraints: { top: 0, bottom: 0 },
+      dragElastic: { top: 0, bottom: 1 },
+      onDragEnd: (_: unknown, info: { offset: { y: number } }) => { if (info.offset.y > 80) onClose(); },
+    },
+    handle: {
+      onPointerDown: (e: PointerEvent) => controls.start(e),
+      style: { touchAction: "none" },
+    },
+  };
+}
+
+/**
  * Un solo componente, dos presentaciones (DESIGN_SYSTEM → «Superficies en
  * pantalla angosta»): en teléfono es una hoja inferior que se cierra
  * deslizándola hacia abajo; desde lg:, el modal centrado de la v1.
  */
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  const desktop = useIsDesktop();
+  const { sheet, handle } = useSheetDrag(onClose);
   return (
     <Overlay onClose={onClose}>
       {/* Sólo entrada. La salida pediría un AnimatePresence en cada una de las
@@ -59,15 +82,12 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
         initial={{ opacity: 0, y: 10, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        drag={desktop ? false : "y"}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0, bottom: 1 }}
-        onDragEnd={(_, info) => { if (info.offset.y > 80) onClose(); }}
+        {...sheet}
         className="max-h-[85dvh] w-full overflow-y-auto rounded-t-lg p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] lg:max-w-md lg:rounded-lg lg:pb-5"
         style={{ background: "var(--bg-deep)", border: "1px solid var(--border-accent)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center">
+        <div {...handle} className="mb-4 flex items-center">
           <h2 className="font-display text-base text-[var(--purple-main)]">{title}</h2>
           <button onClick={onClose} aria-label="Cerrar" className="-m-3 ml-auto p-3 text-[var(--text-muted)] hover:text-[var(--text-body)]">
             <IconX size={16} />

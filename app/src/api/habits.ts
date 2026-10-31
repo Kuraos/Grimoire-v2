@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { v7 as uuidv7 } from 'uuid'
 import type { CompleteOut, Habit, HabitDetail, HabitInput } from '../types'
 import { get, type ApiRequest } from './client'
@@ -36,6 +36,7 @@ export const useHabits = (includeArchived: boolean) =>
   useQuery({
     queryKey: ['habits', 'list', includeArchived],
     queryFn: () => get<Habit[]>(`/habits?include_archived=${includeArchived}`),
+    placeholderData: keepPreviousData,
   })
 
 export const useHabitDetail = (id: string | null) =>

@@ -30,11 +30,11 @@ test('lo recordado no crece sin límite', () => {
 
 test('los toasts dicen si son provisionales y no pintan de oro lo perdido', () => {
   const t = eventToast(event({ habits: ['Leer', 'Correr', 'Alemán'] }))
-  expect(t.title).toContain('provisional')
-  expect(t.body).toBe('Perdiste una vida (Leer y 2 más)')
+  expect(t.body).toBe('Provisional · −1 vida · Leer y 2 más')
   expect(t.variant).toBe('error')
   const fixed = eventToast(event({ kind: 'xp_penalty', xp_penalty: 15, provisional: false }))
-  expect(fixed.title).not.toContain('provisional')
-  expect(fixed.body).toBe('−15 XP (Leer)')
-  expect(eventToast(event({ kind: 'life_regained', habits: [] })).variant).toBeUndefined()
+  expect(fixed.body).toBe('−15 XP · Leer')
+  const regained = eventToast(event({ kind: 'life_regained', habits: [] }))
+  expect(regained.body).toContain('Provisional')
+  expect(regained.variant).toBeUndefined()
 })

@@ -5,17 +5,17 @@ import type { User } from "../../types";
 
 const MAX_LIVES = 3;
 
-// TODO(fase-2): guardar el nombre contra la API nueva (antes Api.updateUser + refreshUser).
+// TODO(fase-N): renombrar: la API nueva todavía no tiene PATCH /user. Sin `onRename` no hay lápiz.
 // TODO(fase-N): SettingsModal no se portó (Tauri, backups, vault); se rehace después.
 export function TopBar({ user, onRename, onOpenSettings }: {
-  user: User | null; onRename: (name: string) => Promise<void>; onOpenSettings: () => void;
+  user: User | null; onRename?: (name: string) => Promise<void>; onOpenSettings: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
 
   const startEdit = () => { setName(user?.name ?? ""); setEditing(true); };
   const save = async () => {
-    if (name.trim()) { try { await onRename(name.trim()); } catch { /* */ } }
+    if (name.trim()) { try { await onRename?.(name.trim()); } catch { /* */ } }
     setEditing(false);
   };
 
@@ -41,11 +41,11 @@ export function TopBar({ user, onRename, onOpenSettings }: {
             <button onClick={save} className="text-[var(--purple-main)] hover:text-[var(--gr-arcane-bright)]"><IconCheck size={14} /></button>
           </span>
         ) : (
-          <span className="group ml-3 flex items-center gap-1 text-xs italic text-[var(--text-body)]">
+          <span className="group ml-3 hidden items-center gap-1 text-xs italic text-[var(--text-body)] lg:flex">
             {user.name} · {user.title}
-            <button onClick={startEdit} title="Editar nombre" className="-m-3 p-3 text-[var(--text-faint)] transition-opacity hover:text-[var(--purple-main)] lg:opacity-0 lg:group-hover:opacity-100">
+            {onRename && <button onClick={startEdit} title="Editar nombre" className="-m-3 p-3 text-[var(--text-faint)] transition-opacity hover:text-[var(--purple-main)] lg:opacity-0 lg:group-hover:opacity-100">
               <IconPencil size={12} />
-            </button>
+            </button>}
           </span>
         )
       )}
@@ -60,7 +60,8 @@ export function TopBar({ user, onRename, onOpenSettings }: {
         </span>
       )}
 
-      <span className="ml-auto text-xs italic tabular text-[var(--text-muted)]">
+      {/* En teléfono no cabe en una línea junto a las vidas. */}
+      <span className="ml-auto hidden whitespace-nowrap text-xs italic tabular text-[var(--text-muted)] lg:inline">
         {romanDate(new Date())}
       </span>
 
@@ -68,7 +69,7 @@ export function TopBar({ user, onRename, onOpenSettings }: {
         onClick={onOpenSettings}
         title="Ajustes"
         aria-label="Ajustes"
-        className="-my-3 -mr-3 ml-0 p-3 text-[var(--text-faint)] hover:text-[var(--purple-main)]"
+        className="-my-3 -mr-3 ml-auto p-3 lg:ml-0 text-[var(--text-faint)] hover:text-[var(--purple-main)]"
       >
         <IconSettings size={16} />
       </button>

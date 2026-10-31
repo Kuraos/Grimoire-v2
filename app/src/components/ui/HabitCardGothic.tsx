@@ -48,7 +48,7 @@ export function HabitCardGothic({ habit, onComplete, onUndo, onOpen, onRestore }
             onClick={() => onRestore?.(habit)}
             title="Restaurar este hábito"
             aria-label={`Restaurar ${habit.name}`}
-            className="mt-[2px] grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border"
+            className="gr-tactil relative mt-[2px] grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border"
             style={{ borderColor: "var(--gr-edge-strong)", color: "var(--gr-ink-dim)" }}
           >
             <IconArchiveOff size={13} />
@@ -59,7 +59,7 @@ export function HabitCardGothic({ habit, onComplete, onUndo, onOpen, onRestore }
           onClick={toggle}
           aria-pressed={done}
           aria-label={done ? `Deshacer ${habit.name}` : `Completar ${habit.name}`}
-          className="mt-[2px] grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border transition-colors"
+          className="gr-tactil relative mt-[2px] grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md border transition-colors"
           style={{
             borderColor: done ? "var(--gr-gilded)" : "var(--gr-edge-strong)",
             background: done ? "var(--gr-gilded-deep)" : "transparent",
@@ -77,11 +77,11 @@ export function HabitCardGothic({ habit, onComplete, onUndo, onOpen, onRestore }
         </button>
         )}
 
-        <div className="min-w-0 flex-1">
+        {/* Toda la zona de texto abre el detalle: el nombre solo es un blanco chico al tacto. */}
+        <div className={`min-w-0 flex-1 ${onOpen ? "cursor-pointer" : ""}`} onClick={() => onOpen?.(habit)}>
           <div className="flex items-baseline gap-2">
             <h3
-              className={`gr-body truncate font-medium ${onOpen ? "cursor-pointer hover:underline" : ""}`}
-              onClick={() => onOpen?.(habit)}
+              className={`gr-body truncate font-medium ${onOpen ? "hover:underline" : ""}`}
               style={{
                 color: done ? "var(--gr-ink-dim)" : "var(--gr-ink-bright)",
                 textDecoration: done ? "line-through" : "none",
@@ -126,7 +126,7 @@ export function HabitCardGothic({ habit, onComplete, onUndo, onOpen, onRestore }
           </div>
         </div>
 
-        {/* Progreso histórico — dato, no adorno */}
+        {/* Constancia de los últimos 90 días — dato, no adorno */}
         <div className="shrink-0 text-right">
           <div className="gr-numeric gr-body font-medium" style={{ color: "var(--gr-ink)" }}>
             {habit.completion_rate}%

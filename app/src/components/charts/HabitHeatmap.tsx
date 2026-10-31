@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isoDate, MONTHS_ES } from "../../utils";
 import { chartPalette, toRgb } from "../../theme-tokens";
 
@@ -74,8 +74,18 @@ export function HabitHeatmap({ data, weeks = 53 }: {
   // 11px de celda + 3px de hueco: el paso con el que se colocan los rótulos.
   const STEP = 14;
 
+  // En teléfono no caben las 53 semanas: se arranca en hoy y lo viejo queda al deslizar.
+  const scroller = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, []);
+  // El `title` solo existe con mouse: al tacto, el día tocado se lee debajo.
+  const [picked, setPicked] = useState<{ date: string; count: number } | null>(null);
+
   return (
-    <div className="overflow-x-auto">
+    <>
+    <div ref={scroller} className="overflow-x-auto">
       <div className="relative mb-1.5 h-4" style={{ width: columns.length * STEP }}>
         {months.map((m) => (
           <span
@@ -95,6 +105,7 @@ export function HabitHeatmap({ data, weeks = 53 }: {
                 key={cell.date}
                 title={`${cell.date}: ${cell.count} completado(s)`}
                 className="h-[11px] w-[11px] rounded-xs"
+                onClick={() => setPicked(cell.date > todayIso ? null : cell)}
                 style={{
                   background: cell.date > todayIso ? "transparent" : color(cell.count),
                   outline: cell.date === todayIso ? "1px solid var(--purple-main)" : "none",
@@ -105,5 +116,11 @@ export function HabitHeatmap({ data, weeks = 53 }: {
         ))}
       </div>
     </div>
+    {picked && (
+      <div className="mt-1.5 text-xs tabular text-[var(--text-muted)]">
+        {picked.date}: {picked.count} completado(s)
+      </div>
+    )}
+    </>
   );
 }

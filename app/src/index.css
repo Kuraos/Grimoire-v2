@@ -466,3 +466,26 @@ input[type="range"]::-moz-range-thumb {
 [data-motion="reduced"] .skeleton {
   animation: none;
 }
+
+/* Teléfono y tablet vertical (DESIGN_SYSTEM → «Interacción táctil»). Los controles conservan
+   su dibujo: el área de 44 × 44 px es un pseudo-elemento centrado, y el texto de un input
+   sube a 16 px porque por debajo el navegador hace zoom al enfocar. */
+@media (max-width: 1023.98px) {
+  .btn,
+  .gr-tactil {
+    position: relative;
+  }
+  .btn::after,
+  .gr-tactil::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .input {
+    font-size: 16px;
+  }
+}

@@ -42,7 +42,7 @@ export function SectionBand({
   children?: ReactNode;
 }) {
   return (
-    <section className={`grid grid-cols-[28px_1fr] gap-x-2 ${spine ? "border-l border-[var(--gr-edge)] pl-1" : ""}`}>
+    <section className={`grid grid-cols-[28px_minmax(0,1fr)] gap-x-2 ${spine ? "border-l border-[var(--gr-edge)] pl-1" : ""}`}>
       <div className="row-span-2 flex flex-col items-center gap-[7px]" style={tone ? { color: tone } : undefined}>
         {versal ? (
           <span className="font-display text-xl font-semibold normal-case tracking-normal text-[var(--text-muted)]">

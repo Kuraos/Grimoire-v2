@@ -10,7 +10,11 @@ import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 import { PageHeader } from "./components/layout/PageHeader";
 import { useIsDesktop } from "./hooks/useMediaQuery";
 import { motionTokens } from "./theme-tokens";
-import Prueba04 from "./Prueba04";
+import Habits from "./pages/Habits";
+import { useApp } from "./context";
+import { ConfirmHost } from "./confirm";
+import { ToastAchievement } from "./components/layout/ToastAchievement";
+import { LevelUpOverlay } from "./components/layout/LevelUpOverlay";
 
 /* Entrada de cada vista, como en la v1: solo opacidad, sin transform (ver Modal.tsx). */
 function viewEnter() {
@@ -42,6 +46,7 @@ const PENDIENTES: [string, string][] = [
 export default function App() {
   const location = useLocation();
   const desktop = useIsDesktop();
+  const { user, toasts, dismissToast, levelUp, dismissLevelUp } = useApp();
 
   // Atrás de Android: primero cierra la hoja o el modal abierto, después navega.
   useEffect(() => {
@@ -61,8 +66,7 @@ export default function App() {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* El borde superior (barra de estado, cámara) se pinta del color del cromo */}
         <div style={{ paddingTop: "env(safe-area-inset-top)", background: "var(--gr-chrome)" }}>
-          {/* TODO(fase-2): usuario y renombrar contra la API nueva */}
-          <TopBar user={null} onRename={async () => {}} onOpenSettings={abrirAjustes} />
+          <TopBar user={user} onOpenSettings={abrirAjustes} />
         </div>
         <main className="flex-1 overflow-y-auto p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-4">
           <ErrorBoundary key={location.pathname} scope={location.pathname}>
@@ -71,7 +75,7 @@ export default function App() {
                 {PENDIENTES.map(([path, titulo]) => (
                   <Route key={path} path={path} element={<Pendiente titulo={titulo} />} />
                 ))}
-                <Route path="/habitos" element={<Prueba04 />} />
+                <Route path="/habitos" element={<Habits />} />
               </Routes>
             </motion.div>
           </ErrorBoundary>
@@ -80,6 +84,9 @@ export default function App() {
       <BottomNav onOpenSettings={abrirAjustes} />
       {/* Solo con teclado físico: en teléfono no se muestra ni se reemplaza */}
       {desktop && <CommandPalette pomo={SIN_POMODORO} />}
+      <ToastAchievement toasts={toasts} dismissToast={dismissToast} />
+      <LevelUpOverlay levelUp={levelUp} dismissLevelUp={dismissLevelUp} />
+      <ConfirmHost />
     </div>
   );
 }

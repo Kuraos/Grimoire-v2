@@ -429,3 +429,28 @@ docs, decisiones tomadas sobre la marcha.)
     leían, en Rust; desaparece el agregado `DONE_UNITS` y con él el 92 % de las filas que
     medía la 2.1.4. El detalle usa la misma definición: el campo no cambia de sentido
     entre la lista y el detalle.
+  - **Filas leídas de `GET /habits` tras el cambio** (`wrangler dev`, seed local, `rows_read`
+    del log): ventana 880–888 + ampliación 756, ~1 640 en total, frente a 20 631 con el
+    agregado. **CPU en producción sin medir todavía**: va con el deploy, junto con el heatmap.
+  - `achievements_unlocked` pasa de claves a `{key, name, icon}`: el catálogo vive en la base
+    y el toast necesita el nombre. Comprobado en local: un hábito nuevo marcado da los toasts
+    «Primera sangre» y «Polímata».
+  - **Recorrido en local** (`wrangler dev` + Vite + Playwright a 393 × 852): crear, marcar,
+    deshacer, detalle, editar, categoría nueva, categoría en uso rechazada, borrar categoría,
+    archivar, restaurar. Evento provisional en toast y sin repetirse al recargar. Un token
+    malo vuelve a la pantalla del token. Arrastrar la hoja por la cabecera la cierra (con
+    mouse; el gesto táctil falta probarlo en el teléfono). Capturas en
+    `docs/capturas/fase-2.1.5-*`, con los datos inventados del seed.
+  - Defectos que solo salieron al mirar las capturas: las tarjetas se salían de la pantalla
+    (`grid-cols-[28px_1fr]` en `SectionBand`, ahora `minmax(0,1fr)`), la fecha de `TopBar` se
+    partía en dos líneas (oculta bajo `lg:`) y el título del toast de evento tapaba el cuerpo.
+  - **Adaptaciones de la vista:** bajo `lg:`, «Ver archivados» y «Categorías» solo con icono
+    para que la cabecera quepa en una fila; área táctil de 44 px como pseudo-elemento
+    (`.gr-tactil` y `.btn`); inputs a 16 px; el heatmap arranca en hoy, se desliza hacia lo
+    viejo y al tocar un día dice su conteo. La hoja se arrastra solo desde su cabecera:
+    `drag` en toda la hoja le quitaba el scroll táctil al contenido (afecta a todo `Modal`).
+    Sin el lápiz de renombrar: la API no tiene `PATCH /user`. Sin el sondeo de `GET /user`
+    cada 30 s de la v1: se refresca al volver a la app y después de cada escritura.
+  - Un toast de racha rota puede cortar el nombre del hábito («Provisional · −1 vida · Be…»):
+    58 px de alto no dan para más. Es lo único que se ve truncado.
+  - **Falta para cerrar la 2.1.5:** deploy y prueba desde el teléfono (Johan).
