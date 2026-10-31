@@ -499,4 +499,9 @@ docs, decisiones tomadas sobre la marcha.)
     `@capacitor/network` en un teléfono en modo avión: el navegador usa `navigator.onLine`.
   - **Límite conocido:** si el servidor aceptó la marca pero la respuesta nunca llegó, el
     reintento responde `xp_earned: 0` y sin logros. El XP queda bien; ese toast no sale.
+  - **Token expuesto en logcat** (2026-10-31): en compilación de depuración, Capacitor registraba
+    lo que devuelven los plugins, incluido el token del Keystore, y salió en la salida de un
+    comando de la sesión. Johan lo rotó (`Secret Change`, versión `21456aeb`) y se puso
+    `loggingBehavior: 'none'`. Tras reinstalar, al abrir: 0 líneas `Capacitor/Console` y 0 con
+    `"data"` en logcat. Precaución: no leer logcat sin filtrar en builds anteriores.
   - **Falta para cerrar la 2.1.6:** la prueba del criterio de terminado en el teléfono (Johan).
