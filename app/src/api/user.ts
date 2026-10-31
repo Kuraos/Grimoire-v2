@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import type { Toast, User, UserEvent } from '../types'
+import type { CompleteOut, Toast, UnlockedAchievement, User, UserEvent } from '../types'
 import { get } from './client'
+import type { SyncResult } from './queryClient'
 
 export const useUser = () => useQuery({ queryKey: ['user'], queryFn: () => get<User>('/user') })
 
@@ -14,6 +15,28 @@ export function unseenEvents(events: UserEvent[], shown: string[]) {
   return {
     fresh: events.filter((e) => !shown.includes(eventKey(e))),
     remember: [...new Set([...shown, ...events.map(eventKey)])].slice(-60),
+  }
+}
+
+/** Menos que esto después de tocar: la respuesta todavía se siente como respuesta al toque. */
+const FRESH_MS = 2000
+
+/**
+ * Lo que un lote de escrituras le dice a la pantalla: un solo resumen de lo que llegó tarde,
+ * un logro por cada uno y un solo ascenso, el más alto.
+ */
+export function summarizeResults(results: SyncResult[]) {
+  const xp = results.filter((r): r is SyncResult & { data: CompleteOut } =>
+    typeof (r.data as CompleteOut | null)?.xp_earned === 'number')
+  const late = xp.filter((r) => r.ageMs >= FRESH_MS)
+  const leveled = xp.filter((r) => r.data.leveled_up).map((r) => r.data)
+  return {
+    burst: xp.some((r) => r.ageMs < FRESH_MS && r.data.xp_earned > 0),
+    level: leveled.reduce<CompleteOut | null>((a, b) => (!a || b.new_level > a.new_level ? b : a), null),
+    achievements: xp.flatMap((r): UnlockedAchievement[] => r.data.achievements_unlocked),
+    syncedXp: late.reduce((s, r) => s + r.data.xp_earned, 0),
+    // deshacer resta: marcar y deshacer sin conexión no es una marca sincronizada
+    syncedMarks: late.reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
   }
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Field } from "./components/ui/Modal";
 import { loadToken, onUnauthorized, saveToken } from "./api/client";
 import { queryClient } from "./api/queryClient";
+import { bootSync, setAuthorized } from "./api/sync";
 
 /** Sin token no hay API: lo pide una vez y lo vuelve a pedir si el servidor lo rechaza. */
 export function TokenGate({ children }: { children: ReactNode }) {
@@ -9,9 +10,16 @@ export function TokenGate({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
-    loadToken().then((t) => setReady(t !== null), () => setReady(false));
+    bootSync()
+      .then(loadToken)
+      .then((t) => {
+        setAuthorized(t !== null);
+        setReady(t !== null);
+      }, () => setReady(false));
     return onUnauthorized(() => {
-      queryClient.clear();
+      setAuthorized(false);
+      // solo las lecturas: la cola sigue, pausada, hasta que haya un token válido
+      queryClient.getQueryCache().clear();
       setReady(false);
     });
   }, []);
@@ -28,6 +36,7 @@ export function TokenGate({ children }: { children: ReactNode }) {
           if (!draft.trim()) return;
           await saveToken(draft.trim());
           setDraft("");
+          setAuthorized(true);
           setReady(true);
         }}
       >

@@ -475,3 +475,28 @@ docs, decisiones tomadas sobre la marcha.)
     `294d0b4a`): Johan confirmó que todo funciona: marcar y deshacer, detalle, crear con la
     hoja inferior, arrastrarla, botón atrás y scroll del historial. La 2.1.5 queda cerrada.
     La captura a 1280 × 800 es de navegador; no se probó en la tablet.
+- **2.1.6** (2026-10-31, Bogotá):
+  - Diseño aprobado por Johan antes de escribir código, con estas decisiones: vista derivada
+    de la cola, lecturas persistidas, rechazos visibles hasta descartarlos, categorías fuera
+    de la cola, un 5xx permanente bloquea con aviso y marca «pendiente» en la tarjeta (ADR 0008).
+  - `api/queue.test.ts`, con arranques simulados (módulos nuevos, mismo disco): marcar y
+    deshacer sin conexión en orden; cola restaurada con el `local_date` original; lo que iba
+    en vuelo; 409 visible que no frena la cola y sobrevive a reiniciar; 401 sin perder la cola;
+    red caída sin descartar; 5xx con un solo aviso; una sola invalidación por vaciado.
+    Para comprobar que no pasan en vacío, 11 mutaciones del código hacen fallar la suite, y
+    el control sin mutación pasa. No registré qué test cae en cada una.
+  - **Navegador contra `wrangler dev`** (Playwright, 393 × 852). Sin red no sale ninguna
+    escritura y la cabecera dice «4 sin sincronizar»; al volver salen en orden
+    (`POST`, `POST`, `POST`, `DELETE`), con el toast «2 marcas · +40 XP». En el servidor quedan
+    marcados 2 de 3: el que se marcó y deshizo no. Reinicio con la API bloqueada: la lista
+    restaurada con la marca encima. El 409 y el 401 se simularon interceptando la request,
+    no son respuestas reales del worker. Categoría sin red: toast y no se encola.
+  - Capturas en `docs/capturas/fase-2.1.6-*`, con los datos inventados del seed.
+  - **La caché se escribe 2 s después del último cambio.** Si se cierra la app antes en la
+    primera carga, abrir sin señal no muestra la lista; la cola no tiene ese retraso.
+  - **Sin verificar:** el cierre real del proceso en Android (`SharedPreferences` escribe de
+    forma asíncrona, así que un cierre brusco justo tras tocar podría perder esa acción), y
+    `@capacitor/network` en un teléfono en modo avión: el navegador usa `navigator.onLine`.
+  - **Límite conocido:** si el servidor aceptó la marca pero la respuesta nunca llegó, el
+    reintento responde `xp_earned: 0` y sin logros. El XP queda bien; ese toast no sale.
+  - **Falta para cerrar la 2.1.6:** la prueba del criterio de terminado en el teléfono (Johan).

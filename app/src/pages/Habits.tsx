@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { IconPlus, IconArchive, IconFlame, IconEdit, IconX, IconTag, IconTrash, IconCalendar } from "@tabler/icons-react";
-import { useHabitActions, useHabitDetail, useHabitHeatmap, useHabits } from "../api/habits";
+import { habitActions, useHabitDetail, useHabitHeatmap, useHabits } from "../api/habits";
+import { dismissQueueEntry } from "../api/queryClient";
 import { useCategoryActions, useHabitCategories } from "../api/categories";
 import { useApp } from "../context";
 import { Card } from "../components/ui/Card";
@@ -25,50 +26,38 @@ import type { Habit, HabitCategory, HabitDetail } from "../types";
 const LEYENDA = [0, 33, 66, 100].map((p) => `color-mix(in srgb, var(--gr-arcane) ${p}%, var(--gr-surface-raised))`);
 
 export default function Habits() {
-  const { handleXP, pushToast } = useApp();
+  const { pushToast } = useApp();
   const [catsOpen, setCatsOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
   const [creating, setCreating] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
 
-  const habitsQuery = useHabits(showArchived);
-  const habits = habitsQuery.data ?? [];
+  const { query: habitsQuery, queue, habits, pendingIds } = useHabits(showArchived);
+  const unsynced = queue.filter((e) => e.status === "pending").length;
+  const rejected = queue.filter((e) => e.status === "error");
   const categories = useHabitCategories().data ?? [];
   const heat = useHabitHeatmap().data ?? [];
-  const detail = useHabitDetail(detailId).data;
-  const actions = useHabitActions();
+  // un hábito que aún no llega al servidor daría 404
+  const detail = useHabitDetail(detailId, !pendingIds.has(detailId ?? "")).data;
   const opened = habits.find((h) => h.id === detailId);
 
-  // Hasta que la 2.1.6 sea optimista, un segundo toque antes del refresco daría un 409.
-  const complete = async (h: Habit) => {
-    if (actions.pending) return;
-    try {
-      handleXP(await actions.complete(h.id));
-    } catch { /* el error ya salió como toast */ }
-  };
+  const complete = (h: Habit) => habitActions.complete(h);
 
-  const undo = async (h: Habit) => {
-    if (actions.pending || !h.last_mark) return;
-    try {
-      await actions.undo(h.id, h.last_mark.id);
-    } catch { /* el error ya salió como toast */ }
+  const undo = (h: Habit) => {
+    if (h.last_mark) habitActions.undo(h, h.last_mark.id);
   };
 
   // archivar es un borrado suave: el historial sigue ahí y debe poder recuperarse
-  const restore = async (h: Habit) => {
-    try {
-      await actions.restore(h.id);
-      pushToast({ title: "Hábito restaurado", body: h.name, icon: "arrow-back-up" });
-    } catch { /* el error ya salió como toast */ }
+  const restore = (h: Habit) => {
+    habitActions.restore(h);
+    pushToast({ title: "Hábito restaurado", body: h.name, icon: "arrow-back-up" });
   };
 
   const archive = async (h: Habit) => {
     if (!(await confirm({ message: `¿Archivar «${h.name}»? Conserva su historial pero deja de aparecer.`, confirmLabel: "Archivar", danger: true }))) return;
-    try {
-      await actions.archive(h.id);
-      setDetailId(null);
-    } catch { /* el error ya salió como toast */ }
+    habitActions.archive(h);
+    setDetailId(null);
   };
 
   // catalog order first, then any category still used by habits but not in the
@@ -105,7 +94,8 @@ export default function Habits() {
           `${activos.length} activos · ${activos.filter((h) => h.done_today).length} cumplidos hoy` +
           // sin racha viva la cláusula era «racha más larga 0 días», que ocupa
           // sitio para no decir nada
-          (record && bestStreak > 0 ? ` · racha más larga ${bestStreak} ${streakUnit(record, bestStreak)}` : "")
+          (record && bestStreak > 0 ? ` · racha más larga ${bestStreak} ${streakUnit(record, bestStreak)}` : "") +
+          (unsynced > 0 ? ` · ${unsynced} sin sincronizar` : "")
         }
       >
         <button
@@ -153,7 +143,18 @@ export default function Habits() {
       </Card>
 
       <div className="min-w-0 space-y-1 lg:col-span-2">
-        {habitsQuery.isPending && (
+        {/* Un rechazo no se pierde con el toast: queda aquí hasta que se lea. */}
+        {rejected.map((e) => (
+          <Card key={e.id}>
+            <p className="gr-sangrado text-sm text-[var(--text-body)]">No se sincronizó: {e.request.label}</p>
+            <p className="gr-sangrado mt-1 text-xs text-[var(--gr-oxblood)]">{e.message}</p>
+            <button className="btn mt-2" onClick={() => dismissQueueEntry(e.id)}>Descartar</button>
+          </Card>
+        ))}
+        {habitsQuery.isPending && habitsQuery.fetchStatus === "paused" && (
+          <Card><p className="gr-sangrado text-xs text-[var(--text-muted)]">Sin conexión. Los hábitos se cargan cuando vuelva la señal.</p></Card>
+        )}
+        {habitsQuery.isPending && habitsQuery.fetchStatus !== "paused" && (
           <div className="space-y-2 pt-2.5">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
           </div>
@@ -181,7 +182,7 @@ export default function Habits() {
             >
               <div className="space-y-2">
                 {g.items.map((h) => (
-                  <HabitCardGothic key={h.id} habit={h} onComplete={complete} onUndo={undo} onOpen={(x) => setDetailId(x.id)} onRestore={restore} />
+                  <HabitCardGothic key={h.id} habit={h} pending={pendingIds.has(h.id)} onComplete={complete} onUndo={undo} onOpen={(x) => setDetailId(x.id)} onRestore={restore} />
                 ))}
               </div>
             </SectionBand>
@@ -425,23 +426,18 @@ function HabitForm({ habit, categories, onClose }: {
   );
   const [notes, setNotes] = useState(habit?.notes ?? "");
   const [tags, setTags] = useState<string>(habit?.tags ?? "");
-  const actions = useHabitActions();
 
-  const save = async () => {
-    if (!name.trim() || actions.pending) return;
+  const save = () => {
+    if (!name.trim()) return;
     const payload = {
       name, category, frequency,
       days: frequency === "daily" && days.length && days.length < 7 ? days.join(",") : null,
       target_per_week: frequency === "weekly" ? targetPerWeek : 1,
       xp_reward: xp, color, notes: notes.trim() || null, tags: tags || null,
     };
-    try {
-      if (habit) await actions.update(habit.id, payload);
-      else await actions.create(payload);
-      onClose();
-    } catch {
-      // el error ya salió como toast; el modal conserva lo escrito
-    }
+    if (habit) habitActions.update(habit, payload);
+    else habitActions.create(payload);
+    onClose();
   };
 
   return (
@@ -512,9 +508,7 @@ function HabitForm({ habit, categories, onClose }: {
       <Field label="Etiquetas"><TagInput value={tags} onChange={setTags} /></Field>
       <div className="mt-2 flex justify-end gap-2">
         <button className="btn" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" onClick={save} disabled={actions.pending}>
-          {actions.pending ? "Guardando…" : "Guardar"}
-        </button>
+        <button className="btn btn-primary" onClick={save}>Guardar</button>
       </div>
     </Modal>
   );

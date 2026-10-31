@@ -1,11 +1,11 @@
 import {
   createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode,
 } from "react";
-import { onApiError } from "./api/queryClient";
-import { eventToast, unseenEvents, useUser } from "./api/user";
+import { onApiError, onSyncResults } from "./api/queryClient";
+import { eventToast, summarizeResults, unseenEvents, useUser } from "./api/user";
 import { playLevelUp } from "./sounds";
 import { burstFromLastPress } from "./burst";
-import type { CompleteOut, LevelUp, Toast, User } from "./types";
+import type { LevelUp, Toast, User } from "./types";
 
 interface AppState {
   user: User | null;
@@ -14,8 +14,6 @@ interface AppState {
   dismissToast: (id: number) => void;
   levelUp: LevelUp | null;
   dismissLevelUp: () => void;
-  /** Lo que sigue a marcar: oro si pagó, nivel y un toast por cada logro. */
-  handleXP: (res: CompleteOut) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -68,24 +66,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const dismissLevelUp = useCallback(() => setLevelUp(null), []);
 
-  const handleXP = useCallback(
-    (res: CompleteOut) => {
-      // Oro sólo si pagó: deshacer devuelve XP negativo y no puede soltar motas.
-      if (res.xp_earned > 0) burstFromLastPress();
-      if (res.leveled_up) {
-        setLevelUp({ level: res.new_level, title: res.title });
-        playLevelUp();
-        setTimeout(() => setLevelUp(null), 4200);
-      }
-      for (const a of res.achievements_unlocked) {
-        pushToast({ title: "Logro desbloqueado", body: a.name, icon: a.icon });
-      }
-    },
-    [pushToast]
-  );
+  // Lo que sigue a marcar, llegue cuando llegue (ADR 0008). Oro sólo si pagó y si la respuesta
+  // sigue pegada al toque: horas después, las motas saldrían de cualquier botón.
+  useEffect(() => onSyncResults((results) => {
+    const { burst, level, achievements, syncedMarks, syncedXp } = summarizeResults(results);
+    if (burst) burstFromLastPress();
+    if (level) {
+      setLevelUp({ level: level.new_level, title: level.title });
+      playLevelUp();
+      setTimeout(() => setLevelUp(null), 4200);
+    }
+    if (syncedMarks > 0 && syncedXp > 0) {
+      pushToast({ title: "Sincronizado", body: `${syncedMarks} ${syncedMarks === 1 ? "marca" : "marcas"} · +${syncedXp} XP`, icon: "checks" });
+    }
+    for (const a of achievements) {
+      pushToast({ title: "Logro desbloqueado", body: a.name, icon: a.icon });
+    }
+  }), [pushToast]);
 
   return (
-    <Ctx.Provider value={{ user, toasts, pushToast, dismissToast, levelUp, dismissLevelUp, handleXP }}>
+    <Ctx.Provider value={{ user, toasts, pushToast, dismissToast, levelUp, dismissLevelUp }}>
       {children}
     </Ctx.Provider>
   );

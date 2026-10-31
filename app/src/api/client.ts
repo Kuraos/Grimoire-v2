@@ -68,6 +68,8 @@ export type ApiRequest = {
   method: 'POST' | 'PATCH' | 'DELETE'
   path: string
   body?: unknown
+  /** Lo que se le muestra a Johan si el servidor la rechaza al sincronizar. */
+  label?: string
 }
 
 export const send = <T>(r: ApiRequest) => call<T>(r.method, r.path, r.body)

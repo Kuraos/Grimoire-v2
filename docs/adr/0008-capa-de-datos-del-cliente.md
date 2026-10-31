@@ -17,23 +17,40 @@ tiene que sobrevivir a cerrar la app, en orden, con repeticiones idempotentes (A
 2. **Una escritura es un dato:** `ApiRequest = { method, path, body }`, JSON puro, con los
    ids del cliente (y el `local_date` de una marca) ya adentro. Se construye una sola vez
    al actuar, en funciones puras (`habitRequests`). Reintentar manda lo mismo.
-3. **Una sola mutación**, clave `['api']`, con `setMutationDefaults`: la función, el
+3. **Una sola mutación** (salvo categorías), clave `['api']`, con `setMutationDefaults`: la función, el
    `scope` que las ejecuta en orden y la invalidación viven en el cliente de queries, no
    en los hooks. Una mutación restaurada de disco no tiene hook que le diga qué hacer.
-4. **Efectos de pantalla** (toasts, XP, nivel) en quien llama, con la promesa de
-   `mutateAsync`. Los errores se informan en un solo punto (`onApiError`).
-5. Un **401** borra el token y vuelve a pedirlo. Un fallo de red no toca el token.
+4. **Efectos de pantalla** (toasts, XP, nivel) en `AppProvider`, y los errores en un solo
+   punto (`onApiError`).
+5. Un **401** borra el token y vuelve a pedirlo, sin tocar la cola. Un fallo de red no toca
+   el token.
 
-## Qué le queda a la 2.1.6
+## Cola sin conexión (2.1.6)
 
-Persistir la caché de mutaciones, reanudarlas (`resumePausedMutations`), la actualización
-optimista y marcar lo pendiente. Nada de eso cambia `ApiRequest` ni las llamadas de las
-vistas. Una mutación restaurada pierde su promesa, así que el resultado de una marca
-sincronizada tarde (XP, logros) lo tendrá que atender el `onSuccess` de los defaults.
+Lo que la 2.1.6 cambió respecto a la decisión de arriba:
+
+- **Las vistas no esperan.** `enqueue` no devuelve promesa: la de una mutación pausada no
+  termina, y la restaurada no tiene. El resultado llega por `onSyncResults`, en un lote por
+  vaciado, y los errores por `onApiError`. Se atiende en el `onSuccess` de `MutationCache`
+  y no en el de los defaults, porque es el único que recibe la mutación (y su edad).
+- **Conexión:** `onlineManager` es `red && token`; la red viene de `@capacitor/network`, no
+  de `navigator.onLine`. Un 401 lo apaga y la cola se pausa; un token válido la reanuda.
+- **Reintentos:** sin respuesta, 5xx, 408 y 429 reintentan sin límite, con espera de hasta
+  60 s. Un 5xx permanente bloquea la cola a propósito (perder datos es peor), con un aviso.
+  Otro 4xx es definitivo: se muestra y la cola sigue.
+- **Persistencia propia** con `@capacitor/preferences`, sin `query-persist-client`: su
+  `maxAge` por defecto borraría una cola de más de 24 h y su throttle puede perder lo último.
+  Se guarda todo lo `pending` (también lo que iba en vuelo: repetirlo es idempotente) y lo
+  rechazado. Las lecturas de la lista también, para poder abrir sin señal: nombres de hábitos
+  en claro en el dispositivo. El token sigue en el Keystore.
+- **La vista optimista es derivada** (`applyQueue`), no un cambio en la caché: sobrevive a
+  refetches y reinicios y no hay nada que revertir. Racha, constancia y XP no se predicen.
+- **Categorías fuera de la cola:** repetir su `DELETE` da 404, así que no cumplen el contrato.
+- La cola solo se vacía con la app abierta: no hay sincronización en segundo plano.
 
 ## Consecuencias
 
-- Toda escritura invalida las queries en pantalla: 3–4 lecturas por marca. Cabe en los
-  100 000 requests diarios; si pesara, se afina por ruta.
+- Vaciar la cola invalida las queries en pantalla una sola vez, al final: 3–4 lecturas
+  por vaciado. Cabe en los 100 000 requests diarios; si pesara, se afina por ruta.
 - Una dependencia nueva, a cambio de no escribir a mano caché, reintentos, pausa sin
   conexión y el estado de las mutaciones.

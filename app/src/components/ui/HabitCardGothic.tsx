@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconFlame, IconAlertTriangle, IconArchiveOff } from "@tabler/icons-react";
+import { IconFlame, IconAlertTriangle, IconArchiveOff, IconClock } from "@tabler/icons-react";
 import type { Habit } from "../../types";
 import { cadenceLabel, scheduledToday, streakUnit } from "../../utils";
 
@@ -12,8 +12,10 @@ import { cadenceLabel, scheduledToday, streakUnit } from "../../utils";
  *   dorado (cálido)-> recompensa: racha, XP  (manuscrito iluminado)
  *   ámbar          -> advertencia: racha en riesgo
  */
-export function HabitCardGothic({ habit, onComplete, onUndo, onOpen, onRestore }: {
+export function HabitCardGothic({ habit, pending, onComplete, onUndo, onOpen, onRestore }: {
   habit: Habit;
+  /** Hay cambios que aún no llegan al servidor. */
+  pending?: boolean;
   onComplete?: (h: Habit) => void;
   onUndo?: (h: Habit) => void;
   onOpen?: (h: Habit) => void;
@@ -121,6 +123,12 @@ export function HabitCardGothic({ habit, onComplete, onUndo, onOpen, onRestore }
               >
                 {atRisk ? <IconAlertTriangle size={13} /> : <IconFlame size={13} />}
                 {habit.streak} {streakUnit(habit, habit.streak)}
+              </span>
+            )}
+
+            {pending && (
+              <span className="gr-meta inline-flex items-center gap-1" style={{ color: "var(--gr-ink-dim)" }}>
+                <IconClock size={13} /> pendiente
               </span>
             )}
           </div>
