@@ -44,7 +44,7 @@ una tarea revela que una decisión no se sostiene, se para y se anota, en vez de
 | `DELETE /habits/{id}/complete` (la última del periodo) | `DELETE /habits/{id}/marks/{mark_id}` | Por id, para que reintentar sea idempotente (cola sin conexión). La UI deshace `last_mark`, que en la práctica es lo mismo que la v1. |
 | `POST /user/evaluate-streaks` (al abrir) | `GET /user` asienta perezosamente | ADR 0005: asienta lo que toque, calcula lo provisional y devuelve los eventos. Nada de cron. |
 | `GET/POST/DELETE /habit-categories` | igual | Catálogo con las 6 categorías por defecto de la v1. |
-| `GET /stats` (solo `heatmap` para Hábitos) | `GET /habits/heatmap` | Marcas por `local_date` de los últimos 371 días (53 semanas; dif. 9). El resto de estadísticas es de la fase 5+. |
+| `GET /stats` (solo `heatmap` para Hábitos) | `GET /habits/heatmap` | Marcas de hábitos activos por `local_date` de los últimos 371 días (53 semanas; dif. 9 y 10). El resto de estadísticas es de la fase 5+. |
 
 Fuera de alcance: vista de Logros, estadísticas, misiones, etiquetas como módulo (las
 `tags` del hábito siguen siendo un texto y se filtran en el cliente), Dashboard.
@@ -341,7 +341,7 @@ docs, decisiones tomadas sobre la marcha.)
     | Request | Filas leídas | Nota |
     |---|---|---|
     | `GET /habits` | 19 882 + 2 894 de ampliación | Antes: ~900 + 2 897. |
-    | `GET /habits/heatmap` | ~12 580 | Escanea todas las marcas: no hay índice por `local_date` solo. |
+    | `GET /habits/heatmap` | ~12 580 (6 466 tras usar el índice, abajo) | Escaneaba todas las marcas: no hay índice por `local_date` solo. |
     | `GET /habits/{id}` del hábito más largo | 1 080 | Una fila por marca, como prevé el plan. |
 
     - **`completion_rate` en la lista rompe la cota del ADR 0007:** ese agregado recorre todo
@@ -351,8 +351,20 @@ docs, decisiones tomadas sobre la marcha.)
       bajó a la mitad. Con las 70 marcas reales son unos cientos de filas (estimado, no
       medido). Si llegara a pesar, el plan ya prevé pasarlo al detalle. Johan decidió
       dejarlo en la lista; el disparador para revisarlo está en `docs/ROADMAP.md`.
-    - **El heatmap pasó de 365 a 371 días** (dif. 9). No baja sus filas leídas: sin índice
-      por `local_date`, la consulta sigue escaneando todas las marcas.
+    - **El heatmap pasó de 365 a 371 días** (dif. 9) y ahora filtra por hábitos activos
+      (dif. 10), lo que le deja usar el índice `habit_logs_habit_day` sin índice nuevo.
+      `EXPLAIN QUERY PLAN` en D1 local:
+      ```
+      SEARCH habit_logs USING COVERING INDEX habit_logs_habit_day (habit_id=? AND local_date>?)
+      LIST SUBQUERY 1
+      SCAN habits
+      USE TEMP B-TREE FOR GROUP BY
+      ```
+      `SCAN habits` es la subconsulta (23 filas); `habit_logs` ya no se escanea. Filas
+      leídas del seed local por `wrangler dev` (`rows_read`, 3 de 3 iguales): **6 466**,
+      frente a ~12 580 con el escaneo. Es casi el doble de las 3 202 marcas que devuelve:
+      6 404 + 62 sin explicar del todo (hipótesis: D1 cuenta también el `TEMP B-TREE` del
+      `GROUP BY`; no verificado). La ruta responde 371 días, desde el 2025-10-25.
   - `last_mark` sale de la ventana de 90 días: una marca más vieja da `null`, y de todos
     modos ya no se puede deshacer.
   - `completion_rate` comparado en los 7 goldens: `format!("{:.1}")` redondea como
