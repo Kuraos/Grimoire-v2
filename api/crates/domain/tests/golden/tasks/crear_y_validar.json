@@ -1,0 +1,773 @@
+{
+  "escenario": "crear_y_validar",
+  "descripcion": "Crear con valores por defecto y con todos los campos; rechazos de validación; filtros y orden de la lista; etiquetas como texto; editar con null; borrar. El filtro `tag` es una subcadena sin distinguir mayúsculas: `a` también trae `casa`.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Minima"
+      },
+      "alias": "minima",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "title": "Minima",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /projects",
+      "cuerpo": {
+        "name": "Tesis"
+      },
+      "alias": "tesis",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Tesis",
+          "description": null,
+          "status": "active",
+          "color": "#9b7fc4",
+          "category": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "tasks_total": 0,
+          "tasks_pending": 0,
+          "pomodoro_hours": 0.0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Completa",
+        "description": "Detalle",
+        "category": "Académico",
+        "priority": "high",
+        "project_id": "{tesis}",
+        "due_date": "2026-03-10",
+        "xp_reward": 50,
+        "status": "doing",
+        "remind_at": "2026-03-09T08:30:00",
+        "tags": "casa, Urgente",
+        "vault_note_path": "Notas/t.md"
+      },
+      "alias": "completa",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "title": "Completa",
+          "description": "Detalle",
+          "category": "Académico",
+          "priority": "high",
+          "project_id": 1,
+          "due_date": "2026-03-10",
+          "xp_reward": 50,
+          "completed": false,
+          "completed_at": null,
+          "status": "doing",
+          "position": 0,
+          "remind_at": "2026-03-09T08:30:00",
+          "tags": "casa, Urgente",
+          "vault_note_path": "Notas/t.md",
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Baja",
+        "priority": "low",
+        "due_date": "2026-03-05",
+        "xp_reward": 5,
+        "tags": "a"
+      },
+      "alias": "baja",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 3,
+          "title": "Baja",
+          "description": null,
+          "category": null,
+          "priority": "low",
+          "project_id": null,
+          "due_date": "2026-03-05",
+          "xp_reward": 5,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": "a",
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": ""
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "string_too_short",
+              "loc": [
+                "body",
+                "title"
+              ],
+              "msg": "String should have at least 1 character",
+              "input": "",
+              "ctx": {
+                "min_length": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "X",
+        "priority": "urgente"
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "literal_error",
+              "loc": [
+                "body",
+                "priority"
+              ],
+              "msg": "Input should be 'high', 'medium' or 'low'",
+              "input": "urgente",
+              "ctx": {
+                "expected": "'high', 'medium' or 'low'"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "X",
+        "status": "inventado"
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "literal_error",
+              "loc": [
+                "body",
+                "status"
+              ],
+              "msg": "Input should be 'todo', 'doing' or 'done'",
+              "input": "inventado",
+              "ctx": {
+                "expected": "'todo', 'doing' or 'done'"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "X",
+        "xp_reward": 4
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "greater_than_equal",
+              "loc": [
+                "body",
+                "xp_reward"
+              ],
+              "msg": "Input should be greater than or equal to 5",
+              "input": 4,
+              "ctx": {
+                "ge": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "X",
+        "xp_reward": 51
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "less_than_equal",
+              "loc": [
+                "body",
+                "xp_reward"
+              ],
+              "msg": "Input should be less than or equal to 50",
+              "input": 51,
+              "ctx": {
+                "le": 50
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Sin proyecto real",
+        "project_id": 999
+      },
+      "alias": "huerfana",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 4,
+          "title": "Sin proyecto real",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": 999,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 2,
+            "title": "Completa",
+            "description": "Detalle",
+            "category": "Académico",
+            "priority": "high",
+            "project_id": 1,
+            "due_date": "2026-03-10",
+            "xp_reward": 50,
+            "completed": false,
+            "completed_at": null,
+            "status": "doing",
+            "position": 0,
+            "remind_at": "2026-03-09T08:30:00",
+            "tags": "casa, Urgente",
+            "vault_note_path": "Notas/t.md",
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 1,
+            "title": "Minima",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 4,
+            "title": "Sin proyecto real",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": 999,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 3,
+            "title": "Baja",
+            "description": null,
+            "category": null,
+            "priority": "low",
+            "project_id": null,
+            "due_date": "2026-03-05",
+            "xp_reward": 5,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": "a",
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks?sort=due_date",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 3,
+            "title": "Baja",
+            "description": null,
+            "category": null,
+            "priority": "low",
+            "project_id": null,
+            "due_date": "2026-03-05",
+            "xp_reward": 5,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": "a",
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 2,
+            "title": "Completa",
+            "description": "Detalle",
+            "category": "Académico",
+            "priority": "high",
+            "project_id": 1,
+            "due_date": "2026-03-10",
+            "xp_reward": 50,
+            "completed": false,
+            "completed_at": null,
+            "status": "doing",
+            "position": 0,
+            "remind_at": "2026-03-09T08:30:00",
+            "tags": "casa, Urgente",
+            "vault_note_path": "Notas/t.md",
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 1,
+            "title": "Minima",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 4,
+            "title": "Sin proyecto real",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": 999,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks?completed=false&priority=high",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 2,
+            "title": "Completa",
+            "description": "Detalle",
+            "category": "Académico",
+            "priority": "high",
+            "project_id": 1,
+            "due_date": "2026-03-10",
+            "xp_reward": 50,
+            "completed": false,
+            "completed_at": null,
+            "status": "doing",
+            "position": 0,
+            "remind_at": "2026-03-09T08:30:00",
+            "tags": "casa, Urgente",
+            "vault_note_path": "Notas/t.md",
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks?project_id={tesis}",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 2,
+            "title": "Completa",
+            "description": "Detalle",
+            "category": "Académico",
+            "priority": "high",
+            "project_id": 1,
+            "due_date": "2026-03-10",
+            "xp_reward": 50,
+            "completed": false,
+            "completed_at": null,
+            "status": "doing",
+            "position": 0,
+            "remind_at": "2026-03-09T08:30:00",
+            "tags": "casa, Urgente",
+            "vault_note_path": "Notas/t.md",
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks?category=Académico",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 2,
+            "title": "Completa",
+            "description": "Detalle",
+            "category": "Académico",
+            "priority": "high",
+            "project_id": 1,
+            "due_date": "2026-03-10",
+            "xp_reward": 50,
+            "completed": false,
+            "completed_at": null,
+            "status": "doing",
+            "position": 0,
+            "remind_at": "2026-03-09T08:30:00",
+            "tags": "casa, Urgente",
+            "vault_note_path": "Notas/t.md",
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks?tag=a",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 2,
+            "title": "Completa",
+            "description": "Detalle",
+            "category": "Académico",
+            "priority": "high",
+            "project_id": 1,
+            "due_date": "2026-03-10",
+            "xp_reward": 50,
+            "completed": false,
+            "completed_at": null,
+            "status": "doing",
+            "position": 0,
+            "remind_at": "2026-03-09T08:30:00",
+            "tags": "casa, Urgente",
+            "vault_note_path": "Notas/t.md",
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 3,
+            "title": "Baja",
+            "description": null,
+            "category": null,
+            "priority": "low",
+            "project_id": null,
+            "due_date": "2026-03-05",
+            "xp_reward": 5,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": "a",
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks?tag=URGENTE",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 2,
+            "title": "Completa",
+            "description": "Detalle",
+            "category": "Académico",
+            "priority": "high",
+            "project_id": 1,
+            "due_date": "2026-03-10",
+            "xp_reward": 50,
+            "completed": false,
+            "completed_at": null,
+            "status": "doing",
+            "position": 0,
+            "remind_at": "2026-03-09T08:30:00",
+            "tags": "casa, Urgente",
+            "vault_note_path": "Notas/t.md",
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tags",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "a",
+          "casa",
+          "Urgente"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/{completa}",
+      "cuerpo": {
+        "tags": null,
+        "remind_at": null,
+        "due_date": null,
+        "vault_note_path": null,
+        "project_id": null
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 2,
+          "title": "Completa",
+          "description": "Detalle",
+          "category": "Académico",
+          "priority": "high",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 50,
+          "completed": false,
+          "completed_at": null,
+          "status": "doing",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/999",
+      "cuerpo": {
+        "title": "Nada"
+      },
+      "esperado": {
+        "status": 404,
+        "cuerpo": {
+          "detail": "Tarea no encontrada"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/{baja}",
+      "cuerpo": {
+        "title": ""
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "string_too_short",
+              "loc": [
+                "body",
+                "title"
+              ],
+              "msg": "String should have at least 1 character",
+              "input": "",
+              "ctx": {
+                "min_length": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "DELETE /tasks/{baja}",
+      "esperado": {
+        "status": 204,
+        "cuerpo": null
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "DELETE /tasks/{baja}",
+      "esperado": {
+        "status": 404,
+        "cuerpo": {
+          "detail": "Tarea no encontrada"
+        }
+      }
+    }
+  ]
+}

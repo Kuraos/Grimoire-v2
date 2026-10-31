@@ -1,0 +1,591 @@
+{
+  "escenario": "checklist",
+  "descripcion": "Posiciones max + 1 (con huecos al borrar), texto vacío aceptado, listas ordenadas por `position`, conteos en la tarea, 404, y que marcarla toda no completa la tarea ni tenerla pendiente impide completarla. Borrar la tarea borra sus ítems.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "T"
+      },
+      "alias": "t",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "title": "T",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Otra"
+      },
+      "alias": "otra",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "title": "Otra",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{t}/checklist",
+      "cuerpo": {
+        "text": "Uno"
+      },
+      "alias": "i1",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "task_id": 1,
+          "text": "Uno",
+          "done": false,
+          "position": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{t}/checklist",
+      "cuerpo": {
+        "text": "Dos"
+      },
+      "alias": "i2",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "task_id": 1,
+          "text": "Dos",
+          "done": false,
+          "position": 1
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{t}/checklist",
+      "cuerpo": {
+        "text": "Tres"
+      },
+      "alias": "i3",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 3,
+          "task_id": 1,
+          "text": "Tres",
+          "done": false,
+          "position": 2
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{t}/checklist",
+      "cuerpo": {
+        "text": ""
+      },
+      "alias": "vacio",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 4,
+          "task_id": 1,
+          "text": "",
+          "done": false,
+          "position": 3
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/999/checklist",
+      "cuerpo": {
+        "text": "Nada"
+      },
+      "esperado": {
+        "status": 404,
+        "cuerpo": {
+          "detail": "Tarea no encontrada"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks/999/checklist",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/checklist/{i1}",
+      "cuerpo": {
+        "done": true
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "task_id": 1,
+          "text": "Uno",
+          "done": true,
+          "position": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/checklist/{i2}",
+      "cuerpo": {
+        "text": "Dos bis"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 2,
+          "task_id": 1,
+          "text": "Dos bis",
+          "done": false,
+          "position": 1
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/checklist/{i3}",
+      "cuerpo": {
+        "position": -1
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 3,
+          "task_id": 1,
+          "text": "Tres",
+          "done": false,
+          "position": -1
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/checklist/999",
+      "cuerpo": {
+        "done": true
+      },
+      "esperado": {
+        "status": 404,
+        "cuerpo": {
+          "detail": "Ítem no encontrado"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks/{t}/checklist",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 3,
+            "task_id": 1,
+            "text": "Tres",
+            "done": false,
+            "position": -1
+          },
+          {
+            "id": 1,
+            "task_id": 1,
+            "text": "Uno",
+            "done": true,
+            "position": 0
+          },
+          {
+            "id": 2,
+            "task_id": 1,
+            "text": "Dos bis",
+            "done": false,
+            "position": 1
+          },
+          {
+            "id": 4,
+            "task_id": 1,
+            "text": "",
+            "done": false,
+            "position": 3
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "DELETE /tasks/checklist/{i2}",
+      "esperado": {
+        "status": 204,
+        "cuerpo": null
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "DELETE /tasks/checklist/{i2}",
+      "esperado": {
+        "status": 404,
+        "cuerpo": {
+          "detail": "Ítem no encontrado"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{t}/checklist",
+      "cuerpo": {
+        "text": "Cuatro"
+      },
+      "alias": "i4",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 5,
+          "task_id": 1,
+          "text": "Cuatro",
+          "done": false,
+          "position": 4
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks/{t}/checklist",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 3,
+            "task_id": 1,
+            "text": "Tres",
+            "done": false,
+            "position": -1
+          },
+          {
+            "id": 1,
+            "task_id": 1,
+            "text": "Uno",
+            "done": true,
+            "position": 0
+          },
+          {
+            "id": 4,
+            "task_id": 1,
+            "text": "",
+            "done": false,
+            "position": 3
+          },
+          {
+            "id": 5,
+            "task_id": 1,
+            "text": "Cuatro",
+            "done": false,
+            "position": 4
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "title": "T",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [
+              {
+                "id": 3,
+                "task_id": 1,
+                "text": "Tres",
+                "done": false,
+                "position": -1
+              },
+              {
+                "id": 1,
+                "task_id": 1,
+                "text": "Uno",
+                "done": true,
+                "position": 0
+              },
+              {
+                "id": 4,
+                "task_id": 1,
+                "text": "",
+                "done": false,
+                "position": 3
+              },
+              {
+                "id": 5,
+                "task_id": 1,
+                "text": "Cuatro",
+                "done": false,
+                "position": 4
+              }
+            ],
+            "checklist_done": 1,
+            "checklist_total": 4
+          },
+          {
+            "id": 2,
+            "title": "Otra",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{t}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{otra}/checklist",
+      "cuerpo": {
+        "text": "Única"
+      },
+      "alias": "o1",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 6,
+          "task_id": 2,
+          "text": "Única",
+          "done": false,
+          "position": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/checklist/{o1}",
+      "cuerpo": {
+        "done": true
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 6,
+          "task_id": 2,
+          "text": "Única",
+          "done": true,
+          "position": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "title": "T",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": true,
+            "completed_at": "2026-03-02T12:00:00",
+            "status": "done",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [
+              {
+                "id": 3,
+                "task_id": 1,
+                "text": "Tres",
+                "done": false,
+                "position": -1
+              },
+              {
+                "id": 1,
+                "task_id": 1,
+                "text": "Uno",
+                "done": true,
+                "position": 0
+              },
+              {
+                "id": 4,
+                "task_id": 1,
+                "text": "",
+                "done": false,
+                "position": 3
+              },
+              {
+                "id": 5,
+                "task_id": 1,
+                "text": "Cuatro",
+                "done": false,
+                "position": 4
+              }
+            ],
+            "checklist_done": 1,
+            "checklist_total": 4
+          },
+          {
+            "id": 2,
+            "title": "Otra",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [
+              {
+                "id": 6,
+                "task_id": 2,
+                "text": "Única",
+                "done": true,
+                "position": 0
+              }
+            ],
+            "checklist_done": 1,
+            "checklist_total": 1
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "DELETE /tasks/{t}",
+      "esperado": {
+        "status": 204,
+        "cuerpo": null
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/checklist/{i1}",
+      "cuerpo": {
+        "done": false
+      },
+      "esperado": {
+        "status": 404,
+        "cuerpo": {
+          "detail": "Ítem no encontrado"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks/{t}/checklist",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    }
+  ]
+}

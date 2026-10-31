@@ -1,0 +1,525 @@
+{
+  "escenario": "descompletar_piso",
+  "descripcion": "Descompletar devuelve lo concedido y deja `todo`, aunque viniera de `doing`. La v1 suma TODAS las concesiones históricas de la tarea: el segundo ciclo devuelve 30 de 15 concedidos. Sola, esa resta toca el piso en 0. Editar `xp_reward` después de completar no cambia lo que se devuelve.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Nunca"
+      },
+      "alias": "nunca",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "title": "Nunca",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{nunca}/uncomplete",
+      "esperado": {
+        "status": 400,
+        "cuerpo": {
+          "detail": "La tarea no está completada"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/999/uncomplete",
+      "esperado": {
+        "status": 404,
+        "cuerpo": {
+          "detail": "Tarea no encontrada"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Piso",
+        "status": "doing"
+      },
+      "alias": "piso",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "title": "Piso",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "doing",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{piso}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{piso}/uncomplete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": -15,
+          "new_xp": 0,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /tasks",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "title": "Nunca",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 2,
+            "title": "Piso",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{piso}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{piso}/uncomplete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": -15,
+          "new_xp": 0,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 0,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 0,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Base",
+        "xp_reward": 50
+      },
+      "alias": "base",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 3,
+          "title": "Base",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 50,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{base}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 50,
+          "new_xp": 50,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Ciclo"
+      },
+      "alias": "ciclo",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 4,
+          "title": "Ciclo",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{ciclo}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 65,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{ciclo}/uncomplete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": -15,
+          "new_xp": 50,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{ciclo}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 65,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{ciclo}/uncomplete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": -30,
+          "new_xp": 35,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 35,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 35,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Edita"
+      },
+      "alias": "edita",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 5,
+          "title": "Edita",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{edita}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 50,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/{edita}",
+      "cuerpo": {
+        "xp_reward": 50
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 5,
+          "title": "Edita",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 50,
+          "completed": true,
+          "completed_at": "2026-03-02T12:00:00",
+          "status": "done",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{edita}/uncomplete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": -15,
+          "new_xp": 35,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 35,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 35,
+          "xp_span": 400
+        }
+      }
+    }
+  ]
+}

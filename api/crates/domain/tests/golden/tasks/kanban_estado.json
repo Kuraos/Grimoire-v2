@@ -1,0 +1,733 @@
+{
+  "escenario": "kanban_estado",
+  "descripcion": "PATCH de `status` sincroniza `completed` sin tocar XP; por eso la v1 llama a complete/uncomplete antes al cruzar «hecho». Salir por PATCH conserva el XP, y completar otra vez lo concede de nuevo. `completed: true` solo no toca `status`. Crear con `status: done` no completa. `position` se guarda, pero la lista no ordena por ella: el tablero ordena en el cliente.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "A"
+      },
+      "alias": "a",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "title": "A",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "B"
+      },
+      "alias": "b",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "title": "B",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "C"
+      },
+      "alias": "c",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 3,
+          "title": "C",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/{a}",
+      "cuerpo": {
+        "status": "doing"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "title": "A",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "doing",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/{a}",
+      "cuerpo": {
+        "status": "done"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "title": "A",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": true,
+          "completed_at": "2026-03-02T12:00:00",
+          "status": "done",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 0,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 0,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{a}",
+      "cuerpo": {
+        "status": "done"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "title": "A",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": true,
+          "completed_at": "2026-03-02T12:00:00",
+          "status": "done",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{a}",
+      "cuerpo": {
+        "status": "todo"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "title": "A",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /tasks/{b}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{b}",
+      "cuerpo": {
+        "status": "doing"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 2,
+          "title": "B",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "doing",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /tasks/{b}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 30,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 30,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 30,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{c}",
+      "cuerpo": {
+        "completed": true
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 3,
+          "title": "C",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": true,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{c}",
+      "cuerpo": {
+        "completed": false,
+        "status": "done"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 3,
+          "title": "C",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": true,
+          "completed_at": "2026-03-03T12:00:00",
+          "status": "done",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Nace_hecha",
+        "status": "done"
+      },
+      "alias": "nace_hecha",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 4,
+          "title": "Nace_hecha",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "done",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-03T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /tasks/{nace_hecha}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 45,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "D1"
+      },
+      "alias": "d1",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 5,
+          "title": "D1",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-03T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "D2"
+      },
+      "alias": "d2",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 6,
+          "title": "D2",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-03T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "D3"
+      },
+      "alias": "d3",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 7,
+          "title": "D3",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-03T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{d3}",
+      "cuerpo": {
+        "position": 0
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 7,
+          "title": "D3",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-03T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{d1}",
+      "cuerpo": {
+        "position": 1
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 5,
+          "title": "D1",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 1,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-03T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PATCH /tasks/{d2}",
+      "cuerpo": {
+        "position": 2
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 6,
+          "title": "D2",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 2,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-03T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /tasks?completed=false",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "title": "A",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 5,
+            "title": "D1",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 1,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-03T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 6,
+            "title": "D2",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 2,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-03T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          },
+          {
+            "id": 7,
+            "title": "D3",
+            "description": null,
+            "category": null,
+            "priority": "medium",
+            "project_id": null,
+            "due_date": null,
+            "xp_reward": 15,
+            "completed": false,
+            "completed_at": null,
+            "status": "todo",
+            "position": 0,
+            "remind_at": null,
+            "tags": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-03T12:00:00",
+            "checklist": [],
+            "checklist_done": 0,
+            "checklist_total": 0
+          }
+        ]
+      }
+    }
+  ]
+}

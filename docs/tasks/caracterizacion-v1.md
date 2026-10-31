@@ -54,6 +54,20 @@ construye la herramienta; después solo se agregan escenarios.
 6. Deshacer una marca (`DELETE /habits/{id}/complete`): XP devuelto, piso en 0.
 7. Logros que dispara marcar hábitos (`first_blood` y los de racha).
 
+## Escenarios de Tareas
+
+Goldens en `api/crates/domain/tests/golden/tasks/` (8 escenarios, 355 pasos):
+
+1. `crear_y_validar`: valores por defecto, todos los campos, rechazos 422, filtros, orden,
+   etiquetas, editar con `null` y borrar.
+2. `completar_xp`: XP, segundo intento rechazado, subida de nivel, borrar lo completado.
+3. `descompletar_piso`: devolver XP, piso en 0, ciclos repetidos, `xp_reward` editado.
+4. `kanban_estado`: sincronía entre `status` y `completed`, y `position`.
+5. `checklist`: posiciones, conteos, rechazos y borrado en cascada.
+6. `proyectos`: CRUD, contadores, orden y qué pasa con las tareas al borrar.
+7. `logros_tareas`: `project_master`, `ascension` y `task_centurion`.
+8. `logro_por_patch`: terminar por `PATCH` y evaluar logros después.
+
 ## Cómo los usa la v2
 
 - `grimoire-domain` tiene un test que lee cada golden y reproduce la secuencia con las
@@ -123,3 +137,35 @@ porta igual.
     `deshacer`, 03-16, cobra 150 y deja el XP en 0.
   - Ningún escenario cae en una mitad exacta del redondeo (diferencia permitida de
     fase-0, 0.1): los pagos con multiplicador son 22, 110, 120 y 135.
+- **Tareas** (2026-10-31): goldens en `api/crates/domain/tests/golden/tasks/`. Al regenerar, los
+  de Hábitos salieron idénticos. Las diferencias que se proponen están en
+  `docs/tasks/fase-2-tareas.md`; hasta aprobarlas, esta lista solo describe la v1.
+  - **Descompletar devuelve todas las concesiones históricas**
+    (`routers/tasks.py:139-143` suma cada `amount > 0`). `descompletar_piso`: en el segundo
+    ciclo de una tarea de 15 XP se restan 30 y el XP queda en 35, no en 50. Sin XP de otra
+    fuente, el piso lo oculta (`piso`: −15 y queda en 0).
+  - **`PATCH status` cambia `completed` sin tocar XP.** `kanban_estado`: `done` por `PATCH` da
+    0 XP, y salir por `PATCH` conserva el XP, así que completar otra vez lo concede de nuevo
+    (`b`: 30 XP con una sola tarea). La UI de la v1 lo evita llamando antes a
+    `complete`/`uncomplete` (`Tasks.tsx:67-76`), en varias requests no atómicas.
+  - **`status` y `completed` pueden contradecirse:** `PATCH {completed: true}` deja `todo` y
+    `completed_at: null`; crear con `status: done` deja `completed: false`, y esa tarea se puede
+    completar después con XP.
+  - **Mover una tarjeta reescribe toda la columna:** una request con `position` por tarjeta
+    (`Tasks.tsx:76`). La API no ordena por `position`; ordena el tablero, en el cliente.
+  - **`project_id` no se valida:** crear con 999 da 201. Borrar un proyecto sí deja sus tareas
+    con `project_id: null`.
+  - **Repetir un `DELETE` da 404**, en tareas, ítems y proyectos. **`GET` de la checklist de
+    una tarea inexistente da 200 con `[]`.**
+  - **Checklist:** acepta texto vacío; `position` admite negativos; una posición borrada no se
+    reutiliza. Marcarla toda no completa la tarea, ni tenerla pendiente lo impide.
+  - **El filtro `tag` es subcadena sin distinguir mayúsculas:** `tag=a` también trae `casa`.
+  - **Logros:** solo se informa el primero: en `logros_tareas`, la tarea 50 desbloquea
+    `ascension` y `project_master`, y la respuesta trae `ascension`. Descompletar no bloquea
+    nada. `project_master` se evalúa sobre todos los proyectos en cada `task_complete`: en
+    `logro_por_patch` lo dispara una tarea sin proyecto. Las tareas no dan `first_blood`.
+  - **`remind_at` no lo procesa el backend.** Lo atiende `frontend/src/hooks/useReminders.ts`:
+    con la app abierta, consulta cada 60 s y notifica una vez por sesión lo vencido hace menos
+    de 24 h. Con la app cerrada no avisa.
+  - **Sin cubrir:** `pomodoro_hours` del proyecto queda en 0 en todos los escenarios; se
+    caracteriza con Pomodoro.

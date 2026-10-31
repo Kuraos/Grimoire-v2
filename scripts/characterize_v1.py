@@ -6,7 +6,7 @@ Uso, con el intérprete del entorno de la v1:
 Cada escenario corre en su propio subproceso (mismo intérprete, -I) con una base
 temporal nueva vía GRIMOIRE_DB: `database.py` crea el engine al importar, así que
 dos escenarios en el mismo proceso compartirían base. El padre solo recoge el JSON
-que imprime cada hijo y escribe api/crates/domain/tests/golden/habits/<escenario>.json.
+que imprime cada hijo y escribe api/crates/domain/tests/golden/<modulo>/<escenario>.json.
 
 Reloj: se sustituye `tz.datetime` por una subclase con `now()` congelado. Todos los
 `from tz import now as _now` de la v1 son el mismo objeto `tz.now`, que busca
@@ -25,7 +25,8 @@ ZONE = "America/Bogota"
 HOUR = "12:00:00"  # hora de pared en ZONE de todas las llamadas
 # Sin GRIMOIRE_TZ: el reloj congelado ya es la hora de pared en ZONE, y en Windows
 # ZoneInfo("America/Bogota") exige `tzdata`, que el .venv de la v1 no tiene.
-GOLDEN_DIR = Path(__file__).resolve().parent.parent / "api/crates/domain/tests/golden/habits"
+REPO = Path(__file__).resolve().parent.parent
+GOLDEN_ROOT = REPO / "api/crates/domain/tests/golden"
 
 
 # ---------- escenarios ----------
@@ -212,9 +213,225 @@ def logros():
     return s
 
 
-SCENARIOS = {f.__name__: f for f in (
-    diario_simple, diario_lv, racha_rota, dia_perfecto, semanal_2x, deshacer, logros,
-)}
+# ---------- tareas ----------
+# Un id de tarea, proyecto o ítem se guarda con su alias, como los de hábitos.
+
+def task(hoy, alias, **kw):
+    return step(hoy, "POST /tasks", {"title": alias.capitalize(), **kw}, alias)
+
+
+def project(hoy, alias, **kw):
+    return step(hoy, "POST /projects", {"name": alias.capitalize(), **kw}, alias)
+
+
+def crear_y_validar():
+    """Crear con valores por defecto y con todos los campos; rechazos de validación;
+    filtros y orden de la lista; etiquetas como texto; editar con null; borrar. El filtro
+    `tag` es una subcadena sin distinguir mayúsculas: `a` también trae `casa`."""
+    d = "2026-03-02"
+    return [
+        task(d, "minima"),
+        project(d, "tesis"),
+        task(d, "completa", description="Detalle", category="Académico", priority="high",
+             project_id="{tesis}", due_date="2026-03-10", xp_reward=50, status="doing",
+             remind_at="2026-03-09T08:30:00", tags="casa, Urgente", vault_note_path="Notas/t.md"),
+        task(d, "baja", priority="low", due_date="2026-03-05", xp_reward=5, tags="a"),
+        step(d, "POST /tasks", {"title": ""}),
+        step(d, "POST /tasks", {"title": "X", "priority": "urgente"}),
+        step(d, "POST /tasks", {"title": "X", "status": "inventado"}),
+        step(d, "POST /tasks", {"title": "X", "xp_reward": 4}),
+        step(d, "POST /tasks", {"title": "X", "xp_reward": 51}),
+        step(d, "POST /tasks", {"title": "Sin proyecto real", "project_id": 999}, "huerfana"),
+        step(d, "GET /tasks"),
+        step(d, "GET /tasks?sort=due_date"),
+        step(d, "GET /tasks?completed=false&priority=high"),
+        step(d, "GET /tasks?project_id={tesis}"),
+        step(d, "GET /tasks?category=Académico"),
+        step(d, "GET /tasks?tag=a"),
+        step(d, "GET /tasks?tag=URGENTE"),
+        step(d, "GET /tags"),
+        step(d, "PATCH /tasks/{completa}", {"tags": None, "remind_at": None, "due_date": None,
+                                             "vault_note_path": None, "project_id": None}),
+        step(d, "PATCH /tasks/999", {"title": "Nada"}),
+        step(d, "PATCH /tasks/{baja}", {"title": ""}),
+        step(d, "DELETE /tasks/{baja}"),
+        step(d, "DELETE /tasks/{baja}"),
+    ]
+
+
+def completar_xp():
+    """Completar concede `xp_reward` y un segundo intento da 400. Ocho tareas de 50 XP
+    llegan a 400 XP (nivel 2). Borrar una tarea completada no devuelve su XP."""
+    d = "2026-03-02"
+    s = [task(d, "t0"), step(d, "POST /tasks/{t0}/complete"), step(d, "POST /tasks/{t0}/complete"),
+         step(d, "GET /tasks?completed=true"), step(d, "POST /tasks/999/complete"), step(d, "GET /user")]
+    for i in range(1, 9):
+        s += [task(d, f"t{i}", xp_reward=50), step(d, "POST /tasks/{t%d}/complete" % i)]
+    s += [step(d, "GET /user"), step("2026-03-03", "DELETE /tasks/{t1}"), step("2026-03-03", "GET /user")]
+    return s
+
+
+def descompletar_piso():
+    """Descompletar devuelve lo concedido y deja `todo`, aunque viniera de `doing`. La v1
+    suma TODAS las concesiones históricas de la tarea: el segundo ciclo devuelve 30 de 15
+    concedidos. Sola, esa resta toca el piso en 0. Editar `xp_reward` después de completar
+    no cambia lo que se devuelve."""
+    d = "2026-03-02"
+    return [
+        task(d, "nunca"), step(d, "POST /tasks/{nunca}/uncomplete"), step(d, "POST /tasks/999/uncomplete"),
+        task(d, "piso", status="doing"),
+        step(d, "POST /tasks/{piso}/complete"),
+        step(d, "POST /tasks/{piso}/uncomplete"),
+        step(d, "GET /tasks"),
+        step(d, "POST /tasks/{piso}/complete"),
+        step(d, "POST /tasks/{piso}/uncomplete"),
+        step(d, "GET /user"),
+        task(d, "base", xp_reward=50), step(d, "POST /tasks/{base}/complete"),
+        task(d, "ciclo"),
+        step(d, "POST /tasks/{ciclo}/complete"),
+        step(d, "POST /tasks/{ciclo}/uncomplete"),
+        step(d, "POST /tasks/{ciclo}/complete"),
+        step(d, "POST /tasks/{ciclo}/uncomplete"),
+        step(d, "GET /user"),
+        task(d, "edita"),
+        step(d, "POST /tasks/{edita}/complete"),
+        step(d, "PATCH /tasks/{edita}", {"xp_reward": 50}),
+        step(d, "POST /tasks/{edita}/uncomplete"),
+        step(d, "GET /user"),
+    ]
+
+
+def kanban_estado():
+    """PATCH de `status` sincroniza `completed` sin tocar XP; por eso la v1 llama a
+    complete/uncomplete antes al cruzar «hecho». Salir por PATCH conserva el XP, y
+    completar otra vez lo concede de nuevo. `completed: true` solo no toca `status`.
+    Crear con `status: done` no completa. `position` se guarda, pero la lista no ordena
+    por ella: el tablero ordena en el cliente."""
+    d = "2026-03-02"
+    return [
+        task(d, "a"), task(d, "b"), task(d, "c"),
+        step(d, "PATCH /tasks/{a}", {"status": "doing"}),
+        step(d, "PATCH /tasks/{a}", {"status": "done"}),
+        step(d, "GET /user"),
+        step("2026-03-03", "PATCH /tasks/{a}", {"status": "done"}),
+        step("2026-03-03", "PATCH /tasks/{a}", {"status": "todo"}),
+        step("2026-03-03", "POST /tasks/{b}/complete"),
+        step("2026-03-03", "PATCH /tasks/{b}", {"status": "doing"}),
+        step("2026-03-03", "POST /tasks/{b}/complete"),
+        step("2026-03-03", "GET /user"),
+        step("2026-03-03", "PATCH /tasks/{c}", {"completed": True}),
+        step("2026-03-03", "PATCH /tasks/{c}", {"completed": False, "status": "done"}),
+        task("2026-03-03", "nace_hecha", status="done"),
+        step("2026-03-03", "POST /tasks/{nace_hecha}/complete"),
+        task("2026-03-03", "d1"), task("2026-03-03", "d2"), task("2026-03-03", "d3"),
+        step("2026-03-03", "PATCH /tasks/{d3}", {"position": 0}),
+        step("2026-03-03", "PATCH /tasks/{d1}", {"position": 1}),
+        step("2026-03-03", "PATCH /tasks/{d2}", {"position": 2}),
+        step("2026-03-03", "GET /tasks?completed=false"),
+    ]
+
+
+def checklist():
+    """Posiciones max + 1 (con huecos al borrar), texto vacío aceptado, listas ordenadas
+    por `position`, conteos en la tarea, 404, y que marcarla toda no completa la tarea ni
+    tenerla pendiente impide completarla. Borrar la tarea borra sus ítems."""
+    d = "2026-03-02"
+
+    def item(alias, text, on="t"):
+        return step(d, "POST /tasks/{%s}/checklist" % on, {"text": text}, alias)
+
+    return [
+        task(d, "t"), task(d, "otra"),
+        item("i1", "Uno"), item("i2", "Dos"), item("i3", "Tres"), item("vacio", ""),
+        step(d, "POST /tasks/999/checklist", {"text": "Nada"}),
+        step(d, "GET /tasks/999/checklist"),
+        step(d, "PATCH /tasks/checklist/{i1}", {"done": True}),
+        step(d, "PATCH /tasks/checklist/{i2}", {"text": "Dos bis"}),
+        step(d, "PATCH /tasks/checklist/{i3}", {"position": -1}),
+        step(d, "PATCH /tasks/checklist/999", {"done": True}),
+        step(d, "GET /tasks/{t}/checklist"),
+        step(d, "DELETE /tasks/checklist/{i2}"),
+        step(d, "DELETE /tasks/checklist/{i2}"),
+        item("i4", "Cuatro"),
+        step(d, "GET /tasks/{t}/checklist"),
+        step(d, "GET /tasks"),
+        step(d, "POST /tasks/{t}/complete"),
+        item("o1", "Única", "otra"),
+        step(d, "PATCH /tasks/checklist/{o1}", {"done": True}),
+        step(d, "GET /tasks"),
+        step(d, "DELETE /tasks/{t}"),
+        step(d, "PATCH /tasks/checklist/{i1}", {"done": False}),
+        step(d, "GET /tasks/{t}/checklist"),
+    ]
+
+
+def proyectos():
+    """CRUD, contadores, orden por creación descendente y validación. Borrar un proyecto
+    deja sus tareas sin proyecto. Un proyecto cerrado sigue aceptando tareas."""
+    d = "2026-03-03"
+    return [
+        project("2026-03-02", "viejo"),
+        project(d, "nuevo", description="D", status="paused", color="#7f8fc4",
+                category="Académico", vault_note_path="Proyectos/n.md"),
+        step(d, "POST /projects", {"name": ""}),
+        step(d, "POST /projects", {"name": "X", "status": "inventado"}),
+        task(d, "t1", project_id="{viejo}"),
+        task(d, "t2", project_id="{viejo}"),
+        step(d, "POST /tasks/{t1}/complete"),
+        step(d, "GET /projects"),
+        step(d, "PATCH /projects/{viejo}", {"status": "closed", "vault_note_path": None}),
+        step(d, "PATCH /projects/999", {"name": "Nada"}),
+        task(d, "t3", project_id="{viejo}"),
+        step(d, "PATCH /tasks/{t3}", {"project_id": "{nuevo}"}),
+        step(d, "GET /projects"),
+        step(d, "DELETE /projects/{viejo}"),
+        step(d, "DELETE /projects/{viejo}"),
+        step(d, "GET /tasks"),
+        step(d, "GET /projects"),
+    ]
+
+
+def logros_tareas():
+    """`task_complete`: un proyecto vacío no cuenta. La tarea 50 (2500 XP) cierra un proyecto:
+    desbloquea `ascension` y `project_master`, y la respuesta solo informa el primero.
+    Descompletarla no bloquea ninguno, y completarla de nuevo no vuelve a informarlos. La 100
+    da `task_centurion`. `first_blood` es de hábitos: las tareas no lo desbloquean."""
+    d = "2026-03-02"
+    s = [project(d, "vacio"), project(d, "p1"),
+         task(d, "a1", project_id="{p1}", xp_reward=50), task(d, "a2", project_id="{p1}", xp_reward=50),
+         step(d, "POST /tasks/{a1}/complete"), step(d, "GET /achievements")]
+    for i in range(2, 50):
+        s += [task(d, f"t{i}", xp_reward=50), step(d, "POST /tasks/{t%d}/complete" % i)]
+    s += [step(d, "GET /achievements"), step(d, "POST /tasks/{a2}/complete"),
+          step(d, "GET /achievements"), step(d, "GET /user"),
+          step(d, "POST /tasks/{a2}/uncomplete"), step(d, "GET /achievements"), step(d, "GET /user"),
+          step(d, "POST /tasks/{a2}/complete")]
+    for i in range(51, 100):
+        s += [task(d, f"t{i}", xp_reward=5), step(d, "POST /tasks/{t%d}/complete" % i)]
+    s.append(step(d, "GET /achievements"))
+    s += [task(d, "t100", xp_reward=5), step(d, "POST /tasks/{t100}/complete"), step(d, "GET /achievements")]
+    return s
+
+
+def logro_por_patch():
+    """Terminar por PATCH cuenta para los logros, pero no los evalúa: el proyecto cerrado
+    con `status: done` solo da `project_master` cuando otra tarea cualquiera se completa."""
+    d = "2026-03-02"
+    return [
+        project(d, "p"), task(d, "dentro", project_id="{p}"), task(d, "fuera"),
+        step(d, "PATCH /tasks/{dentro}", {"status": "done"}),
+        step(d, "GET /achievements"),
+        step(d, "POST /tasks/{fuera}/complete"),
+        step(d, "GET /achievements"),
+    ]
+
+
+MODULES = {
+    "habits": (diario_simple, diario_lv, racha_rota, dia_perfecto, semanal_2x, deshacer, logros),
+    "tasks": (crear_y_validar, completar_xp, descompletar_piso, kanban_estado, checklist,
+              proyectos, logros_tareas, logro_por_patch),
+}
+SCENARIOS = {f.__name__: f for fs in MODULES.values() for f in fs}
 
 
 # ---------- hijo: un escenario, una base, un proceso ----------
@@ -277,16 +494,23 @@ def run_child(backend: Path, name: str) -> None:
         con.close()
         assert c.get("/habits", params={"include_archived": "true"}).json() == [], \
             "la base del escenario no arranca vacía de hábitos"
+        assert c.get("/tasks").json() == [] and c.get("/projects").json() == [], \
+            "la base del escenario no arranca vacía de tareas y proyectos"
 
         ids: dict[str, int] = {}
         for s in steps:
             clock = set_clock(s["hoy"])
             method, path = s["llamada"].split(" ", 1)
-            r = c.request(method, path.format(**ids), json=s.get("cuerpo"))
+            cuerpo = s.get("cuerpo")
+            if isinstance(cuerpo, dict):  # "{tesis}" en el cuerpo: el id entero del alias
+                cuerpo = {k: ids[v[1:-1]] if isinstance(v, str) and v[:1] == "{" else v
+                          for k, v in cuerpo.items()}
+            r = c.request(method, path.format(**ids), json=cuerpo)
             body = r.json() if r.content else None
-            if s["llamada"] == "POST /habits":
+            if "alias" in s and r.status_code == 201:
                 # verificación 2: los defaults de SQLAlchemy también ven el reloj congelado
-                assert body["created_at"] == clock, (body["created_at"], clock)
+                if "created_at" in body:
+                    assert body["created_at"] == clock, (body["created_at"], clock)
                 ids[s["alias"]] = body["id"]
             out.append({**s, "esperado": {"status": r.status_code, "cuerpo": _project(s["llamada"], body)}})
 
@@ -300,7 +524,7 @@ def main_parent(backend: Path) -> None:
         ["git", "-C", str(backend), "rev-parse", "--short", "HEAD"],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
-    GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
+    module_of = {f.__name__: m for m, fs in MODULES.items() for f in fs}
     for name, fn in SCENARIOS.items():
         with tempfile.TemporaryDirectory() as tmp:
             env = {k: v for k, v in os.environ.items() if k != "GRIMOIRE_TZ"}
@@ -318,9 +542,10 @@ def main_parent(backend: Path) -> None:
             "entrada": {"v1_commit": commit, "zona": ZONE, "hora_local": HOUR},
             "pasos": pasos,
         }
-        path = GOLDEN_DIR / f"{name}.json"
+        path = GOLDEN_ROOT / module_of[name] / f"{name}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(golden, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-        print(f"{name}: {len(pasos)} pasos -> {path.relative_to(GOLDEN_DIR.parents[5])}")
+        print(f"{name}: {len(pasos)} pasos -> {path.relative_to(REPO)}")
 
 
 if __name__ == "__main__":

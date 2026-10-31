@@ -1,0 +1,166 @@
+{
+  "escenario": "logro_por_patch",
+  "descripcion": "Terminar por PATCH cuenta para los logros, pero no los evalúa: el proyecto cerrado con `status: done` solo da `project_master` cuando otra tarea cualquiera se completa.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /projects",
+      "cuerpo": {
+        "name": "P"
+      },
+      "alias": "p",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "P",
+          "description": null,
+          "status": "active",
+          "color": "#9b7fc4",
+          "category": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "tasks_total": 0,
+          "tasks_pending": 0,
+          "pomodoro_hours": 0.0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Dentro",
+        "project_id": "{p}"
+      },
+      "alias": "dentro",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "title": "Dentro",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": 1,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Fuera"
+      },
+      "alias": "fuera",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "title": "Fuera",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /tasks/{dentro}",
+      "cuerpo": {
+        "status": "done"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "title": "Dentro",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": 1,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": true,
+          "completed_at": "2026-03-02T12:00:00",
+          "status": "done",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{fuera}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": "project_master"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "project_master"
+        ]
+      }
+    }
+  ]
+}

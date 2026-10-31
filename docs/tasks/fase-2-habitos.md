@@ -504,4 +504,27 @@ docs, decisiones tomadas sobre la marcha.)
     comando de la sesión. Johan lo rotó (`Secret Change`, versión `21456aeb`) y se puso
     `loggingBehavior: 'none'`. Tras reinstalar, al abrir: 0 líneas `Capacitor/Console` y 0 con
     `"data"` en logcat. Precaución: no leer logcat sin filtrar en builds anteriores.
-  - **Falta para cerrar la 2.1.6:** la prueba del criterio de terminado en el teléfono (Johan).
+  - **Prueba en el teléfono** (2026-10-31, Bogotá): Johan reporta que la prueba con datos
+    funcionó. No hay registro de los pasos ni se revisó el servidor.
+  - **Simulación del día siguiente: el servidor no la respalda** (2026-10-31, Bogotá). Atrasar
+    el teléfono al 2026-10-30 debía producir marcas con `local_date` 10-30 y sincronización
+    del 31. Johan reportó que funcionó, pero D1 remota (solo lectura, 22:16 UTC) dice otra cosa:
+    - `habit_logs`: ninguna fila combina `local_date` 10-30 con `completed_at` de la prueba. Las
+      filas del 10-30 son de las 22:16 de Bogotá de ese mismo día.
+    - `xp_log` conserva la prueba, deshecha después: dos rondas de dos marcas en tres hábitos.
+      En la primera, el UUIDv7 dice 22:02:32 UTC y el servidor concedió a las 22:05:58: 3 min 26 s
+      en cola, así que sí hubo sincronización diferida real en el teléfono. En la segunda, ~1 s.
+    - Esos tres hábitos tienen marcas vivas del 10-29 y del 10-30, y `habit_logs_habit_day` más
+      `AlreadyDoneToday` impiden otra ese día. Las marcas concedidas tuvieron que ser del 10-31:
+      `local_date` fue el día real, y ninguna marca con fecha atrasada llegó al servidor.
+    - Ningún UUID lleva hora del 10-30. Es indicio débil: `uuid` v7 no retrocede dentro de un
+      mismo proceso si el reloj se atrasa con la app viva.
+    - `completed_at` lo pone el servidor (`now_utc`) y coincide con `xp_log.created_at`. No se
+      pudo ver en una fila viva con desfase porque las de la prueba se borraron al deshacer.
+    - Las vidas provisionales no se guardan; su devolución no se puede comprobar en D1, y esos
+      hábitos no tenían ninguna vida en juego el 10-30.
+  - **Comprobado en el teléfono:** una escritura hecha sin sincronizar sale después. **Sin
+    comprobar:** marca con `local_date` anterior al día de sincronización, vida provisional
+    devuelta, cierre forzado y `@capacitor/network` en modo avión (el reporte no detalla pasos).
+  - **La 2.1.6 sigue abierta.** Falta repetir la simulación con un hábito sin marca del 10-30 y
+    consultar D1 antes de deshacer nada. El 10-30 solo se acepta hasta el 2026-11-01.
