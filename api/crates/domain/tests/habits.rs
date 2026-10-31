@@ -6,7 +6,7 @@ use grimoire_domain::cadence::{Cadence, InvalidWeeklyTarget, WeekdaySet, WeeklyT
 use grimoire_domain::habits::{
     MarkRejected, Marks, UndoRejected, WindowedStreak, best_streak, check_mark_day, check_undo,
     completion_rate, current_streak, current_streak_since, done_units, heatmap_window_start,
-    history_window_start, mark, total_units,
+    history_window_start, mark, recent_completion_rate, total_units,
 };
 use grimoire_domain::xp::{
     apply_multiplier, award_xp, streak_multiplier, title_for_level, xp_for_level, xp_to_level,
@@ -53,6 +53,107 @@ fn completion_rate_rounds_like_python() {
 }
 
 const DAILY: Cadence = Cadence::Daily { days: None };
+
+// ---------- Constancia de 90 días (caracterizacion-v1.md, fila 10) ----------
+
+/// Días desde `first` hasta `last`, cada `step`.
+fn every(first: &str, last: &str, step: usize) -> Marks {
+    d(first)
+        .iter_days()
+        .take_while(|x| *x <= d(last))
+        .step_by(step)
+        .collect()
+}
+
+#[test]
+fn recent_rate_forgets_what_is_older_than_the_window() {
+    // hoy − 90 = 2026-07-31. Todo marcado antes de la ventana y nada después: sobre todo el
+    // historial serían 576 de 667 (86,4 %), y la constancia reciente es 0.
+    let m = every("2025-01-01", "2026-07-30", 1);
+    assert_eq!(
+        recent_completion_rate(DAILY, &m, d("2025-01-01"), d("2026-10-29")),
+        0.0
+    );
+    // al revés: abandonado y retomado justo al abrir la ventana, 100 %
+    let m = every("2026-07-31", "2026-10-29", 1);
+    assert_eq!(m.len(), 91, "la ventana incluye hoy − 90 y hoy");
+    assert_eq!(
+        recent_completion_rate(DAILY, &m, d("2025-01-01"), d("2026-10-29")),
+        100.0
+    );
+}
+
+#[test]
+fn recent_rate_of_a_new_habit_counts_from_its_creation() {
+    // 2 de 4 días desde que existe, no 2 de 91
+    let m = marks(&["2026-10-26", "2026-10-28"]);
+    assert_eq!(
+        recent_completion_rate(DAILY, &m, d("2026-10-26"), d("2026-10-29")),
+        50.0
+    );
+}
+
+#[test]
+fn recent_rate_counts_scheduled_days_only() {
+    // L–V en la ventana: 2026-07-31 (viernes) a 2026-10-29 (jueves) son 65 días programados.
+    // Todos los días marcados, 91 marcas: 100 %, sin contar fines de semana.
+    let m = every("2026-07-31", "2026-10-29", 1);
+    assert_eq!(
+        recent_completion_rate(weekdays_only(), &m, d("2025-01-01"), d("2026-10-29")),
+        100.0
+    );
+    // solo un día programado de 65: 1,5 %
+    let m = marks(&["2026-10-29"]);
+    assert_eq!(
+        recent_completion_rate(weekdays_only(), &m, d("2025-01-01"), d("2026-10-29")),
+        1.5
+    );
+}
+
+#[test]
+fn recent_rate_ignores_the_week_cut_by_the_window() {
+    // hoy = jueves 2026-10-29; hoy − 90 = viernes 2026-07-31. Esa semana (lun 07-27) queda
+    // cortada: la primera entera es la del lunes 08-03, y hasta la de hoy (lun 10-26) son 13.
+    let weekly = Cadence::Weekly {
+        target: WeeklyTarget::new(2).unwrap(),
+    };
+    let today = d("2026-10-29");
+    // la semana cortada cumplió la meta, pero no suma ni en la cifra ni en el total
+    let cut = marks(&["2026-07-31", "2026-08-01"]);
+    assert_eq!(
+        recent_completion_rate(weekly, &cut, d("2025-01-01"), today),
+        0.0
+    );
+    // una semana entera cumplida de 13
+    let one = marks(&["2026-08-03", "2026-08-04"]);
+    assert_eq!(
+        recent_completion_rate(weekly, &one, d("2025-01-01"), today),
+        7.7
+    );
+    // creado dentro de la semana cortada: esa semana sí es suya, porque no hay marcas
+    // anteriores que se hayan quedado fuera. 14 semanas.
+    assert_eq!(
+        recent_completion_rate(weekly, &cut, d("2026-07-31"), today),
+        7.1
+    );
+}
+
+#[test]
+fn recent_rate_is_the_same_with_the_window_or_the_full_history() {
+    // el worker le pasa solo la ventana a unos hábitos y el historial completo a otros
+    let today = d("2026-10-29");
+    let weekly = Cadence::Weekly {
+        target: WeeklyTarget::new(2).unwrap(),
+    };
+    let full = every("2025-01-01", "2026-10-29", 3);
+    let window: Marks = full.range(history_window_start(today)..).copied().collect();
+    for c in [DAILY, weekdays_only(), weekly] {
+        assert_eq!(
+            recent_completion_rate(c, &full, d("2025-01-01"), today),
+            recent_completion_rate(c, &window, d("2025-01-01"), today)
+        );
+    }
+}
 
 fn weekdays_only() -> Cadence {
     Cadence::Daily {

@@ -16,9 +16,8 @@ use grimoire_domain::achievements::{
 };
 use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{
-    MarkRejected, Marks, WindowedStreak, best_streak, check_mark_day, check_undo, completion_rate,
-    current_streak, current_streak_since, done_units, heatmap_window_start, history_window_start,
-    mark, total_units,
+    MarkRejected, Marks, WindowedStreak, best_streak, check_mark_day, check_undo, current_streak,
+    current_streak_since, heatmap_window_start, history_window_start, mark, recent_completion_rate,
 };
 use grimoire_domain::lives::DailyHabit;
 use grimoire_domain::xp::award_xp;
@@ -192,29 +191,6 @@ struct WindowRow {
     last_date: String,
 }
 
-#[derive(Deserialize)]
-struct DoneRow {
-    habit_id: String,
-    done: u32,
-}
-
-/// ?1 = 1 incluye los archivados. Ocasiones cumplidas por hábito, sin cruzar fechas a
-/// wasm: marcas en días programados (`%w`: 0 = domingo; `days`: 0 = lunes) y semanas que
-/// alcanzan la meta. Debe dar lo mismo que `domain::habits::done_units`. `CROSS JOIN` fija
-/// el orden: desde `habits`, las marcas salen del índice `(habit_id, local_date)`.
-pub(crate) const DONE_UNITS: &str = "SELECT l.habit_id, COUNT(*) AS done \
-     FROM habits h CROSS JOIN habit_logs l ON l.habit_id = h.id \
-     WHERE (?1 = 1 OR h.active = 1) AND h.frequency = 'daily' AND (h.days IS NULL OR \
-     instr(',' || h.days || ',', ',' || ((strftime('%w', l.local_date) + 6) % 7) || ',') > 0) \
-     GROUP BY l.habit_id \
-     UNION ALL \
-     SELECT habit_id, COUNT(*) FROM ( \
-     SELECT l.habit_id AS habit_id FROM habits h CROSS JOIN habit_logs l ON l.habit_id = h.id \
-     WHERE (?1 = 1 OR h.active = 1) AND h.frequency = 'weekly' \
-     GROUP BY l.habit_id, date(l.local_date, 'weekday 0', '-6 days') \
-     HAVING COUNT(*) >= h.target_per_week \
-     ) GROUP BY habit_id";
-
 #[worker::send]
 pub async fn list(
     State(s): State<AppState>,
@@ -242,7 +218,6 @@ pub async fn list(
                 archived,
                 from.to_string()
             )?,
-            query!(&s.db, DONE_UNITS, archived)?,
         ])
         .await?;
     log_d1("GET /habits: ventana", &res);
@@ -259,11 +234,6 @@ pub async fn list(
             },
         );
     }
-    let done: HashMap<String, u32> = res[2]
-        .results::<DoneRow>()?
-        .into_iter()
-        .map(|r| (r.habit_id, r.done))
-        .collect();
 
     let empty = Marks::new();
     let mut at_edge = Vec::new();
@@ -283,11 +253,11 @@ pub async fn list(
         .map(|habit| {
             let m = marks.get(&habit.id).unwrap_or(&empty);
             let cadence = habit.cadence()?;
-            let total = total_units(cadence, local_date_of(&habit.created_at, &s.tz)?, today);
+            let created_on = local_date_of(&habit.created_at, &s.tz)?;
             Ok(HabitWithStreak {
                 streak: current_streak(cadence, m, today),
                 done_today: m.contains(&today),
-                completion_rate: completion_rate(done.get(&habit.id).copied().unwrap_or(0), total),
+                completion_rate: recent_completion_rate(cadence, m, created_on, today),
                 last_mark: last_marks.remove(&habit.id),
                 habit,
             })
@@ -414,10 +384,7 @@ pub async fn detail(
         streak: current_streak(cadence, &marks, today),
         best_streak: best_streak(cadence, &marks),
         done_today: marks.contains(&today),
-        completion_rate: completion_rate(
-            done_units(cadence, &marks),
-            total_units(cadence, created_on, today),
-        ),
+        completion_rate: recent_completion_rate(cadence, &marks, created_on, today),
         total_xp,
         last_completed: rows.iter().map(|m| m.completed_at.clone()).max(),
         last_mark: rows.first().map(|m| LastMark {
@@ -1188,14 +1155,10 @@ pub async fn undo(
 mod tests {
     //! Las sentencias reales, contra SQLite (D1 es SQLite).
     use super::{
-        DONE_UNITS, ENSURE_CATEGORY, HEATMAP, UNDO_FLOOR, UNDO_GRANT, UNDO_MARK, UNDO_USER,
-        UNLOCK_ACHIEVEMENTS,
+        ENSURE_CATEGORY, HEATMAP, UNDO_FLOOR, UNDO_GRANT, UNDO_MARK, UNDO_USER, UNLOCK_ACHIEVEMENTS,
     };
     use crate::categories::CREATE_CATEGORY;
-    use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget};
-    use grimoire_domain::habits::{Marks, done_units};
     use rusqlite::{Connection, OptionalExtension, params};
-    use std::collections::HashMap;
 
     const USER: &str = "00000000-0000-7000-8000-000000000001";
 
@@ -1227,89 +1190,6 @@ mod tests {
             params![format!("{habit}-{day}"), habit, day],
         )
         .unwrap();
-    }
-
-    fn done_sql(c: &Connection, archived: i64) -> HashMap<String, u32> {
-        let mut q = c.prepare(DONE_UNITS).unwrap();
-        q.query_map([archived], |r| Ok((r.get(0)?, r.get(1)?)))
-            .unwrap()
-            .map(Result::unwrap)
-            .collect()
-    }
-
-    /// El agregado en SQL y `done_units` del dominio cuentan lo mismo. 2026-03-02 es lunes.
-    #[test]
-    fn done_units_sql_matches_the_domain() {
-        let c = db();
-        let days: Vec<String> = (2..=31).map(|d| format!("2026-03-{d:02}")).collect();
-        let cases = [
-            (
-                "diario",
-                "daily",
-                None,
-                1,
-                Cadence::Daily { days: None },
-                3usize,
-            ),
-            (
-                "lv",
-                "daily",
-                Some("0,1,2,3,4"),
-                1,
-                Cadence::Daily {
-                    days: WeekdaySet::parse("0,1,2,3,4").unwrap(),
-                },
-                2,
-            ),
-            (
-                "domingo",
-                "daily",
-                Some("6"),
-                1,
-                Cadence::Daily {
-                    days: WeekdaySet::parse("6").unwrap(),
-                },
-                1,
-            ),
-            (
-                "semanal",
-                "weekly",
-                None,
-                2,
-                Cadence::Weekly {
-                    target: WeeklyTarget::new(2).unwrap(),
-                },
-                3,
-            ),
-        ];
-        let sql_marks: Vec<(&str, Cadence, Marks)> = cases
-            .iter()
-            .map(|(id, freq, d, target, cadence, step)| {
-                add_habit(&c, id, freq, *d, *target);
-                let mut m = Marks::new();
-                for day in days.iter().step_by(*step) {
-                    add_mark(&c, id, day);
-                    m.insert(day.parse().unwrap());
-                }
-                (*id, *cadence, m)
-            })
-            .collect();
-        let got = done_sql(&c, 0);
-        for (id, cadence, m) in &sql_marks {
-            let want = done_units(*cadence, m);
-            assert!(want > 0, "{id}: el caso no prueba nada");
-            assert_eq!(got.get(*id).copied().unwrap_or(0), want, "{id}");
-        }
-    }
-
-    #[test]
-    fn done_units_sql_hides_archived_unless_asked() {
-        let c = db();
-        add_habit(&c, "h", "daily", None, 1);
-        add_mark(&c, "h", "2026-03-02");
-        c.execute("UPDATE habits SET active = 0", []).unwrap();
-        assert!(done_sql(&c, 0).is_empty());
-        assert_eq!(done_sql(&c, 1).get("h"), Some(&1));
     }
 
     /// Hoy es el domingo 2026-11-01: el 10-27 de 2025 es el primer día de 371 y el 26 ya no entra.

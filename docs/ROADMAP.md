@@ -59,10 +59,3 @@ Pendientes técnicos que salieron de la fase 0:
   el dashboard de Workers durante el primer mes de uso real. En la fase 0 la mediana de
   CPU quedó en 4,5–7 ms, pero hubo picos de 13–51 ms que no se explicaron (hipótesis:
   arranque en frío). Si aparecen 1102, se mide de nuevo antes de portar más módulos.
-
-Pendientes técnicos que salieron de la fase 2:
-
-- **Revisar `completion_rate` en `GET /habits`** si hay más de 5 000 marcas o la mediana
-  de `GET /habits` pasa de 7 ms de CPU. Se queda en la lista porque `HabitCardGothic`
-  muestra la constancia en la tarjeta, pero su agregado recorre todo el historial
-  (`docs/tasks/fase-2-habitos.md`, 2.1.4).

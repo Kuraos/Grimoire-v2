@@ -20,8 +20,8 @@ use chrono::NaiveDate;
 use grimoire_domain::achievements::{MarkFacts, earned_on_mark, total_discipline};
 use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget, week_monday};
 use grimoire_domain::habits::{
-    MarkRejected, Marks, best_streak, check_mark_day, check_undo, completion_rate, current_streak,
-    done_units, mark, total_units,
+    MarkRejected, Marks, best_streak, check_mark_day, check_undo, current_streak, mark,
+    recent_completion_rate,
 };
 use grimoire_domain::lives::DailyHabit;
 use grimoire_domain::xp::{award_xp, title_for_level, xp_to_level};
@@ -232,10 +232,8 @@ impl Sim {
                 let best = best_streak(h.cadence, &marks);
                 assert_eq!(int(&body["best_streak"]), i64::from(best), "best_streak");
                 assert_eq!(body["done_today"], marks.contains(&today), "done_today");
-                let rate = completion_rate(
-                    done_units(h.cadence, &marks),
-                    total_units(h.cadence, h.created, today),
-                );
+                // fila 10: ningún escenario pasa de 90 días, así que da lo mismo que la v1
+                let rate = recent_completion_rate(h.cadence, &marks, h.created, today);
                 assert_eq!(
                     body["completion_rate"].as_f64(),
                     Some(rate),

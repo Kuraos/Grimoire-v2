@@ -146,6 +146,29 @@ pub fn completion_rate(done: u32, total: u32) -> f64 {
     format!("{rate:.1}").parse().unwrap_or(0.0)
 }
 
+/// Constancia de los últimos 90 días, desde que existe el hábito si es más nuevo
+/// (caracterizacion-v1.md, fila 10). `marks` puede traer solo la ventana (ADR 0007) o más:
+/// da lo mismo. La semana que la ventana corta no cuenta, porque sus marcas pueden estar
+/// incompletas (como en `current_streak_since`), salvo que el hábito naciera en ella.
+pub fn recent_completion_rate(
+    cadence: Cadence,
+    marks: &Marks,
+    created_on: NaiveDate,
+    today: NaiveDate,
+) -> f64 {
+    let from = history_window_start(today);
+    let start = match cadence {
+        Cadence::Weekly { .. } if created_on < from => week_monday(from + Days::new(6)),
+        Cadence::Weekly { .. } => week_monday(created_on),
+        Cadence::Daily { .. } => created_on.max(from),
+    };
+    let recent: Marks = marks.range(start..).copied().collect();
+    completion_rate(
+        done_units(cadence, &recent),
+        total_units(cadence, start, today),
+    )
+}
+
 pub fn best_streak(cadence: Cadence, marks: &Marks) -> u32 {
     let units: Vec<NaiveDate> = match cadence {
         Cadence::Weekly { target } => met_weeks(marks, target.get()).into_iter().collect(),

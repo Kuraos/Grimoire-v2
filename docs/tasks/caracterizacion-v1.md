@@ -68,7 +68,7 @@ construye la herramienta; después solo se agregan escenarios.
 ### Diferencias permitidas
 
 Decididas por Johan el 2026-10-30, salvo las dos primeras, que vienen de fase-0 y del
-ADR 0005.
+ADR 0005, y la 10, que tiene su fecha.
 
 | # | Diferencia | v1 (lo que graba el golden) | v2 | Motivo |
 |---|---|---|---|---|
@@ -81,6 +81,7 @@ ADR 0005.
 | 7 | `iron_constancy` con hábitos semanales | Cuenta semanas, con la racha real | **Igual que la v1** | Se conserva. Va aquí para que no se «arregle» por error. |
 | 8 | Racha que dispara los logros de racha | La más larga entre **todos** los hábitos activos, recalculada en cada marca (`_max_current_streak`) | La del hábito que se marca | Marcar un hábito no cambia la racha de los demás, y leerlas todas costó 48–53 ms de CPU por marca (`docs/tasks/fase-2-habitos.md`, 2.1.3). Solo difiere si otro hábito ya tiene la racha y el logro sigue bloqueado; lo cubre el backfill del ADR 0006. Ningún golden lo muestra. |
 | 9 | Días del heatmap | `GET /stats` devuelve 365 días, y `HabitHeatmap` pinta 53 semanas (371 celdas) | 371 días (`GET /habits/heatmap`) | Con 365, las celdas más viejas de la rejilla salían vacías aunque hubiera marcas. Ningún golden lo muestra. |
+| 10 | `completion_rate` | Sobre todo el historial, desde la creación | Últimos 90 días (lectura acotada del ADR 0007), desde la creación si el hábito es más nuevo; en semanales, solo semanas enteras dentro de la ventana. Igual en la lista y en el detalle | El agregado sobre todo el historial era el 92 % de las filas de `GET /habits` y crecía con los años (cuota de 5 M de filas de D1), y para la tarjeta lo reciente dice más. Decidido por Johan el 2026-10-31. Ningún golden pasa de 90 días, así que ninguno lo muestra. |
 
 ## Hallazgos
 

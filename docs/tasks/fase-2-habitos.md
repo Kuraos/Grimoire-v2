@@ -35,7 +35,7 @@ una tarea revela que una decisión no se sostiene, se para y se anota, en vez de
 
 | v1 | v2 | Nota |
 |---|---|---|
-| `GET /habits?include_archived` | igual | Añade `completion_rate`, `last_mark` (`{id, local_date}` o `null`). Sin `best_streak` ni `total_xp` (ADR 0007). |
+| `GET /habits?include_archived` | igual | Añade `completion_rate` (90 días; dif. 10), `last_mark` (`{id, local_date}` o `null`). Sin `best_streak` ni `total_xp` (ADR 0007). |
 | `GET /habits/{id}`, `/logs`, `/xp-series` | `GET /habits/{id}` | Un solo detalle: `best_streak`, `total_xp`, `last_completed`, marcas y serie de XP. Lee el historial completo de **un** hábito. |
 | `POST /habits` | existe (fase 0) | Sin cambios. |
 | `PATCH /habits/{id}` | nuevo | Editar, y restaurar con `active: true`. |
@@ -424,3 +424,8 @@ docs, decisiones tomadas sobre la marcha.)
     ```
     Los hábitos «Ruta 214» y «Ruta 214 otro» quedan archivados en la base local, con el XP
     local alterado por la prueba del piso.
+- **2.1.5** (2026-10-31, Bogotá):
+  - **`completion_rate` pasa a 90 días** (dif. 10) con las marcas de la ventana que ya se
+    leían, en Rust; desaparece el agregado `DONE_UNITS` y con él el 92 % de las filas que
+    medía la 2.1.4. El detalle usa la misma definición: el campo no cambia de sentido
+    entre la lista y el detalle.
