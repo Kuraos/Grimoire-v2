@@ -307,10 +307,10 @@ pub struct HeatDay {
 /// ?1 primer día. El filtro por hábito es lo que deja usar el índice `(habit_id, local_date)`
 /// y leer solo la ventana.
 const HEATMAP: &str = "SELECT local_date AS date, COUNT(*) AS count FROM habit_logs \
-     WHERE habit_id IN (SELECT id FROM habits WHERE active = 1) AND local_date >= ?1 \
+     WHERE habit_id IN (SELECT id FROM habits) AND local_date >= ?1 \
      GROUP BY local_date ORDER BY local_date";
 
-/// Marcas por día de las 53 semanas de la rejilla, solo de hábitos activos (dif. 10).
+/// Marcas por día de las 53 semanas de la rejilla, archivados incluidos (v1: `GET /stats`).
 #[worker::send]
 pub async fn heatmap(State(s): State<AppState>) -> Result<Json<Vec<HeatDay>>, AppError> {
     let from = heatmap_window_start(today(&s.tz)?);
@@ -1339,16 +1339,13 @@ mod tests {
     }
 
     #[test]
-    fn heatmap_ignores_archived_habits_and_reads_through_the_index() {
+    fn heatmap_keeps_archived_habits_and_reads_through_the_index() {
         let c = db();
         add_habit(&c, "a", "daily", None, 1);
         add_mark(&c, "a", "2026-03-02");
         c.execute("UPDATE habits SET active = 0", []).unwrap();
-        let count: Option<u32> = c
-            .query_row(HEATMAP, ["2026-01-01"], |r| r.get(1))
-            .optional()
-            .unwrap();
-        assert_eq!(count, None);
+        let count: u32 = c.query_row(HEATMAP, ["2026-01-01"], |r| r.get(1)).unwrap();
+        assert_eq!(count, 1);
 
         let mut q = c.prepare(&format!("EXPLAIN QUERY PLAN {HEATMAP}")).unwrap();
         let plan: Vec<String> = q

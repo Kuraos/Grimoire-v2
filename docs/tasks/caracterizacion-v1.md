@@ -81,7 +81,6 @@ ADR 0005.
 | 7 | `iron_constancy` con hábitos semanales | Cuenta semanas, con la racha real | **Igual que la v1** | Se conserva. Va aquí para que no se «arregle» por error. |
 | 8 | Racha que dispara los logros de racha | La más larga entre **todos** los hábitos activos, recalculada en cada marca (`_max_current_streak`) | La del hábito que se marca | Marcar un hábito no cambia la racha de los demás, y leerlas todas costó 48–53 ms de CPU por marca (`docs/tasks/fase-2-habitos.md`, 2.1.3). Solo difiere si otro hábito ya tiene la racha y el logro sigue bloqueado; lo cubre el backfill del ADR 0006. Ningún golden lo muestra. |
 | 9 | Días del heatmap | `GET /stats` devuelve 365 días, y `HabitHeatmap` pinta 53 semanas (371 celdas) | 371 días (`GET /habits/heatmap`) | Con 365, las celdas más viejas de la rejilla salían vacías aunque hubiera marcas. Ningún golden lo muestra. |
-| 10 | Hábitos que cuenta el heatmap | Todos, archivados incluidos | Solo los activos: al archivar un hábito, sus marcas salen del heatmap, y vuelven al restaurarlo | Filtrar por hábito deja usar el índice `(habit_id, local_date)` y leer solo la ventana (`docs/tasks/fase-2-habitos.md`, 2.1.4). Ningún golden lo muestra. |
 
 ## Hallazgos
 

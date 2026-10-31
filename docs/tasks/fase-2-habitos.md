@@ -44,7 +44,7 @@ una tarea revela que una decisión no se sostiene, se para y se anota, en vez de
 | `DELETE /habits/{id}/complete` (la última del periodo) | `DELETE /habits/{id}/marks/{mark_id}` | Por id, para que reintentar sea idempotente (cola sin conexión). La UI deshace `last_mark`, que en la práctica es lo mismo que la v1. |
 | `POST /user/evaluate-streaks` (al abrir) | `GET /user` asienta perezosamente | ADR 0005: asienta lo que toque, calcula lo provisional y devuelve los eventos. Nada de cron. |
 | `GET/POST/DELETE /habit-categories` | igual | Catálogo con las 6 categorías por defecto de la v1. |
-| `GET /stats` (solo `heatmap` para Hábitos) | `GET /habits/heatmap` | Marcas de hábitos activos por `local_date` de los últimos 371 días (53 semanas; dif. 9 y 10). El resto de estadísticas es de la fase 5+. |
+| `GET /stats` (solo `heatmap` para Hábitos) | `GET /habits/heatmap` | Marcas por `local_date` de los últimos 371 días (53 semanas; dif. 9), archivados incluidos. El resto de estadísticas es de la fase 5+. |
 
 Fuera de alcance: vista de Logros, estadísticas, misiones, etiquetas como módulo (las
 `tags` del hábito siguen siendo un texto y se filtran en el cliente), Dashboard.
@@ -332,9 +332,20 @@ docs, decisiones tomadas sobre la marcha.)
   - **Pendientes de baja prioridad:** el origen de las 6 marcas de hoy en los hábitos
     `Bench` y el error 7403 de la migración.
 - **2.1.4** (2026-10-30, Bogotá):
-  - **CPU sin medir:** la tarea no se desplegó (Johan lo pide aparte). Falta aplicar la
-    migración `0004` remota, desplegar y medir `GET /habits` y `GET /habits/heatmap` con
-    `wrangler tail`. Este criterio del plan queda abierto.
+  - **CPU en producción** (2026-10-31, Bogotá; versión `c0fa39fc`, `0004` aplicada). `cpuTime`
+    de `wrangler tail`, 20 requests por ruta, una por segundo, todas 200 y `outcome: ok`:
+
+    | Request | Mediana | Mín–máx | Más de 10 ms | Filas leídas |
+    |---|---|---|---|---|
+    | `GET /habits` | **10,5 ms** (8 sin las 5 primeras) | 5–38 ms | 10 de 20 | 19 943 + 2 897 de ampliación |
+    | `GET /habits/heatmap` | **3 ms** | 2–8 ms | 0 de 20 | 6 498 |
+
+    - Serie de `GET /habits`: 30, 27, 32, 25, 26, 7, 7, 10, 8, 12, 7, 38, 5, 7, 11, 11, 9,
+      11, 5, 7. Las 5 primeras y el 38 no se explicaron (hipótesis: arranque en frío, que
+      no aclara por sí solo cinco seguidas).
+    - **El disparador de `completion_rate` (`docs/ROADMAP.md`) salta con el seed:** 10,5 ms
+      frente a 7 ms. El seed es ~130× las marcas reales, y no se aisló cuánto de ese CPU
+      viene de `completion_rate`. Falta medir con los datos reales.
   - **Filas leídas**, en local con el seed (9 417 marcas, 21 hábitos activos; solo cuenta
     D1, no el CPU):
 
@@ -351,20 +362,33 @@ docs, decisiones tomadas sobre la marcha.)
       bajó a la mitad. Con las 70 marcas reales son unos cientos de filas (estimado, no
       medido). Si llegara a pesar, el plan ya prevé pasarlo al detalle. Johan decidió
       dejarlo en la lista; el disparador para revisarlo está en `docs/ROADMAP.md`.
-    - **El heatmap pasó de 365 a 371 días** (dif. 9) y ahora filtra por hábitos activos
-      (dif. 10), lo que le deja usar el índice `habit_logs_habit_day` sin índice nuevo.
+    - **El heatmap pasó de 365 a 371 días** (dif. 9) y filtra con
+      `habit_id IN (SELECT id FROM habits)`, que deja usar el índice `habit_logs_habit_day`
+      sin índice nuevo y conserva los archivados, como la v1. Filas leídas del seed local
+      por `wrangler dev` (`rows_read`, 5 de 5 iguales, 2026-10-31): **6 459**, frente a
+      ~12 580 con el escaneo. Es casi el doble de las marcas de la ventana (hipótesis: D1
+      cuenta también el `TEMP B-TREE` del `GROUP BY`; no verificado). La medición en
+      producción es de la versión anterior, que solo contaba hábitos activos.
       `EXPLAIN QUERY PLAN` en D1 local:
       ```
       SEARCH habit_logs USING COVERING INDEX habit_logs_habit_day (habit_id=? AND local_date>?)
-      LIST SUBQUERY 1
-      SCAN habits
+      USING INDEX sqlite_autoindex_habits_1 FOR IN-OPERATOR
       USE TEMP B-TREE FOR GROUP BY
       ```
-      `SCAN habits` es la subconsulta (23 filas); `habit_logs` ya no se escanea. Filas
-      leídas del seed local por `wrangler dev` (`rows_read`, 3 de 3 iguales): **6 466**,
-      frente a ~12 580 con el escaneo. Es casi el doble de las 3 202 marcas que devuelve:
-      6 404 + 62 sin explicar del todo (hipótesis: D1 cuenta también el `TEMP B-TREE` del
-      `GROUP BY`; no verificado). La ruta responde 371 días, desde el 2025-10-25.
+    - **Costo de `completion_rate`** (2026-10-31, `wrangler dev`, seed local, 30 requests por
+      variante). «Sin» quita `DONE_UNITS` y `total_units`; fue un cambio temporal, no
+      commiteado:
+
+      | `GET /habits` | Filas: ventana + ampliación | Total | Tiempo total (mediana) |
+      |---|---|---|---|
+      | Con | 19 875 + 756 | 20 631 | 29,1 ms |
+      | Sin | 880 + 756 | 1 636 | 28,4 ms |
+
+      Explica el **92 % de las filas** (18 995 de 20 631), pero el tiempo apenas cambia. El
+      tiempo local no es CPU: no permite concluir que `completion_rate` explique los
+      10,5 ms de producción. Cuota de 5 M de filas al día, con este seed: ~242 `GET /habits`
+      con él y ~3 056 sin él. La ampliación bajó de 2 894 a 756 filas respecto al 30 de
+      octubre, sin cambios de código en esa lectura (no investigado).
   - `last_mark` sale de la ventana de 90 días: una marca más vieja da `null`, y de todos
     modos ya no se puede deshacer.
   - `completion_rate` comparado en los 7 goldens: `format!("{:.1}")` redondea como
