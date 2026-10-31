@@ -60,6 +60,15 @@ pub fn history_window_start(today: NaiveDate) -> NaiveDate {
     today - Days::new(HISTORY_WINDOW_DAYS)
 }
 
+/// Días del heatmap: las 53 semanas de `HabitHeatmap`. La rejilla termina el domingo de
+/// esta semana, así que nunca empieza antes de hoy − 370, que es el caso del domingo.
+pub const HEATMAP_DAYS: u64 = 53 * 7;
+
+/// Primer día del heatmap para `today`, inclusive.
+pub fn heatmap_window_start(today: NaiveDate) -> NaiveDate {
+    today - Days::new(HEATMAP_DAYS - 1)
+}
+
 /// Racha calculada solo con las marcas desde `from` (ADR 0007).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowedStreak {

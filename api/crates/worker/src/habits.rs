@@ -9,7 +9,7 @@ use axum::Json;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use chrono::{Days, NaiveDate};
+use chrono::NaiveDate;
 use grimoire_domain::achievements::{
     MarkFacts, POLYMATH, TOTAL_DISCIPLINE, discipline_window_start, earned_on_mark,
     total_discipline as discipline_met,
@@ -17,7 +17,8 @@ use grimoire_domain::achievements::{
 use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{
     MarkRejected, Marks, WindowedStreak, best_streak, check_mark_day, check_undo, completion_rate,
-    current_streak, current_streak_since, done_units, history_window_start, mark, total_units,
+    current_streak, current_streak_since, done_units, heatmap_window_start, history_window_start,
+    mark, total_units,
 };
 use grimoire_domain::lives::DailyHabit;
 use grimoire_domain::xp::award_xp;
@@ -303,18 +304,15 @@ pub struct HeatDay {
     count: u32,
 }
 
-/// Marcas por día de los últimos 365 días, archivados incluidos (v1: `GET /stats`).
+/// ?1 primer día.
+const HEATMAP: &str = "SELECT local_date AS date, COUNT(*) AS count FROM habit_logs \
+     WHERE local_date >= ?1 GROUP BY local_date ORDER BY local_date";
+
+/// Marcas por día de las 53 semanas de la rejilla, archivados incluidos (v1: `GET /stats`).
 #[worker::send]
 pub async fn heatmap(State(s): State<AppState>) -> Result<Json<Vec<HeatDay>>, AppError> {
-    let from = today(&s.tz)? - Days::new(364);
-    let res = query!(
-        &s.db,
-        "SELECT local_date AS date, COUNT(*) AS count FROM habit_logs \
-         WHERE local_date >= ?1 GROUP BY local_date ORDER BY local_date",
-        from.to_string()
-    )?
-    .all()
-    .await?;
+    let from = heatmap_window_start(today(&s.tz)?);
+    let res = query!(&s.db, HEATMAP, from.to_string())?.all().await?;
     log_d1("GET /habits/heatmap", std::slice::from_ref(&res));
     Ok(Json(res.results()?))
 }
@@ -1188,7 +1186,7 @@ pub async fn undo(
 mod tests {
     //! Las sentencias reales, contra SQLite (D1 es SQLite).
     use super::{
-        DONE_UNITS, ENSURE_CATEGORY, UNDO_FLOOR, UNDO_GRANT, UNDO_MARK, UNDO_USER,
+        DONE_UNITS, ENSURE_CATEGORY, HEATMAP, UNDO_FLOOR, UNDO_GRANT, UNDO_MARK, UNDO_USER,
         UNLOCK_ACHIEVEMENTS,
     };
     use crate::categories::CREATE_CATEGORY;
@@ -1310,6 +1308,32 @@ mod tests {
         c.execute("UPDATE habits SET active = 0", []).unwrap();
         assert!(done_sql(&c, 0).is_empty());
         assert_eq!(done_sql(&c, 1).get("h"), Some(&1));
+    }
+
+    /// Hoy es el domingo 2026-11-01: el 10-27 de 2025 es el primer día de 371 y el 26 ya no entra.
+    #[test]
+    fn heatmap_stops_at_the_first_day_of_the_window() {
+        let c = db();
+        add_habit(&c, "a", "daily", None, 1);
+        add_habit(&c, "b", "daily", None, 1);
+        for (habit, day) in [
+            ("a", "2025-10-26"),
+            ("a", "2025-10-27"),
+            ("b", "2025-10-27"),
+            ("a", "2026-11-01"),
+        ] {
+            add_mark(&c, habit, day);
+        }
+        let mut q = c.prepare(HEATMAP).unwrap();
+        let got: Vec<(String, u32)> = q
+            .query_map(["2025-10-27"], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert_eq!(
+            got,
+            [("2025-10-27".to_string(), 2), ("2026-11-01".to_string(), 1)]
+        );
     }
 
     /// Una marca con su XP, como `complete`.

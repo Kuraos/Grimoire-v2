@@ -5,8 +5,8 @@ use chrono::{Datelike, NaiveDate, Weekday};
 use grimoire_domain::cadence::{Cadence, InvalidWeeklyTarget, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{
     MarkRejected, Marks, UndoRejected, WindowedStreak, best_streak, check_mark_day, check_undo,
-    completion_rate, current_streak, current_streak_since, done_units, history_window_start, mark,
-    total_units,
+    completion_rate, current_streak, current_streak_since, done_units, heatmap_window_start,
+    history_window_start, mark, total_units,
 };
 use grimoire_domain::xp::{
     apply_multiplier, award_xp, streak_multiplier, title_for_level, xp_for_level, xp_to_level,
@@ -357,6 +357,14 @@ fn days_back(today: NaiveDate, from_days: u64, to_days: u64) -> Marks {
 #[test]
 fn window_starts_90_days_back() {
     assert_eq!(history_window_start(d("2026-10-29")), d("2026-07-31"));
+}
+
+/// Un domingo, el caso más largo: la rejilla de 53 semanas empieza en el lunes de hoy − 370.
+#[test]
+fn heatmap_window_covers_the_53_week_grid() {
+    let start = heatmap_window_start(d("2026-11-01"));
+    assert_eq!(start, d("2025-10-27"));
+    assert_eq!(start.weekday(), Weekday::Mon);
 }
 
 #[test]

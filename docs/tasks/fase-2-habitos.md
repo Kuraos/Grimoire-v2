@@ -44,7 +44,7 @@ una tarea revela que una decisión no se sostiene, se para y se anota, en vez de
 | `DELETE /habits/{id}/complete` (la última del periodo) | `DELETE /habits/{id}/marks/{mark_id}` | Por id, para que reintentar sea idempotente (cola sin conexión). La UI deshace `last_mark`, que en la práctica es lo mismo que la v1. |
 | `POST /user/evaluate-streaks` (al abrir) | `GET /user` asienta perezosamente | ADR 0005: asienta lo que toque, calcula lo provisional y devuelve los eventos. Nada de cron. |
 | `GET/POST/DELETE /habit-categories` | igual | Catálogo con las 6 categorías por defecto de la v1. |
-| `GET /stats` (solo `heatmap` para Hábitos) | `GET /habits/heatmap` | Marcas por `local_date` de los últimos 365 días. El resto de estadísticas es de la fase 5+. |
+| `GET /stats` (solo `heatmap` para Hábitos) | `GET /habits/heatmap` | Marcas por `local_date` de los últimos 371 días (53 semanas; dif. 9). El resto de estadísticas es de la fase 5+. |
 
 Fuera de alcance: vista de Logros, estadísticas, misiones, etiquetas como módulo (las
 `tags` del hábito siguen siendo un texto y se filtran en el cliente), Dashboard.
@@ -349,7 +349,10 @@ docs, decisiones tomadas sobre la marcha.)
       `GET /habits` al día en los 5 M de cuota. Con `JOIN` desde `habit_logs` eran ~39 270
       filas; recorrer desde `habits` (`CROSS JOIN`, índice `(habit_id, local_date)`) las
       bajó a la mitad. Con las 70 marcas reales son unos cientos de filas (estimado, no
-      medido). Si llegara a pesar, el plan ya prevé pasarlo al detalle.
+      medido). Si llegara a pesar, el plan ya prevé pasarlo al detalle. Johan decidió
+      dejarlo en la lista; el disparador para revisarlo está en `docs/ROADMAP.md`.
+    - **El heatmap pasó de 365 a 371 días** (dif. 9). No baja sus filas leídas: sin índice
+      por `local_date`, la consulta sigue escaneando todas las marcas.
   - `last_mark` sale de la ventana de 90 días: una marca más vieja da `null`, y de todos
     modos ya no se puede deshacer.
   - `completion_rate` comparado en los 7 goldens: `format!("{:.1}")` redondea como

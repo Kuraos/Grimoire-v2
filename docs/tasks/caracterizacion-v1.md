@@ -80,6 +80,7 @@ ADR 0005.
 | 6 | `streak` en la respuesta de marcar | Racha previa + 1, la que decide el multiplicador, aunque la marca no cierre la semana | La racha real tras la marca, la misma que devuelve `GET` | La respuesta contradecía al `GET` en semanales (`semanal_2x`, 03-04 y 04-20). El **XP pagado no cambia**: sigue usando previa + 1, como en la v1. |
 | 7 | `iron_constancy` con hábitos semanales | Cuenta semanas, con la racha real | **Igual que la v1** | Se conserva. Va aquí para que no se «arregle» por error. |
 | 8 | Racha que dispara los logros de racha | La más larga entre **todos** los hábitos activos, recalculada en cada marca (`_max_current_streak`) | La del hábito que se marca | Marcar un hábito no cambia la racha de los demás, y leerlas todas costó 48–53 ms de CPU por marca (`docs/tasks/fase-2-habitos.md`, 2.1.3). Solo difiere si otro hábito ya tiene la racha y el logro sigue bloqueado; lo cubre el backfill del ADR 0006. Ningún golden lo muestra. |
+| 9 | Días del heatmap | `GET /stats` devuelve 365 días, y `HabitHeatmap` pinta 53 semanas (371 celdas) | 371 días (`GET /habits/heatmap`) | Con 365, las celdas más viejas de la rejilla salían vacías aunque hubiera marcas. Ningún golden lo muestra. |
 
 ## Hallazgos
 

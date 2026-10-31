@@ -48,6 +48,12 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
   v2, `complete` solo mira la racha del hábito que se marca
   (`docs/tasks/caracterizacion-v1.md`, fila 8), así que un logro pendiente no saltaría
   al marcar otro hábito.
+- **`mark_id` de las marcas migradas:** cada marca enlaza su entrada de `xp_log` (v1:
+  `source = 'habit'`, `source_id` = el hábito, `amount > 0`) emparejando por `habit_id` y
+  `earned_at ≈ completed_at`. Cada entrada se usa una sola vez, y las dos fechas se
+  comparan antes de pasarlas a UTC. La tolerancia se fija al escribir el script,
+  comprobándola en la copia de los datos reales. Una entrada o marca que no case queda sin
+  `mark_id`; **deshacer una marca sin `mark_id` no devuelve XP**.
 - **Repetible:** se prueba contra una copia fresca de los datos reales cada vez que
   cambie el esquema, en una base D1 local, con verificación de conteos por tabla y de
   totales (XP, saldos). Los datos reales y el SQL generado nunca se commitean.
