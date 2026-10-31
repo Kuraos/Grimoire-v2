@@ -526,5 +526,13 @@ docs, decisiones tomadas sobre la marcha.)
   - **Comprobado en el teléfono:** una escritura hecha sin sincronizar sale después. **Sin
     comprobar:** marca con `local_date` anterior al día de sincronización, vida provisional
     devuelta, cierre forzado y `@capacitor/network` en modo avión (el reporte no detalla pasos).
-  - **La 2.1.6 sigue abierta.** Falta repetir la simulación con un hábito sin marca del 10-30 y
-    consultar D1 antes de deshacer nada. El 10-30 solo se acepta hasta el 2026-11-01.
+  - **Simulación repetida, confirmada en D1** (2026-10-31, 22:36 UTC), con un hábito diario sin
+    marca del 10-30: modo avión, teléfono en el 10-30, cierre forzado, marca, cierre forzado,
+    fecha restaurada y señal. La fila quedó con `local_date` 2026-10-30, `completed_at`
+    2026-10-31T22:36:03Z y UUIDv7 de 2026-10-30T22:35:31Z (reloj atrasado, 32 s antes de
+    sincronizar), y `xp_log` tiene una sola concesión con ese `mark_id`. Comprueba día de la
+    acción, hora de sincronización, cola tras cierre forzado y pausa de `@capacitor/network`.
+    Una sola marca, no dos: los demás hábitos ya tenían marca ese día. Fue 32 s, no una noche real.
+  - **Vida provisional:** Johan ve 3 vidas con la marca del 10-30 y 2 al deshacerla, en la barra
+    superior. Con el resto de lo anterior, se cumple el criterio salvo por usar 32 s en vez de
+    una noche real. **La 2.1.6 y el módulo Hábitos quedan cerrados.**
