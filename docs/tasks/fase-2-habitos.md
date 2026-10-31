@@ -533,6 +533,14 @@ docs, decisiones tomadas sobre la marcha.)
     sincronizar), y `xp_log` tiene una sola concesión con ese `mark_id`. Comprueba día de la
     acción, hora de sincronización, cola tras cierre forzado y pausa de `@capacitor/network`.
     Una sola marca, no dos: los demás hábitos ya tenían marca ese día. Fue 32 s, no una noche real.
-  - **Vida provisional:** Johan ve 3 vidas con la marca del 10-30 y 2 al deshacerla, en la barra
-    superior. Con el resto de lo anterior, se cumple el criterio salvo por usar 32 s en vez de
-    una noche real. **La 2.1.6 y el módulo Hábitos quedan cerrados.**
+  - **Vida provisional.** Corrige el commit `68a0b1b`, que atribuyó el «3 → 2» a deshacer la marca
+    del 10-30. D1 muestra que esa marca sigue viva: lo deshecho fue otra del 10-31, marcada y
+    desmarcada en 0,7 s (22:37:52 UTC), que no afecta a las vidas porque hoy no se evalúa.
+    Tras reabrir la app, Johan ve 3, lo que da el `fold` con todas las marcas del 10-29 y 10-30.
+    Antes de sincronizar, el 10-30 estaba roto y el `fold` daba 2.
+    `late_mark_undoes_provisional_loss` cubre esa transición en el dominio.
+    **Límite:** el 2 también se vio en el teléfono, pero no se registró cuándo, así que la
+    transición 2 → 3 no se observó en orden. Tampoco se pudo repetir: la tarjeta solo deshace si
+    `done_today`, de modo que la marca del 10-30 no se puede deshacer hoy desde la lista.
+  - **La 2.1.6 y el módulo Hábitos quedan cerrados**, con ese límite y con 32 s en vez de una
+    noche real.
