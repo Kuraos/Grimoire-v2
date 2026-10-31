@@ -431,7 +431,25 @@ docs, decisiones tomadas sobre la marcha.)
     entre la lista y el detalle.
   - **Filas leídas de `GET /habits` tras el cambio** (`wrangler dev`, seed local, `rows_read`
     del log): ventana 880–888 + ampliación 756, ~1 640 en total, frente a 20 631 con el
-    agregado. **CPU en producción sin medir todavía**: va con el deploy, junto con el heatmap.
+    agregado.
+  - **CPU en producción** (2026-10-31, Bogotá; versión `294d0b4a`, seed de bench). `cpuTime`
+    de `wrangler tail`, requests de una en una por segundo, todas 200 y `outcome: ok`. Hubo dos
+    tandas (de ahí n = 40); del heatmap se capturaron 36 de 40, sin investigar por qué faltan 4:
+
+    | Request | n | Mediana | Mín–máx | Más de 10 ms | Wall mediana | Filas leídas |
+    |---|---|---|---|---|---|---|
+    | `GET /habits` | 40 | **6 ms** | 3–17 ms | 2 de 40 | 35 ms | 902 + 2 897 de ampliación = 3 799 |
+    | `GET /habits/heatmap` | 36 | **2 ms** | 1–4 ms | 0 de 36 | 17 ms | 6 477 |
+
+    - Antes (2.1.4): `GET /habits` 10,5 ms de mediana, 10 de 20 sobre 10 ms y 22 840 filas.
+      Las filas bajan un 83 %. Muestras de otro día, pero la mediana pasa debajo de los 7 ms
+      del disparador que tenía `completion_rate`, ya retirado del `ROADMAP`.
+    - Los dos únicos picos (17 ms) son la primera request de cada tanda.
+    - El 76 % de las filas es la ampliación de los hábitos en el borde (ADR 0007; el pendiente
+      de la duplicación sigue en el `ROADMAP`).
+    - **Costo de una marca:** con el refresco total (ADR 0008), lista + heatmap son unas
+      10 300 filas por escritura con este seed, y el heatmap pesa más que la lista. Daría para
+      unas 480 escrituras al día en los 5 M de cuota. El seed es ~130× las marcas reales.
   - `achievements_unlocked` pasa de claves a `{key, name, icon}`: el catálogo vive en la base
     y el toast necesita el nombre. Comprobado en local: un hábito nuevo marcado da los toasts
     «Primera sangre» y «Polímata».
