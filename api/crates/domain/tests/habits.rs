@@ -5,7 +5,8 @@ use chrono::{Datelike, NaiveDate, Weekday};
 use grimoire_domain::cadence::{Cadence, InvalidWeeklyTarget, WeekdaySet, WeeklyTarget};
 use grimoire_domain::habits::{
     MarkRejected, Marks, UndoRejected, WindowedStreak, best_streak, check_mark_day, check_undo,
-    current_streak, current_streak_since, history_window_start, mark,
+    completion_rate, current_streak, current_streak_since, done_units, history_window_start, mark,
+    total_units,
 };
 use grimoire_domain::xp::{
     apply_multiplier, award_xp, streak_multiplier, title_for_level, xp_for_level, xp_to_level,
@@ -17,6 +18,38 @@ fn d(s: &str) -> NaiveDate {
 
 fn marks(days: &[&str]) -> Marks {
     days.iter().map(|s| d(s)).collect()
+}
+
+#[test]
+fn completion_counts_only_what_the_habit_asked_for() {
+    // L–V del lunes 26 al domingo 1: 5 ocasiones; el sábado marcado no cuenta
+    let lv = Cadence::Daily {
+        days: WeekdaySet::parse("0,1,2,3,4").unwrap(),
+    };
+    let m = marks(&["2026-10-26", "2026-10-27", "2026-10-31"]);
+    assert_eq!(done_units(lv, &m), 2);
+    assert_eq!(total_units(lv, d("2026-10-26"), d("2026-11-01")), 5);
+    assert_eq!(
+        total_units(lv, d("2026-10-31"), d("2026-11-01")),
+        1,
+        "piso en 1"
+    );
+
+    // semanal 2×: solo cuenta la semana que alcanza la meta
+    let weekly = Cadence::Weekly {
+        target: WeeklyTarget::new(2).unwrap(),
+    };
+    let m = marks(&["2026-10-26", "2026-10-28", "2026-11-02"]);
+    assert_eq!(done_units(weekly, &m), 1);
+    assert_eq!(total_units(weekly, d("2026-10-28"), d("2026-11-02")), 2);
+}
+
+#[test]
+fn completion_rate_rounds_like_python() {
+    assert_eq!(completion_rate(2, 3), 66.7);
+    assert_eq!(completion_rate(1, 16), 6.2, "6,25 exacto: mitad al par");
+    assert_eq!(completion_rate(3, 16), 18.8, "18,75 exacto: mitad al par");
+    assert_eq!(completion_rate(7, 5), 100.0, "tope en 100");
 }
 
 const DAILY: Cadence = Cadence::Daily { days: None };

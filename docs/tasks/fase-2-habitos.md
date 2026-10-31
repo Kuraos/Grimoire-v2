@@ -322,3 +322,66 @@ docs, decisiones tomadas sobre la marcha.)
   - Local: con los logros reiniciados y un hábito del seed con racha larga, marcar un
     hábito nuevo da `[first_blood, polymath]`, sin logros de racha (fila 8). El reintento
     da lista vacía y otra marca del mismo día, 409.
+  - **Escala real** (dato de Johan, 2026-10-30): la v1 tiene 15 hábitos activos y 70
+    marcas (máx. 6 por hábito). El seed de bench, con ~9 400 marcas, es ~130× más pesado,
+    así que los 9 ms de mediana de `complete` son una cota de peor caso frente al uso
+    real. Dos matices: el factor 130 es de marcas, no de hábitos (21 activos en la base
+    medida frente a 15), y la lectura de `total_discipline` crece con los hábitos; y esas
+    10 marcas no ampliaron la lectura de su propio hábito, lo que solo pasa con rachas de
+    más de 90 días.
+  - **Pendientes de baja prioridad:** el origen de las 6 marcas de hoy en los hábitos
+    `Bench` y el error 7403 de la migración.
+- **2.1.4** (2026-10-30, Bogotá):
+  - **CPU sin medir:** la tarea no se desplegó (Johan lo pide aparte). Falta aplicar la
+    migración `0004` remota, desplegar y medir `GET /habits` y `GET /habits/heatmap` con
+    `wrangler tail`. Este criterio del plan queda abierto.
+  - **Filas leídas**, en local con el seed (9 417 marcas, 21 hábitos activos; solo cuenta
+    D1, no el CPU):
+
+    | Request | Filas leídas | Nota |
+    |---|---|---|
+    | `GET /habits` | 19 882 + 2 894 de ampliación | Antes: ~900 + 2 897. |
+    | `GET /habits/heatmap` | ~12 580 | Escanea todas las marcas: no hay índice por `local_date` solo. |
+    | `GET /habits/{id}` del hábito más largo | 1 080 | Una fila por marca, como prevé el plan. |
+
+    - **`completion_rate` en la lista rompe la cota del ADR 0007:** ese agregado recorre todo
+      el historial, así que estas filas crecen con los años. Con el seed caben ~219
+      `GET /habits` al día en los 5 M de cuota. Con `JOIN` desde `habit_logs` eran ~39 270
+      filas; recorrer desde `habits` (`CROSS JOIN`, índice `(habit_id, local_date)`) las
+      bajó a la mitad. Con las 70 marcas reales son unos cientos de filas (estimado, no
+      medido). Si llegara a pesar, el plan ya prevé pasarlo al detalle.
+  - `last_mark` sale de la ventana de 90 días: una marca más vieja da `null`, y de todos
+    modos ya no se puede deshacer.
+  - `completion_rate` comparado en los 7 goldens: `format!("{:.1}")` redondea como
+    `round(x, 1)` de Python (6,25 → 6,2). Un test con las sentencias reales comprueba que
+    el agregado en SQL y `done_units` del dominio cuentan lo mismo (diario, L–V, solo
+    domingo y semanal 2×).
+  - Deshacer: las 4 sentencias del `batch` exigen que la marca siga existiendo, con el
+    borrado de último; dos deshacer seguidos devuelven el XP una sola vez. Una marca
+    inexistente da 200 sin efecto, y la de otro hábito, 409. Se puede deshacer en un hábito
+    archivado, como en la v1. Por eso `read_mark_state` ya no filtra por `active`;
+    `complete` responde 404 aparte. Las marcas previas a la `0004` no tienen `mark_id`:
+    deshacerlas no devuelve XP.
+  - La respuesta de `PATCH` es el hábito sin racha, igual que `POST /habits`. La v1
+    devolvía el hábito enriquecido; la UI lee racha y constancia de `GET`. `GET /habits`
+    ahora ordena por categoría y nombre, como la v1. CORS ahora permite `PATCH` y `DELETE`.
+  - La `0004` no agrega al catálogo las categorías de hábitos ya existentes que no estén
+    entre las 6 por defecto. Solo hay datos de prueba, y la migración de la v1 trae su
+    propio catálogo.
+  - **`wrangler dev`** (puerto 8798, base local), todo como se esperaba:
+    ```
+    crear con categoría nueva → 201, la categoría entra al catálogo con habit_count 1
+    borrar categoría en uso   → 409 «Cat214» está en uso por 1 hábito(s)…
+    PATCH days/notes null     → 200, quedan en null; xp_reward 5 → 422; id inexistente → 404
+    categoría: crear 201, reintento 200, otras mayúsculas 409, borrar 204, otra vez 404
+    marcar → xp +20; detalle: total_xp 20, last_mark y marcas; heatmap cuenta la marca
+    deshacer → xp −20, streak 0; reintento → 200, xp_earned 0
+    XP en 5, deshacer con piso → xp_earned −5, new_xp 0; filas de la marca: +20, −20 y
+      xp_floor +15; total_xp del detalle 0, sin la marca borrada
+    deshacer con otro hábito → 409; marca fuera de gracia → 409
+    archivar 204, otra vez 204; fuera de la lista, dentro de include_archived=true
+    marcar archivado → 404; restaurar con active:true → 200
+    OPTIONS → Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+    ```
+    Los hábitos «Ruta 214» y «Ruta 214 otro» quedan archivados en la base local, con el XP
+    local alterado por la prueba del piso.

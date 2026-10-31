@@ -9,8 +9,7 @@
 //! Lo que este test todavía no cubre, y dónde se cubre:
 //! - vidas y `evaluate-streaks` (2.1.2): el XP de la penalización de la v1 se inyecta
 //!   desde el golden para seguir comparando los pasos siguientes (filas 2 y 3);
-//! - `completion_rate` (2.1.4, agregado en SQL) y los campos de la barra de XP de
-//!   `GET /user` (2.1.2);
+//! - los campos de la barra de XP de `GET /user` (2.1.2);
 //! - los mensajes de rechazo, que son del worker.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -21,7 +20,8 @@ use chrono::NaiveDate;
 use grimoire_domain::achievements::{MarkFacts, earned_on_mark, total_discipline};
 use grimoire_domain::cadence::{Cadence, WeekdaySet, WeeklyTarget, week_monday};
 use grimoire_domain::habits::{
-    MarkRejected, Marks, best_streak, check_mark_day, check_undo, current_streak, mark,
+    MarkRejected, Marks, best_streak, check_mark_day, check_undo, completion_rate, current_streak,
+    done_units, mark, total_units,
 };
 use grimoire_domain::lives::DailyHabit;
 use grimoire_domain::xp::{award_xp, title_for_level, xp_to_level};
@@ -232,6 +232,15 @@ impl Sim {
                 let best = best_streak(h.cadence, &marks);
                 assert_eq!(int(&body["best_streak"]), i64::from(best), "best_streak");
                 assert_eq!(body["done_today"], marks.contains(&today), "done_today");
+                let rate = completion_rate(
+                    done_units(h.cadence, &marks),
+                    total_units(h.cadence, h.created, today),
+                );
+                assert_eq!(
+                    body["completion_rate"].as_f64(),
+                    Some(rate),
+                    "completion_rate"
+                );
                 let total: i64 = h.grants.values().sum();
                 assert_eq!(
                     int(&body["total_xp"]),

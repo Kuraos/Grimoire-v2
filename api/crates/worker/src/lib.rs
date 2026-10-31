@@ -5,13 +5,14 @@ use std::sync::Arc;
 use axum::Router;
 use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use chrono::NaiveDate;
 use subtle::ConstantTimeEq;
 use tower_service::Service;
 use worker::js_sys::{self, Object, Reflect};
 use worker::{D1Database, D1Result, Env, HttpRequest, console_error, console_log, event};
 
+mod categories;
 mod habits;
 mod user;
 
@@ -39,7 +40,7 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
             let h = res.headers_mut();
             h.insert(
                 header::ACCESS_CONTROL_ALLOW_METHODS,
-                HeaderValue::from_static("GET, POST, OPTIONS"),
+                HeaderValue::from_static("GET, POST, PATCH, DELETE, OPTIONS"),
             );
             h.insert(
                 header::ACCESS_CONTROL_ALLOW_HEADERS,
@@ -63,7 +64,20 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
         let router = Router::new()
             .route("/health", get(|| async { "ok" }))
             .route("/habits", get(habits::list).post(habits::create))
+            .route("/habits/heatmap", get(habits::heatmap))
+            .route(
+                "/habits/{id}",
+                get(habits::detail)
+                    .patch(habits::update)
+                    .delete(habits::archive),
+            )
             .route("/habits/{id}/complete", post(habits::complete))
+            .route("/habits/{id}/marks/{mark_id}", delete(habits::undo))
+            .route(
+                "/habit-categories",
+                get(categories::list).post(categories::create),
+            )
+            .route("/habit-categories/{id}", delete(categories::delete))
             .route("/user", get(user::read))
             .with_state(state);
         router.into_service().call(req).await?

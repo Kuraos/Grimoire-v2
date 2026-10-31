@@ -109,6 +109,34 @@ pub fn current_streak_since(
     }
 }
 
+/// Ocasiones cumplidas: días programados marcados, o semanas que alcanzaron la meta.
+pub fn done_units(cadence: Cadence, marks: &Marks) -> u32 {
+    match cadence {
+        Cadence::Weekly { target } => met_weeks(marks, target.get()).len() as u32,
+        Cadence::Daily { days } => marks.iter().filter(|&&d| scheduled_on(days, d)).count() as u32,
+    }
+}
+
+/// Ocasiones que el hábito pidió desde que existe, al menos 1 (v1: `_enrich`).
+pub fn total_units(cadence: Cadence, created_on: NaiveDate, today: NaiveDate) -> u32 {
+    let total = match cadence {
+        Cadence::Weekly { .. } => (week_monday(today) - week_monday(created_on)).num_days() / 7 + 1,
+        Cadence::Daily { days } => created_on
+            .iter_days()
+            .take_while(|d| *d <= today)
+            .filter(|&d| scheduled_on(days, d))
+            .count() as i64,
+    };
+    total.max(1) as u32
+}
+
+/// Constancia en porcentaje, con un decimal y sin pasar de 100. `format!` redondea el
+/// valor binario exacto con mitades al par, como `round(x, 1)` de Python en la v1.
+pub fn completion_rate(done: u32, total: u32) -> f64 {
+    let rate = f64::from(done.min(total)) / f64::from(total) * 100.0;
+    format!("{rate:.1}").parse().unwrap_or(0.0)
+}
+
 pub fn best_streak(cadence: Cadence, marks: &Marks) -> u32 {
     let units: Vec<NaiveDate> = match cadence {
         Cadence::Weekly { target } => met_weeks(marks, target.get()).into_iter().collect(),
