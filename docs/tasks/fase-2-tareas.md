@@ -1,6 +1,6 @@
 # Fase 2.2 — Tareas de punta a punta
 
-**Estado: plan propuesto, pendiente de aprobación de Johan. Sin código del módulo todavía.**
+**Estado: plan aprobado por Johan el 2026-10-31.**
 
 Depende de: fase 2.1 (usuario, XP, logros y cola sin conexión, ADR 0008) y la caracterización
 de la v1 (`docs/tasks/caracterizacion-v1.md`, goldens en
@@ -17,8 +17,8 @@ que una decisión no se sostiene, se para y se anota, en vez de rodearla.
 
 ## Decisiones
 
-Las 1, 2, 4, 5 y 6 las fijó Johan al pedir este plan (2026-10-31); aquí se concretan. La 3 y de
-la 7 en adelante son propuestas.
+Las 1, 2, 4, 5 y 6 las fijó Johan al pedir este plan (2026-10-31). La 3 y de la 7 en adelante
+las propuso el plan, y Johan las aprobó con él.
 
 1. **Orden del kanban con claves fraccionarias.** `tasks.rank` (`TEXT`, solo `[0-9A-Za-z]`) y
    `ORDER BY rank, id`. El cliente calcula la clave entre las dos vecinas una sola vez, al
@@ -36,8 +36,8 @@ la 7 en adelante son propuestas.
      concesión, con la fila `xp_floor` de Hábitos si el piso recorta. Con saldo 0, o si
      `grant_id` ya no es la vigente, responde 200 sin efecto.
    - Completada con otro id: 409 visible (dos dispositivos sin conexión). La segunda no paga.
-3. **`remind_at` entra el día 1 como notificación local, propuesta.** Va al final (2.2.6) y no
-   bloquea lo demás.
+3. **`remind_at` entra el día 1 como notificación local.** Va al final (2.2.6) y no bloquea lo
+   demás.
    - **Por qué ahora:** es la razón del APK (ADR 0003), la dependencia ya está instalada, y
      Pomodoro, el módulo siguiente, necesita el mismo permiso y el mismo flujo de alarma exacta.
      Dejar la v1 sin recordatorios sería perder una función.
@@ -69,25 +69,10 @@ la 7 en adelante son propuestas.
 
 ---
 
-## Diferencias propuestas con la v1
+## Diferencias con la v1
 
-Al aprobarlas pasan a «Diferencias permitidas» de `caracterizacion-v1.md`, como filas 11 en
-adelante. También aplica la fila 4 (todos los logros desbloqueados en la respuesta).
-
-| # | Diferencia | v1 (golden) | v2 | Motivo |
-|---|---|---|---|---|
-| A | XP al descompletar | Suma todas las concesiones históricas (`descompletar_piso`: −30 de 15) | Solo la concesión vigente | Es un bug: quitaba XP legítimo. |
-| B | `PATCH` y `done` | Cambia `completed` sin XP; repetir ciclos paga de nuevo (`kanban_estado`) | 422; solo por `complete`/`uncomplete` | La UI nunca lo usó sin llamar antes a `complete`. Decisión 7. |
-| C | Crear con `status: done`, `PATCH completed` | Estados contradictorios | 422; `completed` no se acepta | Decisión 7. |
-| D | Orden | `position` entera; mover reescribe la columna | `rank`; mover escribe una fila. Tarea nueva: al final de su columna | Decisión 1. |
-| E | Repetir `DELETE` | 404 | 204 | Contrato de la cola. Decisión 6. |
-| F | Regla rechazada (ya completada, no completada) | 400 | 409, o 200 sin efecto si es el mismo id | 409 como en Hábitos. Decisión 2. |
-| G | `project_id` inexistente | 201 | 422 | Con la clave foránea, una referencia rota fallaría igual. La cola mantiene el orden, así que crear proyecto y tarea sin conexión funciona. |
-| H | Checklist: texto vacío | 201 | 422 en la API, sin `CHECK`, por si la migración trae vacíos | Es un ítem que no dice nada. |
-| I | Checklist: `PATCH position` y `GET /tasks/{id}/checklist` | Existen; un id inexistente da 200 con `[]` | No existen; la checklist viene en la tarea | La UI de la v1 no reordena ni usa esa lectura sola. |
-| J | Filtro `tag` | Subcadena en el servidor (`a` trae `casa`) | Token exacto sin distinguir mayúsculas, en el cliente | Es un falso positivo. Igual que Hábitos: filtro en el cliente. |
-| K | Lista de etiquetas del filtro | `GET /tags`: hábitos, tareas y diario | Derivada de las tareas cargadas | Sin ruta nueva; módulo de etiquetas en la fase 5+. |
-| L | `pomodoro_hours` | En cada proyecto | Llega con Pomodoro | Aún no hay sesiones. Su UI se oculta hasta entonces. |
+Aprobadas con el plan. Están en «Diferencias permitidas» de `caracterizacion-v1.md`, filas 11 a
+22. También aplica la fila 4 (todos los logros desbloqueados en la respuesta).
 
 ---
 
@@ -199,3 +184,26 @@ editar la hora lo reagenda; se anota si sobrevive a reiniciar el teléfono.
 
 (Agregar aquí lo que se descubra: mediciones, APIs que no funcionaron como dicen los docs,
 decisiones tomadas sobre la marcha.)
+
+- **2.2.1** (2026-10-31, Bogotá):
+  - `golden_tasks.rs` reproduce la parte de regla de 4 goldens (`completar_xp`,
+    `descompletar_piso`, `logros_tareas`, `logro_por_patch`). Difieren lo previsto: en
+    `descompletar_piso`, un solo paso (fila 11; la v2 conserva 15 XP), y en `logro_por_patch`,
+    el `PATCH` a `done` (fila 12), por lo que ahí no se desbloquea `project_master`.
+  - Para comprobar que no pasan en vacío, 12 mutaciones del dominio hacen fallar `tasks.rs` o
+    `golden_tasks.rs`. Qué test cae:
+    - Reintento de `complete` que paga: `complete_grants_once…` y 4 goldens.
+    - Completar lo completado: `complete_with_another_grant…`, `completar_xp`.
+    - Día futuro aceptado: `complete_accepts_any_past_day…`.
+    - XP fijo: `complete_grants_once…`, `completar_xp`, `descompletar_piso`, `logros_tareas`.
+    - Devolver el doble: `uncomplete_refunds…`, `descompletar_piso`, `logros_tareas`.
+    - Concesión vieja que reabre: `uncomplete_rejects…`, `uncomplete_retry…`.
+    - Reintento de `uncomplete` que falla: `uncomplete_retry…`, `descompletar_piso`, `logros_tareas`.
+    - `done` escribible: `done_is_not_writable`, `logro_por_patch`.
+    - `rank` vacío: `rank_is_ascii_alphanumeric`. Checklist vacío: `checklist_text_must…`.
+    - Sin `project_master`, y centurión en 101: `task_achievements…`, `logros_tareas`.
+  - **Claves foráneas en D1 local** (`wrangler d1`, `0005` aplicada): `project_id` inexistente
+    falla con `SQLITE_CONSTRAINT_FOREIGNKEY`, borrar el proyecto deja `project_id` en `NULL` y
+    borrar la tarea borra sus ítems. Filas de prueba eliminadas. **`0005` no se aplicó en remoto.**
+  - **Pendiente de la 2.2.2:** falta decidir cómo se registra lo restado por el piso en el saldo:
+    Hábitos ya lo resuelve con `UNDO_GRANT` y `UNDO_FLOOR`, y se reutiliza.

@@ -62,6 +62,38 @@ pub fn earned_on_mark(f: MarkFacts) -> Vec<&'static str> {
     earned
 }
 
+/// Lo que hay que saber después de completar una tarea.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TaskFacts {
+    /// Nivel con el XP de la tarea ya sumado.
+    pub level: u32,
+    /// Algún proyecto con tareas las tiene todas hechas, sea o no el de esta tarea (v1).
+    pub project_finished: bool,
+    /// Tareas completadas en total, con esta incluida.
+    pub completed_tasks: u32,
+}
+
+pub const PROJECT_MASTER: &str = "project_master";
+pub const TASK_CENTURION: &str = "task_centurion";
+const CENTURION_TASKS: u32 = 100;
+
+/// Todos los logros que se cumplen, en el orden de la v1: nivel, proyecto y centenar. La v1 solo
+/// informaba el primero (caracterizacion-v1.md, fila 4). Las tareas no dan `first_blood`.
+pub fn earned_on_task_complete(f: TaskFacts) -> Vec<&'static str> {
+    let mut earned: Vec<&'static str> = LEVELS
+        .iter()
+        .filter(|(min, _)| f.level >= *min)
+        .map(|(_, key)| *key)
+        .collect();
+    if f.project_finished {
+        earned.push(PROJECT_MASTER);
+    }
+    if f.completed_tasks >= CENTURION_TASKS {
+        earned.push(TASK_CENTURION);
+    }
+    earned
+}
+
 const DISCIPLINE_DAYS: u64 = 7;
 
 /// Primer día que mira `total_discipline`.

@@ -96,6 +96,18 @@ ADR 0005, y la 10, que tiene su fecha.
 | 8 | Racha que dispara los logros de racha | La más larga entre **todos** los hábitos activos, recalculada en cada marca (`_max_current_streak`) | La del hábito que se marca | Marcar un hábito no cambia la racha de los demás, y leerlas todas costó 48–53 ms de CPU por marca (`docs/tasks/fase-2-habitos.md`, 2.1.3). Solo difiere si otro hábito ya tiene la racha y el logro sigue bloqueado; lo cubre el backfill del ADR 0006. Ningún golden lo muestra. |
 | 9 | Días del heatmap | `GET /stats` devuelve 365 días, y `HabitHeatmap` pinta 53 semanas (371 celdas) | 371 días (`GET /habits/heatmap`) | Con 365, las celdas más viejas de la rejilla salían vacías aunque hubiera marcas. Ningún golden lo muestra. |
 | 10 | `completion_rate` | Sobre todo el historial, desde la creación | Últimos 90 días (lectura acotada del ADR 0007), desde la creación si el hábito es más nuevo; en semanales, solo semanas enteras dentro de la ventana. Igual en la lista y en el detalle | El agregado sobre todo el historial era el 92 % de las filas de `GET /habits` y crecía con los años (cuota de 5 M de filas de D1), y para la tarjeta lo reciente dice más. Decidido por Johan el 2026-10-31. Ningún golden pasa de 90 días, así que ninguno lo muestra. |
+| 11 | XP al descompletar | Suma todas las concesiones históricas de la tarea (`descompletar_piso`: −30 de 15) | Solo el saldo de la concesión vigente | Es un bug: quitaba XP legítimo. Aprobada por Johan el 2026-10-31, como las filas 12 a 22. |
+| 12 | `PATCH status` hacia o desde `done` | Cambia `completed` sin XP, y repetir ciclos paga de nuevo (`kanban_estado`) | 422 hacia `done`; entrar y salir solo por `complete`/`uncomplete` | La UI nunca lo usó sin llamar antes a `complete` (`fase-2-tareas.md`, decisión 7). |
+| 13 | Crear con `status: done` y `PATCH completed` | Estados contradictorios | 422; `completed` no se acepta y se deriva de `status` | Decisión 7. |
+| 14 | Orden del tablero | `position` entera; mover reescribe la columna | `rank` fraccionario; mover escribe una fila. Tarea nueva: al final de su columna | Decisión 1. |
+| 15 | Repetir `DELETE` de tarea, ítem o proyecto | 404 | 204 | Contrato de la cola (decisión 6). |
+| 16 | Regla rechazada (ya completada, no completada) | 400 | 409, o 200 sin efecto si es el mismo id | 409 como en Hábitos (decisión 2). |
+| 17 | `project_id` inexistente | 201 | 422 | Con la clave foránea fallaría igual. La cola mantiene el orden, así que crear proyecto y tarea sin conexión funciona. |
+| 18 | Checklist con texto vacío | 201 | 422 en la API, sin `CHECK`, por si la migración trae vacíos | Es un ítem que no dice nada. |
+| 19 | `PATCH position` de un ítem y `GET /tasks/{id}/checklist` | Existen; un id inexistente da 200 con `[]` | No existen; la checklist viene en la tarea | La UI de la v1 no reordena ni usa esa lectura sola. |
+| 20 | Filtro `tag` | Subcadena en el servidor (`a` trae `casa`) | Token exacto sin distinguir mayúsculas, en el cliente | Es un falso positivo. Igual que Hábitos: filtro en el cliente. |
+| 21 | Lista de etiquetas del filtro | `GET /tags`: hábitos, tareas y diario | Derivada de las tareas cargadas | Sin ruta nueva; módulo de etiquetas en la fase 5+. |
+| 22 | `pomodoro_hours` del proyecto | En cada proyecto | Llega con Pomodoro | Aún no hay sesiones. Su UI se oculta hasta entonces. |
 
 ## Hallazgos
 
@@ -138,8 +150,7 @@ porta igual.
   - Ningún escenario cae en una mitad exacta del redondeo (diferencia permitida de
     fase-0, 0.1): los pagos con multiplicador son 22, 110, 120 y 135.
 - **Tareas** (2026-10-31): goldens en `api/crates/domain/tests/golden/tasks/`. Al regenerar, los
-  de Hábitos salieron idénticos. Las diferencias que se proponen están en
-  `docs/tasks/fase-2-tareas.md`; hasta aprobarlas, esta lista solo describe la v1.
+  de Hábitos salieron idénticos. Lo decidido sobre cada punto está en las filas 11 a 22.
   - **Descompletar devuelve todas las concesiones históricas**
     (`routers/tasks.py:139-143` suma cada `amount > 0`). `descompletar_piso`: en el segundo
     ciclo de una tarea de 15 XP se restan 30 y el XP queda en 35, no en 50. Sin XP de otra

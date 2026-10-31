@@ -4,4 +4,5 @@ pub mod achievements;
 pub mod cadence;
 pub mod habits;
 pub mod lives;
+pub mod tasks;
 pub mod xp;
