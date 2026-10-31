@@ -135,13 +135,9 @@ en «Hallazgos».
 
 ## 2.2.3 — Checklist, proyectos y paridad de la API
 
-- Rutas de checklist y proyectos, con el contrato de la cola.
-- Medir la lista de proyectos con el mismo seed.
-- `scripts/replay_golden.py`: reproduce los 8 goldens contra `wrangler dev`. Traduce alias a UUID,
-  genera `id`, `rank` y concesiones, y compara status y campos. Hace falta porque buena parte de
-  estos goldens es CRUD del worker, que el dominio no ve. Cada campo omitido cita su diferencia.
-
-Terminado: los 8 goldens reproducidos sin diferencias fuera de la tabla. Salida en «Hallazgos».
+Hecha dentro de la 2.2.2: Johan pidió reproducir ahí los goldens de CRUD, y esos goldens necesitan
+estas rutas. `scripts/replay_golden.py` traduce alias a UUID, genera `id`, `rank` y concesiones, y
+compara status y campos. Queda pendiente solo el CPU en producción.
 
 ## 2.2.4 — Capa de datos
 
@@ -207,3 +203,44 @@ decisiones tomadas sobre la marcha.)
     borrar la tarea borra sus ítems. Filas de prueba eliminadas. **`0005` no se aplicó en remoto.**
   - **Pendiente de la 2.2.2:** falta decidir cómo se registra lo restado por el piso en el saldo:
     Hábitos ya lo resuelve con `UNDO_GRANT` y `UNDO_FLOOR`, y se reutiliza.
+- **2.2.2** (2026-10-31, Bogotá; incluye la 2.2.3):
+  - Lo restado por el piso se anota como en Hábitos (`xp_floor`), y `uncomplete_respects_the_floor`
+    comprueba que `users.xp` sigue siendo la suma de `xp_log`.
+  - **Goldens contra `wrangler dev`** (`scripts/replay_golden.py`, base local aislada): los 8
+    pasan. Cada escritura aceptada se repitió con el mismo id: mismo resultado y sin XP nuevo.
+
+    | Golden | Pasos | Reintentos | Pasos con diferencia | Filas | XP final |
+    |---|---|---|---|---|---|
+    | `crear_y_validar` | 23 | 7 | 3 | 15, 17, 21 | 0 |
+    | `kanban_estado` | 23 | 12 | 9 | 12, 13, 16 | 15 (v1: 45) |
+    | `checklist` | 25 | 14 | 8 | 15, 18, 19 | 15 |
+    | `proyectos` | 17 | 10 | 1 | 15 | 15 |
+    | `completar_xp` | 25 | 19 | 0 | — | 415 |
+    | `descompletar_piso` | 23 | 17 | 1 | 11 | 50 (v1: 35) |
+    | `logros_tareas` | 212 | 204 | 0 | — | 2750 |
+    | `logro_por_patch` | 7 | 4 | 3 | 12 | 15 |
+
+    Los filtros de `GET /tasks` son del cliente (filas 20 y 21): aquí se comparan las tareas que
+    devolvió la v1, pero el filtrado en sí se prueba en la 2.2.4. `pomodoro_hours` no se compara
+    (fila 22). `GET /achievements` no existe en la v2: los logros se comparan con los que informan
+    las respuestas.
+  - **Filas leídas y escritas** con `wrangler dev`, seed de 500 tareas, 20 proyectos y 1 013 ítems
+    (`scripts/bench_seed_tasks.py`). El tiempo local no es CPU:
+
+    | Request | n | Filas leídas | Filas escritas | Wall local (mediana) |
+    |---|---|---|---|---|
+    | `GET /tasks` (355 683 bytes) | 10 | 2 013 | 0 | 31 ms |
+    | `GET /projects` (4 307 bytes) | 10 | 464 | 0 | 20 ms |
+    | `PATCH` mover (`status`, `rank`) | 5 | 3–8 | **1** | 22 ms |
+    | `POST /tasks` | 5 | 3 | 3 | 19 ms |
+    | `complete`, logros bloqueados | 5 | 448–959 | 6–7 | 33 ms |
+    | `complete`, logros desbloqueados | 5 | 43 | 6 | 28 ms |
+
+    - `GET /tasks`: 500 de lectura, 500 del ordenamiento por `rank` (sin índice) y 1 013 de ítems.
+      No se añade índice: a 2 013 filas por lectura, los 5 M diarios de D1 dan para unas 2 400.
+    - Mover escribe una sola fila, lo que pedía la decisión 1.
+    - `complete` solo escanea mientras `project_master` o `task_centurion` siguen bloqueados.
+  - **Sin medir:** CPU en producción. `GET /tasks` serializa 355 KB, así que es el candidato a
+    pasar de 10 ms. El plan pedía 2 000 tareas; Johan fijó 500. Si la mediana pasa de 10 ms con 500,
+    se acota como dice la 2.2.2.
+  - **`0005` y este worker no están en producción.**

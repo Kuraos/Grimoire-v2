@@ -36,12 +36,14 @@ const HABIT_COLUMNS: &str = "id, name, category, frequency, days, target_per_wee
 pub(crate) const ENSURE_CATEGORY: &str = "INSERT INTO habit_categories (id, name, color) \
      SELECT ?1, category, color FROM habits WHERE id = ?2 ON CONFLICT (name) DO NOTHING";
 
-fn int_bool<'de, D: Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
+pub(crate) fn int_bool<'de, D: Deserializer<'de>>(d: D) -> Result<bool, D::Error> {
     Ok(u8::deserialize(d)? != 0)
 }
 
 /// Distingue en un PATCH «no vino» (`None`) de «vino null» (`Some(None)`).
-fn present<'de, T: Deserialize<'de>, D: Deserializer<'de>>(d: D) -> Result<Option<T>, D::Error> {
+pub(crate) fn present<'de, T: Deserialize<'de>, D: Deserializer<'de>>(
+    d: D,
+) -> Result<Option<T>, D::Error> {
     T::deserialize(d).map(Some)
 }
 
@@ -93,9 +95,9 @@ struct MarksRow {
 }
 
 #[derive(Deserialize)]
-struct UserRow {
-    id: String,
-    xp: i64,
+pub(crate) struct UserRow {
+    pub id: String,
+    pub xp: i64,
 }
 
 pub(crate) fn parse_date(s: &str) -> Result<NaiveDate, AppError> {
@@ -417,7 +419,7 @@ pub struct HabitPatch {
     active: Option<bool>,
 }
 
-fn opt_text(v: Option<&str>) -> JsValue {
+pub(crate) fn opt_text(v: Option<&str>) -> JsValue {
     v.map_or(JsValue::NULL, JsValue::from_str)
 }
 
@@ -699,13 +701,13 @@ pub(crate) const UNLOCK_ACHIEVEMENTS: &str = "UPDATE achievements SET unlocked_a
      WHERE unlocked_at IS NULL AND key IN (SELECT value FROM json_each(?2)) RETURNING key, name, icon";
 
 #[derive(Deserialize)]
-struct AchievementRow {
-    key: String,
+pub(crate) struct AchievementRow {
+    pub key: String,
 }
 
 #[derive(Deserialize, Serialize)]
-struct UnlockedAchievement {
-    key: String,
+pub(crate) struct UnlockedAchievement {
+    pub key: String,
     name: String,
     icon: String,
 }

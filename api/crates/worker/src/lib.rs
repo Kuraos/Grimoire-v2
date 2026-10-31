@@ -5,7 +5,7 @@ use std::sync::Arc;
 use axum::Router;
 use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, get, patch, post};
 use chrono::NaiveDate;
 use subtle::ConstantTimeEq;
 use tower_service::Service;
@@ -14,6 +14,8 @@ use worker::{D1Database, D1Result, Env, HttpRequest, console_error, console_log,
 
 mod categories;
 mod habits;
+mod projects;
+mod tasks;
 mod user;
 
 #[derive(Clone)]
@@ -78,6 +80,20 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
                 get(categories::list).post(categories::create),
             )
             .route("/habit-categories/{id}", delete(categories::delete))
+            .route("/tasks", get(tasks::list).post(tasks::create))
+            .route("/tasks/{id}", patch(tasks::update).delete(tasks::remove))
+            .route("/tasks/{id}/complete", post(tasks::complete))
+            .route("/tasks/{id}/uncomplete", post(tasks::uncomplete))
+            .route("/tasks/{id}/checklist", post(tasks::add_item))
+            .route(
+                "/tasks/checklist/{id}",
+                patch(tasks::update_item).delete(tasks::remove_item),
+            )
+            .route("/projects", get(projects::list).post(projects::create))
+            .route(
+                "/projects/{id}",
+                patch(projects::update).delete(projects::remove),
+            )
             .route("/user", get(user::read))
             .with_state(state);
         router.into_service().call(req).await?
