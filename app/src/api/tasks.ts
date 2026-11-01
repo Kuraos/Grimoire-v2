@@ -94,6 +94,8 @@ export const taskRequests = {
     body: { grant_id: t.grant_id, ...place },
     label: `Descompletar ${t.title}`,
   }),
+  /** Desde el historial: la lista no tiene la tarea, así que la request la lleva para la vista. */
+  uncompleteOlder: (t: ApiTask): ApiRequest => ({ ...taskRequests.uncomplete(t), snapshot: t }),
   /** Soltar en una columna. Entrar o salir de `done` da XP o lo devuelve, así que no es un `PATCH`. */
   move: (t: Named & Pick<ApiTask, 'status' | 'grant_id'>, status: ApiTask['status'], rank: string, now = new Date()): ApiRequest => {
     if (status === 'done') {
@@ -222,6 +224,7 @@ export function applyTaskQueue(
       })
     } else if (action === 'uncomplete') {
       const u = body as unknown as { grant_id: string | null; status?: 'todo' | 'doing'; rank?: string }
+      if (r.snapshot && !out.some((t) => t.id === id)) out = [...out, r.snapshot as ApiTask]
       change(id, (t) => t.status !== 'done' || t.grant_id !== u.grant_id ? t : {
         ...t,
         status: u.status ?? 'todo',
@@ -243,6 +246,64 @@ export function applyTaskQueue(
   return { tasks: [...out].sort(byRank), pendingIds }
 }
 
+/** Los cambios de la cola en los conteos de cada proyecto, frente a lo que ya contó el servidor. */
+export function projectCountDeltas(
+  tasks: ApiTask[],
+  entries: Pick<QueueEntry, 'request' | 'status'>[],
+): Map<string, { total: number; pending: number }> {
+  const deltas = new Map<string, { total: number; pending: number }>()
+  const add = (list: ApiTask[], sign: number) => {
+    for (const t of list) {
+      if (!t.project_id) continue
+      const d = deltas.get(t.project_id) ?? { total: 0, pending: 0 }
+      d.total += sign
+      if (t.status !== 'done') d.pending += sign
+      deltas.set(t.project_id, d)
+    }
+  }
+  // lo traído del historial ya estaba contado, como hecha
+  const known = new Set(tasks.map((t) => t.id))
+  const older = entries
+    .filter((e) => e.status !== 'error' && e.request.snapshot)
+    .map((e) => e.request.snapshot as ApiTask)
+    .filter((t) => !known.has(t.id) && (known.add(t.id), true))
+  add([...tasks, ...older], -1)
+  add(applyTaskQueue(tasks, entries).tasks, 1)
+  return deltas
+}
+
+const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 }
+
+/** Los criterios de la v1: por prioridad y luego fecha, o por fecha con lo que no tiene al final. */
+export function sortTasks(tasks: ApiTask[], sort: 'priority' | 'due_date'): ApiTask[] {
+  const due = (t: ApiTask) => t.due_date ?? '9999-12-31'
+  const text = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+  return [...tasks].sort((a, b) => sort === 'due_date'
+    ? text(due(a), due(b))
+    : (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1) || text(due(a), due(b)))
+}
+
+/** Las vecinas para subir o bajar un puesto en la columna. `null`: ya está en el borde. */
+export function stepNeighbours(column: Pick<ApiTask, 'id' | 'rank'>[], id: string, step: -1 | 1): [string | null, string | null] | null {
+  const i = column.findIndex((t) => t.id === id)
+  const j = i + step
+  if (i < 0 || j < 0 || j >= column.length) return null
+  const rest = column.filter((t) => t.id !== id)
+  return [rest[j - 1]?.rank ?? null, rest[j]?.rank ?? null]
+}
+
+/** `datetime-local` (hora del dispositivo) → instante UTC, sin milisegundos (invariante 3). */
+export const remindAtToUtc = (local: string) =>
+  local ? new Date(local).toISOString().replace(/\.\d+Z$/, 'Z') : null
+
+/** Instante UTC → valor de `datetime-local`. */
+export function remindAtToLocal(utc: string | null): string {
+  if (!utc) return ''
+  const d = new Date(utc)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 // ---------- Lecturas ----------
 
 export function useTasks() {
@@ -251,10 +312,7 @@ export function useTasks() {
   return { query, queue, ...applyTaskQueue(query.data ?? [], queue) }
 }
 
-/**
- * Las completadas que la lista ya no trae (fila 23). Lo descompletado sin conexión sale de aquí al
- * instante, pero entra a la lista al sincronizar: la lista no tiene esa tarea hasta entonces.
- */
+/** Las completadas que la lista ya no trae (fila 23). Lo descompletado pasa a la lista al instante. */
 export function useTaskHistory(enabled: boolean) {
   const query = useInfiniteQuery({
     queryKey: ['tasks', 'history'],
@@ -277,6 +335,7 @@ export const taskActions = {
   remove: (t: Named) => enqueue(taskRequests.remove(t)),
   complete: (t: Named) => enqueue(taskRequests.complete(t)),
   uncomplete: (t: Named & Pick<ApiTask, 'grant_id'>) => enqueue(taskRequests.uncomplete(t)),
+  uncompleteOlder: (t: ApiTask) => enqueue(taskRequests.uncompleteOlder(t)),
   /** `prev` y `next` son las claves vecinas en la columna de destino; `null`, el borde. */
   move: (t: Named & Pick<ApiTask, 'status' | 'grant_id'>, status: ApiTask['status'], prev: string | null, next: string | null) =>
     enqueue(taskRequests.move(t, status, rankBetween(prev, next))),

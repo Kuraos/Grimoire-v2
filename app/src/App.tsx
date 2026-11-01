@@ -11,6 +11,7 @@ import { PageHeader } from "./components/layout/PageHeader";
 import { useIsDesktop } from "./hooks/useMediaQuery";
 import { motionTokens } from "./theme-tokens";
 import Habits from "./pages/Habits";
+import Tasks from "./pages/Tasks";
 import { useApp } from "./context";
 import { ConfirmHost } from "./confirm";
 import { ToastAchievement } from "./components/layout/ToastAchievement";
@@ -38,7 +39,7 @@ function Pendiente({ titulo }: { titulo: string }) {
 }
 
 const PENDIENTES: [string, string][] = [
-  ["/", "Inicio"], ["/tareas", "Tareas"], ["/pomodoro", "Pomodoro"], ["/calendario", "Calendario"],
+  ["/", "Inicio"], ["/pomodoro", "Pomodoro"], ["/calendario", "Calendario"],
   ["/diario", "Diario"], ["/entrenamiento", "Entrenamiento"], ["/erario", "Erario"],
   ["/estadisticas", "Estadísticas"], ["/logros", "Logros"], ["/revision", "Revisión semanal"],
 ];
@@ -76,6 +77,7 @@ export default function App() {
                   <Route key={path} path={path} element={<Pendiente titulo={titulo} />} />
                 ))}
                 <Route path="/habitos" element={<Habits />} />
+                <Route path="/tareas" element={<Tasks />} />
               </Routes>
             </motion.div>
           </ErrorBoundary>

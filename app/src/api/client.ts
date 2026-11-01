@@ -70,6 +70,11 @@ export type ApiRequest = {
   body?: unknown
   /** Lo que se le muestra a Johan si el servidor la rechaza al sincronizar. */
   label?: string
+  /**
+   * La tarea tal como se veía al actuar. No viaja: es para que la vista derivada pueda mostrar
+   * una tarea del historial que la lista todavía no trae, también tras reiniciar sin señal.
+   */
+  snapshot?: unknown
 }
 
 export const send = <T>(r: ApiRequest) => call<T>(r.method, r.path, r.body)

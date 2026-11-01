@@ -2,7 +2,7 @@ import {
   createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode,
 } from "react";
 import { onApiError, onSyncResults } from "./api/queryClient";
-import { eventToast, summarizeResults, unseenEvents, useUser } from "./api/user";
+import { eventToast, summarizeResults, syncedSummary, unseenEvents, useUser } from "./api/user";
 import { playLevelUp } from "./sounds";
 import { burstFromLastPress } from "./burst";
 import type { LevelUp, Toast, User } from "./types";
@@ -69,16 +69,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Lo que sigue a marcar, llegue cuando llegue (ADR 0008). Oro sólo si pagó y si la respuesta
   // sigue pegada al toque: horas después, las motas saldrían de cualquier botón.
   useEffect(() => onSyncResults((results) => {
-    const { burst, level, achievements, syncedMarks, syncedXp } = summarizeResults(results);
+    const summary = summarizeResults(results);
+    const { burst, level, achievements } = summary;
+    const synced = syncedSummary(summary);
     if (burst) burstFromLastPress();
     if (level) {
       setLevelUp({ level: level.new_level, title: level.title });
       playLevelUp();
       setTimeout(() => setLevelUp(null), 4200);
     }
-    if (syncedMarks > 0 && syncedXp > 0) {
-      pushToast({ title: "Sincronizado", body: `${syncedMarks} ${syncedMarks === 1 ? "marca" : "marcas"} · +${syncedXp} XP`, icon: "checks" });
-    }
+    if (synced) pushToast({ title: "Sincronizado", body: synced, icon: "checks" });
     for (const a of achievements) {
       pushToast({ title: "Logro desbloqueado", body: a.name, icon: a.icon });
     }

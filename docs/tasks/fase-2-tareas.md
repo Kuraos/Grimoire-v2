@@ -342,8 +342,66 @@ decisiones tomadas sobre la marcha.)
       posición 0 también tumba `un proyecto, una tarea…` y, en cascada, el test siguiente.
     - Proyecto nuevo al final: `crear, editar y borrar un proyecto…`.
     - Sin persistir tareas o proyectos: `las tareas sobreviven al arranque…`.
-  - **Límites para la 2.2.5:**
+  - **Límites para la 2.2.5** (resueltos ahí):
     - Una tarea del historial descompletada sin conexión sale de `useTaskHistory` al instante, pero
       solo entra a `useTasks` al sincronizar.
     - Los conteos `tasks_total` y `tasks_pending` no se predicen.
     - El toast de sincronización de `context.tsx` dice «marcas» también para tareas completadas.
+- **`android:allowBackup="false"`** (2026-10-31, Bogotá): el APK de debug lo lleva (`aapt`). **Falta
+  instalarlo y abrirlo en el teléfono:** `adb devices` no mostró ninguno.
+- **2.2.5** (2026-10-31, Bogotá):
+  - **Pendientes de la 2.2.4, resueltos:**
+    - **Historial sin conexión:** la request de descompletar lleva una copia de la tarea
+      (`ApiRequest.snapshot`). No viaja al servidor, pero sobrevive a reiniciar, y por eso la tarea
+      entra a la lista al instante.
+    - **Conteos de proyectos:** los del servidor más la diferencia que hace la cola sobre la lista.
+      No se cuentan desde cero, porque el servidor también cuenta completadas que la lista no trae.
+    - **Toast:** «2 marcas · 1 tarea · +35 XP».
+  - **Mover con el dedo:** cada tarjeta del tablero tiene un botón «Mover» visible, que abre la hoja
+    de la decisión 9 (columna, subir, bajar). En táctil (`pointer: coarse`) el arrastre HTML5 se
+    apaga, para no pelear con el scroll; con ratón sigue igual. En teléfono se ve una columna a la
+    vez, con `Segmented`.
+  - **Adaptaciones:** bajo `lg:` hay filtros plegados y una sola fila de botones. Tocar el texto de
+    una tarea abre el formulario, que también borra. Los proyectos van al final, en una columna.
+    Las etiquetas de la banda de vencimientos son más angostas, y al tocarlas dicen la lista completa
+    del día (en la v1 era un `title`). Fuera, como dice el plan: pomodoro y nota del vault; también
+    `h foco`, que llega con Pomodoro (fila 22).
+  - **Sin agregar a `DESIGN_SYSTEM`:** `Field` es un `<label>`, así que un botón adentro se activa
+    al tocar el rótulo. La hoja «Mover» y la checklist usan un rótulo simple por eso. Los chips de
+    `TagInput` siguen dentro de un `Field`, igual que en Hábitos y en la v1.
+  - **Lo que solo salió al mirar:** el rótulo «Orden» activaba «Subir» (lo delató Playwright);
+    «Hecho» cortado en las pestañas; etiquetas de la banda pisándose en el teléfono; el botón de
+    completadas antiguas saliéndose de la tarjeta; y el aviso de React por `borderLeft` junto a
+    `borderColor`, que venía de la v1.
+  - **Recorrido en navegador** contra `wrangler dev` con D1 aparte y datos inventados:
+    - **Contexto táctil móvil** (`hasTouch`, `pointer: coarse`, 393 × 852), 0 tarjetas `draggable`:
+      bajar, pasar a En curso y a Hecho con la hoja salió como `PATCH`, `PATCH` y `complete`.
+    - **Sin conexión:** completar, reabrir, completar y reabrir otra no mandaron nada; la cabecera
+      dijo «4 sin sincronizar» y al volver salieron en orden.
+    - **Historial sin conexión:** la tarea entró a la lista y Tesis pasó a 1/4, lo mismo que dio
+      el servidor (4 en total, 3 pendientes). XP final 35, igual a la cuenta a mano.
+    - **Ratón a 1280 × 800:** arrastrar a otra tarjeta y a la columna Hecho salió como `PATCH` con
+      `rank` y `complete` con `rank`. Toast real: «1 tarea · +15 XP».
+    - La sin conexión se simuló con el navegador; `@capacitor/network` sigue sin probarse en modo
+      avión. **El dedo en un teléfono real y la tablet tampoco se han probado.**
+  - **Vista contra el worker real:** el test temporal de la 2.2.4 ahora también compara
+    `tasks_total` y `tasks_pending` en sus 23 escrituras, y coincide en todas.
+  - **Mutaciones:** caen las 13 nuevas, con los tests de `tasks.test.ts` de cada pendiente, de
+    `sortTasks`, `stepNeighbours` y el recordatorio. Una 14.ª (un rechazo del historial contado en
+    los conteos) sobrevivió y se le agregó test; **no se volvió a correr esa mutación tras agregarlo.**
+  - **El worker no cambió** desde `4c0f549` (versión `e48ada2d`): esta tarea no necesita deploy. La
+    vista llega en el APK.
+  - **Prueba en el teléfono** (2026-10-31, Bogotá; Infinix X6831, contra producción). El APK se
+    instala encima del anterior y abre; `dumpsys package` ya no lista `ALLOW_BACKUP`. Johan reporta
+    que hizo el recorrido. D1 después:
+    - **XP:** `users.xp` = 969 = suma de `xp_log`.
+    - **Primera tarea:** completada y descompletada con la misma concesión (+15 y −15, 7 s después)
+      y luego borrada: ya no está en `tasks`.
+    - **Segunda tarea:** en `done`, con su concesión vigente, `rank` `V`, en su proyecto (1 de 1
+      hecha). `completed_on` es 2026-10-31 con `completed_at` 2026-11-01T04:27Z: el día local
+      correcto. El `id` de la concesión (UUID v7) dice que se tocó a las 04:27:45 y el servidor la
+      recibió a las 04:27:55: 10 s en cola, compatible con el modo avión.
+    - **Sin rastro en D1:** `checklist_items` está vacía y los `PATCH` de mover no dejan historial.
+      Si hubo subtareas, se pudieron borrar a mano o con la tarea (`ON DELETE CASCADE`). Esos dos
+      pasos quedan solo con el reporte de Johan.
+    - Quedan en producción 1 tarea y 1 proyecto de prueba. Se borran al vaciar la base (fase 4).

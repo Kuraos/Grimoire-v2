@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { v7 as uuidv7 } from 'uuid'
-import type { ApiProject, ProjectInput } from '../types'
+import type { ApiProject, ApiTask, ProjectInput } from '../types'
 import { get, type ApiRequest } from './client'
 import { enqueue, useQueue, type QueueEntry } from './queryClient'
+import { projectCountDeltas } from './tasks'
 
 type Named = Pick<ApiProject, 'id' | 'name'>
 
@@ -26,10 +27,14 @@ export const projectRequests = {
   }),
 }
 
-/** Los conteos de tareas no se predicen: son un agregado del servidor y cambian al sincronizar. */
+/**
+ * Los conteos del servidor más lo que cambia la cola sobre `tasks`, la lista sin nada encima. No se
+ * cuentan desde cero: el servidor también cuenta las completadas que la lista ya no trae.
+ */
 export function applyProjectQueue(
   projects: ApiProject[],
   entries: Pick<QueueEntry, 'request' | 'status'>[],
+  tasks: ApiTask[] = [],
 ): { projects: ApiProject[]; pendingIds: Set<string> } {
   let out = projects
   const pendingIds = new Set<string>()
@@ -59,13 +64,23 @@ export function applyProjectQueue(
       out = out.filter((p) => p.id !== id)
     }
   }
+  const deltas = projectCountDeltas(tasks, entries)
+  out = out.map((p) => {
+    const d = deltas.get(p.id)
+    return d ? {
+      ...p,
+      tasks_total: Math.max(0, p.tasks_total + d.total),
+      tasks_pending: Math.max(0, p.tasks_pending + d.pending),
+    } : p
+  })
   return { projects: out, pendingIds }
 }
 
 export function useProjects() {
   const query = useQuery({ queryKey: ['projects'], queryFn: () => get<ApiProject[]>('/projects') })
+  const tasks = useQuery({ queryKey: ['tasks', 'list'], queryFn: () => get<ApiTask[]>('/tasks') })
   const queue = useQueue()
-  return { query, queue, ...applyProjectQueue(query.data ?? [], queue) }
+  return { query, queue, ...applyProjectQueue(query.data ?? [], queue, tasks.data ?? []) }
 }
 
 export const projectActions = {

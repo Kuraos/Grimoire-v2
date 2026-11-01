@@ -36,8 +36,20 @@ export function summarizeResults(results: SyncResult[]) {
     achievements: xp.flatMap((r): UnlockedAchievement[] => r.data.achievements_unlocked),
     syncedXp: late.reduce((s, r) => s + r.data.xp_earned, 0),
     // deshacer resta: marcar y deshacer sin conexión no es una marca sincronizada
-    syncedMarks: late.reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
+    syncedMarks: late.filter((r) => !isTask(r)).reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
+    syncedTasks: late.filter(isTask).reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
   }
+}
+
+const isTask = (r: SyncResult) => r.request.path.startsWith('/tasks')
+
+/** «2 marcas · 1 tarea · +55 XP», o `null` si el lote no dejó nada que contar. */
+export function syncedSummary({ syncedMarks, syncedTasks, syncedXp }: Pick<ReturnType<typeof summarizeResults>, 'syncedMarks' | 'syncedTasks' | 'syncedXp'>): string | null {
+  const parts = [
+    syncedMarks > 0 && `${syncedMarks} ${syncedMarks === 1 ? 'marca' : 'marcas'}`,
+    syncedTasks > 0 && `${syncedTasks} ${syncedTasks === 1 ? 'tarea' : 'tareas'}`,
+  ].filter(Boolean)
+  return parts.length > 0 && syncedXp > 0 ? `${parts.join(' · ')} · +${syncedXp} XP` : null
 }
 
 const dayLabel = (day: string) =>

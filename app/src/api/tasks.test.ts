@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { applyQueue } from './habits'
 import { applyProjectQueue, projectRequests } from './projects'
-import { applyTaskQueue, rankAtEnd, rankBetween, taskRequests } from './tasks'
+import { applyTaskQueue, rankAtEnd, rankBetween, remindAtToLocal, remindAtToUtc, sortTasks, stepNeighbours, taskRequests } from './tasks'
+import { summarizeResults, syncedSummary } from './user'
 import type { ApiChecklistItem, ApiProject, ApiTask } from '../types'
 
 /** Sobrevive a `vi.resetModules()`: es el disco. */
@@ -382,6 +383,92 @@ test('borrar un proyecto deja sus tareas sin proyecto, como ON DELETE SET NULL',
     [entry({ method: 'DELETE', path: '/projects/p' })],
   )
   expect(tasks.map((t) => t.project_id)).toEqual([null, 'q'])
+})
+
+test('descompletar desde el historial la pone en la lista al instante, también tras reiniciar', async () => {
+  stubFetch()
+  const old = task({ id: 'o', status: 'done', completed: true, grant_id: 'g', completed_on: '2026-01-01', project_id: 'p' })
+  const first = await start()
+  first.enqueue(taskRequests.uncompleteOlder(old))
+  await settle()
+  first.queryClient.unmount()
+
+  const second = await start()
+  expect(applyTaskQueue([], queued(second)).tasks[0]).toMatchObject({ id: 'o', status: 'todo', completed: false, grant_id: null })
+  // ya contada como hecha: solo sube pendientes
+  const [p] = applyProjectQueue([project()], queued(second), []).projects
+  expect(p).toMatchObject({ tasks_total: 3, tasks_pending: 2 })
+  await goOnline()
+  expect(calls[0].body).toEqual({ grant_id: 'g' }) // la copia no viaja
+})
+
+test('descompletar desde el historial, si se rechaza, no cambia los conteos', () => {
+  const old = task({ status: 'done', completed: true, grant_id: 'g', project_id: 'p' })
+  const [p] = applyProjectQueue([project()], [entry(taskRequests.uncompleteOlder(old), 'error')], []).projects
+  expect(p).toMatchObject({ tasks_total: 3, tasks_pending: 1 })
+})
+
+test('si el servidor ya trae la tarea descompletada, la copia no la duplica ni la pisa', () => {
+  const old = task({ id: 'o', status: 'done', completed: true, grant_id: 'g', title: 'Vieja' })
+  const e = entry({ ...taskRequests.uncompleteOlder(old) }, 'success')
+  const { tasks } = applyTaskQueue([task({ id: 'o', title: 'Nueva' })], [e])
+  expect(tasks.map((t) => t.title)).toEqual(['Nueva'])
+})
+
+test('los conteos de un proyecto siguen a la cola sin esperar al servidor', () => {
+  const base = [task({ id: 'a', project_id: 'p' }), task({ id: 'd', project_id: 'p', status: 'done', completed: true, grant_id: 'g' })]
+  const count = (...es: ReturnType<typeof entry>[]) => {
+    const [p] = applyProjectQueue([project({ tasks_total: 5, tasks_pending: 1 })], es, base).projects
+    return [p.tasks_total, p.tasks_pending]
+  }
+  const complete = entry({ method: 'POST', path: '/tasks/a/complete', body: { id: 'n', local_date: '2026-10-31' } })
+  expect(count()).toEqual([5, 1])
+  expect(count(complete)).toEqual([5, 0])
+  expect(count(entry({ method: 'POST', path: '/tasks/d/uncomplete', body: { grant_id: 'g' } }))).toEqual([5, 2])
+  expect(count(entry({ method: 'POST', path: '/tasks', body: { id: 'x', title: 'x', rank: 'V', project_id: 'p' } }))).toEqual([6, 2])
+  expect(count(entry({ method: 'DELETE', path: '/tasks/a' }))).toEqual([4, 0])
+  expect(count(entry({ method: 'PATCH', path: '/tasks/a', body: { project_id: 'q' } }))).toEqual([4, 0])
+  // lo rechazado no cuenta, y lo ya sincronizado que el servidor trae no cuenta dos veces
+  expect(count({ ...complete, status: 'error' })).toEqual([5, 1])
+  const synced = entry({ method: 'POST', path: '/tasks', body: { id: 'a', title: 'x', rank: 'V', project_id: 'p' } }, 'success')
+  expect(count(synced)).toEqual([5, 1])
+})
+
+test('el toast cuenta marcas y tareas por separado', () => {
+  const r = (path: string, xp_earned: number) => ({ request: { method: 'POST' as const, path }, data: { xp_earned, new_level: 1, title: '', leveled_up: false, achievements_unlocked: [] }, ageMs: 90_000 })
+  const say = (...rs: ReturnType<typeof r>[]) => syncedSummary(summarizeResults(rs))
+  expect(say(r('/tasks/t/complete', 15))).toBe('1 tarea · +15 XP')
+  expect(say(r('/habits/h/complete', 20), r('/habits/i/complete', 20), r('/tasks/t/complete', 15), r('/tasks/u/complete', 15))).toBe('2 marcas · 2 tareas · +70 XP')
+  expect(say(r('/tasks/t/complete', 15), r('/tasks/t/uncomplete', -15))).toBeNull()
+})
+
+test('subir y bajar un puesto: entre qué vecinas cae, y el borde no se mueve', () => {
+  const col = [{ id: 'a', rank: 'A' }, { id: 'b', rank: 'B' }, { id: 'c', rank: 'C' }, { id: 'd', rank: 'D' }]
+  expect(stepNeighbours(col, 'c', -1)).toEqual(['A', 'B'])
+  expect(stepNeighbours(col, 'b', 1)).toEqual(['C', 'D'])
+  expect(stepNeighbours(col, 'b', -1)).toEqual([null, 'A'])
+  expect(stepNeighbours(col, 'c', 1)).toEqual(['D', null])
+  expect(stepNeighbours(col, 'a', -1)).toBeNull()
+  expect(stepNeighbours(col, 'd', 1)).toBeNull()
+})
+
+test('los órdenes de la lista son los de la v1', () => {
+  const list = [
+    task({ id: 'sin', priority: 'high' }),
+    task({ id: 'baja', priority: 'low', due_date: '2026-01-01' }),
+    task({ id: 'alta', priority: 'high', due_date: '2026-06-01' }),
+    task({ id: 'media', priority: 'medium', due_date: '2026-03-01' }),
+  ]
+  expect(sortTasks(list, 'priority').map((t) => t.id)).toEqual(['alta', 'sin', 'media', 'baja'])
+  expect(sortTasks(list, 'due_date').map((t) => t.id)).toEqual(['baja', 'media', 'alta', 'sin'])
+})
+
+test('el recordatorio va en UTC sin milisegundos y vuelve a la hora del dispositivo', () => {
+  expect(remindAtToUtc('')).toBeNull()
+  const utc = remindAtToUtc('2026-11-02T08:30')!
+  expect(utc).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
+  expect(remindAtToLocal(utc)).toBe('2026-11-02T08:30')
+  expect(remindAtToLocal(null)).toBe('')
 })
 
 // ---------- Una sola cola para todos los recursos ----------
