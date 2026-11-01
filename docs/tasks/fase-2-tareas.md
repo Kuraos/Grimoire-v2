@@ -137,7 +137,7 @@ en «Hallazgos».
 
 Hecha dentro de la 2.2.2: Johan pidió reproducir ahí los goldens de CRUD, y esos goldens necesitan
 estas rutas. `scripts/replay_golden.py` traduce alias a UUID, genera `id`, `rank` y concesiones, y
-compara status y campos. Queda pendiente solo el CPU en producción.
+compara status y campos. El CPU en producción se midió después; ver «Hallazgos».
 
 ## 2.2.4 — Capa de datos
 
@@ -252,7 +252,7 @@ decisiones tomadas sobre la marcha.)
     **`GET /tasks` no cumple el criterio de 10 ms:** toca acotarla, según esta misma tarea. Ningún
     request falló, pero el mínimo ya pasa del límite, así que no es ruido. No se ha acotado todavía.
   - **El seed sigue en la base remota** (500 tareas, 20 proyectos, 1 013 ítems): sirve para volver a
-    medir, y hay que borrarlo antes de la 2.2.5.
+    medir, y hay que borrarlo antes de la 2.2.5. (Borrado después; ver abajo.)
 - **`GET /tasks` acotado y lectura compacta** (2026-10-31, Bogotá):
   - **Datos reales de la v1** (Johan, de una copia): 95 tareas (90 abiertas, 5 completadas), 10
     proyectos, 320 ítems (máximo 4 por tarea) y 0 completadas hace más de 90 días. La ventana no
@@ -286,5 +286,19 @@ decisiones tomadas sobre la marcha.)
     cursor inválido (422) y que descompletar desde ahí devuelve la tarea a la lista.
   - **Goldens contra `wrangler dev`:** los 8 pasan como en la 2.2.2, con reintentos. La réplica ya
     no manda `local_date`, para que las fechas de los goldens no caigan fuera de la ventana.
-  - **Sin medir:** CPU en producción con estos cambios. La opción B (ítems al abrir la tarea) solo
-    entra si el seed `realista` queda por encima de 10 ms de mediana.
+  - **CPU en producción** (2026-10-31, Bogotá; versión `e48ada2d`). `cpuTime` de `wrangler tail`,
+    `GET /tasks`, 20 requests por seed, una por segundo, todas 200 y `outcome: ok`:
+
+    | Seed | Tareas devueltas | Bytes | CPU mediana | CPU mín–máx | > 10 ms | Wall mediana |
+    |---|---|---|---|---|---|---|
+    | `realista` | 105 | 95 247 | **3 ms** | 2–24 ms | 1 de 20 | 23,5 ms |
+    | `pesado` | 324 | 229 867 | **5 ms** | 4–29 ms | 1 de 20 | 23 ms |
+
+    **Cumple el criterio de 10 ms y la opción B (ítems al abrir la tarea) no entra.** Antes de la
+    lectura compacta y la ventana, un seed comparable al `pesado` marcaba 15,5 ms de mediana, aunque
+    no son los mismos datos exactos (500 tareas devueltas, 1 013 ítems). No se midió aparte qué parte
+    de la mejora aporta cada cambio.
+  - **El seed ya no está en la base remota:** `tasks`, `projects` y `checklist_items` quedaron en 0
+    filas. El borrado encontró 472 tareas y 10 proyectos `Bench`, no los 500 y 20 anotados arriba;
+    no se sabe por qué. Mandar los dos `DELETE` juntos con `--command` falló en remoto con
+    `incomplete input`, aunque funciona en local; por separado funcionan.

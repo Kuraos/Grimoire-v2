@@ -8,8 +8,9 @@ Títulos `Bench tarea …` y proyectos `Bench proyecto …`. Nada otorga XP: sol
 
 Uso: python scripts/bench_seed_tasks.py <realista|pesado> seed_tasks.sql
      npx wrangler d1 execute grimoire --local --file seed_tasks.sql
-Limpiar:
-     npx wrangler d1 execute grimoire --local --command "DELETE FROM tasks WHERE title LIKE 'Bench tarea %'; DELETE FROM projects WHERE name LIKE 'Bench proyecto %'"
+Limpiar, una sentencia por comando (las dos juntas fallaron en remoto con `incomplete input`):
+     npx wrangler d1 execute grimoire --local --command "DELETE FROM tasks WHERE title LIKE 'Bench tarea %'"
+     npx wrangler d1 execute grimoire --local --command "DELETE FROM projects WHERE name LIKE 'Bench proyecto %'"
 """
 import random
 import sys

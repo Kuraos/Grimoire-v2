@@ -19,6 +19,11 @@ solo arreglos de bugs mientras siga en uso. Cualquier idea nueva se anota aquí,
 
 La fase 3 puede ir en paralelo con la 2, pero **la 4 no empieza sin la 3**.
 
+Pasos del día de la migración (fase 4):
+
+- **Vaciar la base y rotar `GRIMOIRE_TOKEN`** con `wrangler secret put GRIMOIRE_TOKEN`, y
+  actualizar el token en la APK.
+
 Pendientes de la fase 1 (salieron de la 1.1):
 
 - **Migrar react-router 6 → 7** (`npm audit`, severidad moderada) como tarea propia,
