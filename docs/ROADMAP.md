@@ -49,7 +49,8 @@ punta (dominio, API, UI adaptada) antes de abrir el siguiente.
 ## Después del cambio (fase 5+)
 
 Sin orden decidido: check-ins, calendario, Erario, entrenamiento, estadísticas, logros,
-misiones, revisión semanal, etiquetas, exportación a Obsidian, widgets en Kotlin.
+misiones, revisión semanal, etiquetas, exportación a Obsidian, widgets en Kotlin,
+temporizador de Pomodoro a pantalla completa.
 
 Hasta que cada uno se porte, sus datos se migran igual (ADR 0006), aunque la v2 todavía
 no tenga pantalla para ellos: se migra todo, se muestra lo que haya.

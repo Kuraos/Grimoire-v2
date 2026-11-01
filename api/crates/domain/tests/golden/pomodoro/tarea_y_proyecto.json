@@ -1,0 +1,589 @@
+{
+  "escenario": "tarea_y_proyecto",
+  "descripcion": "Con tarea, hereda su proyecto si no se manda otro; un proyecto explícito manda sobre el de la tarea. Sin validar: tarea o proyecto inexistentes dan 200. `task_title` sale de la tarea. Horas del proyecto: suma de completadas / 60, a un decimal. Borrar tarea y proyecto con sesiones: se ve qué queda en la sesión.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /projects",
+      "cuerpo": {
+        "name": "Tesis"
+      },
+      "alias": "tesis",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Tesis",
+          "description": null,
+          "status": "active",
+          "color": "#9b7fc4",
+          "category": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "tasks_total": 0,
+          "tasks_pending": 0,
+          "pomodoro_hours": 0.0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /projects",
+      "cuerpo": {
+        "name": "Otro"
+      },
+      "alias": "otro",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "name": "Otro",
+          "description": null,
+          "status": "active",
+          "color": "#9b7fc4",
+          "category": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "tasks_total": 0,
+          "tasks_pending": 0,
+          "pomodoro_hours": 0.0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Con",
+        "project_id": "{tesis}"
+      },
+      "alias": "con",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "title": "Con",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": 1,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks",
+      "cuerpo": {
+        "title": "Sin"
+      },
+      "alias": "sin",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "title": "Sin",
+          "description": null,
+          "category": null,
+          "priority": "medium",
+          "project_id": null,
+          "due_date": null,
+          "xp_reward": 15,
+          "completed": false,
+          "completed_at": null,
+          "status": "todo",
+          "position": 0,
+          "remind_at": null,
+          "tags": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "checklist": [],
+          "checklist_done": 0,
+          "checklist_total": 0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 33,
+        "task_id": "{con}"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 33,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 34,
+        "project_id": "{tesis}"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 30,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 67,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 35,
+        "task_id": "{con}",
+        "project_id": "{otro}"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 45,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 102,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 36,
+        "task_id": "{sin}"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 60,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 138,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 37,
+        "task_id": 999
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 75,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 175,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 38,
+        "project_id": 999
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 90,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 213,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /pomodoro/today",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "task_id": 1,
+            "project_id": 1,
+            "work_minutes": 33,
+            "completed": true,
+            "started_at": "2026-03-02T11:27:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 2,
+            "task_id": null,
+            "project_id": 1,
+            "work_minutes": 34,
+            "completed": true,
+            "started_at": "2026-03-02T11:26:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 3,
+            "task_id": 1,
+            "project_id": 2,
+            "work_minutes": 35,
+            "completed": true,
+            "started_at": "2026-03-02T11:25:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 4,
+            "task_id": 2,
+            "project_id": null,
+            "work_minutes": 36,
+            "completed": true,
+            "started_at": "2026-03-02T11:24:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Sin"
+          },
+          {
+            "id": 5,
+            "task_id": 999,
+            "project_id": null,
+            "work_minutes": 37,
+            "completed": true,
+            "started_at": "2026-03-02T11:23:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 6,
+            "task_id": null,
+            "project_id": 999,
+            "work_minutes": 38,
+            "completed": true,
+            "started_at": "2026-03-02T11:22:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /projects",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "name": "Tesis",
+            "description": null,
+            "status": "active",
+            "color": "#9b7fc4",
+            "category": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "tasks_total": 1,
+            "tasks_pending": 1,
+            "pomodoro_hours": 1.1
+          },
+          {
+            "id": 2,
+            "name": "Otro",
+            "description": null,
+            "status": "active",
+            "color": "#9b7fc4",
+            "category": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "tasks_total": 0,
+            "tasks_pending": 0,
+            "pomodoro_hours": 0.6
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /tasks/{con}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 105,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": "project_master"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 20,
+        "task_id": "{con}"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 120,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 233,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "DELETE /tasks/{sin}",
+      "esperado": {
+        "status": 204,
+        "cuerpo": null
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /pomodoro/today",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 7,
+            "task_id": 1,
+            "project_id": 1,
+            "work_minutes": 20,
+            "completed": true,
+            "started_at": "2026-03-02T11:40:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 1,
+            "task_id": 1,
+            "project_id": 1,
+            "work_minutes": 33,
+            "completed": true,
+            "started_at": "2026-03-02T11:27:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 2,
+            "task_id": null,
+            "project_id": 1,
+            "work_minutes": 34,
+            "completed": true,
+            "started_at": "2026-03-02T11:26:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 3,
+            "task_id": 1,
+            "project_id": 2,
+            "work_minutes": 35,
+            "completed": true,
+            "started_at": "2026-03-02T11:25:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 4,
+            "task_id": 2,
+            "project_id": null,
+            "work_minutes": 36,
+            "completed": true,
+            "started_at": "2026-03-02T11:24:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 5,
+            "task_id": 999,
+            "project_id": null,
+            "work_minutes": 37,
+            "completed": true,
+            "started_at": "2026-03-02T11:23:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 6,
+            "task_id": null,
+            "project_id": 999,
+            "work_minutes": 38,
+            "completed": true,
+            "started_at": "2026-03-02T11:22:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "DELETE /projects/{otro}",
+      "esperado": {
+        "status": 204,
+        "cuerpo": null
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /pomodoro/today",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 7,
+            "task_id": 1,
+            "project_id": 1,
+            "work_minutes": 20,
+            "completed": true,
+            "started_at": "2026-03-02T11:40:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 1,
+            "task_id": 1,
+            "project_id": 1,
+            "work_minutes": 33,
+            "completed": true,
+            "started_at": "2026-03-02T11:27:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 2,
+            "task_id": null,
+            "project_id": 1,
+            "work_minutes": 34,
+            "completed": true,
+            "started_at": "2026-03-02T11:26:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 3,
+            "task_id": 1,
+            "project_id": 2,
+            "work_minutes": 35,
+            "completed": true,
+            "started_at": "2026-03-02T11:25:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": "Con"
+          },
+          {
+            "id": 4,
+            "task_id": 2,
+            "project_id": null,
+            "work_minutes": 36,
+            "completed": true,
+            "started_at": "2026-03-02T11:24:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 5,
+            "task_id": 999,
+            "project_id": null,
+            "work_minutes": 37,
+            "completed": true,
+            "started_at": "2026-03-02T11:23:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 6,
+            "task_id": null,
+            "project_id": 999,
+            "work_minutes": 38,
+            "completed": true,
+            "started_at": "2026-03-02T11:22:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /projects",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "name": "Tesis",
+            "description": null,
+            "status": "active",
+            "color": "#9b7fc4",
+            "category": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "tasks_total": 1,
+            "tasks_pending": 0,
+            "pomodoro_hours": 1.4
+          }
+        ]
+      }
+    }
+  ]
+}

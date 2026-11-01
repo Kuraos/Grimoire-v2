@@ -57,6 +57,11 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
 - **`remind_at` de las tareas:** en la v1 es una fecha naive en hora de Bogotá; la migración
   la convierte a RFC 3339 UTC, igual que las demás fechas. La UI de la v2 la muestra y la edita
   en `America/Bogota`.
+- **Sesiones de pomodoro:** `started_at` y `finished_at` naive (hora de Bogotá) pasan a UTC, y
+  `local_date` sale de `finished_at` antes de convertir. Una sesión con `finished_at` nulo se
+  decide al ver los datos reales. `task_id` o `project_id` colgantes pasan a `NULL`, y sus horas
+  dejan de contar para el proyecto borrado, que la v1 ya no muestra. El XP histórico se copia, y
+  lo migrado no necesita `mark_id`, porque las sesiones no se deshacen.
 - **Claves `rank` de las tareas:** las que genere la migración no terminan en `0`. Entre `x` y
   `x0` no cabe ninguna clave (nada ordena antes de `0`), así que una tarjeta soltada ahí no
   podría quedar entre las dos: `rankBetween` la deja después de ambas.

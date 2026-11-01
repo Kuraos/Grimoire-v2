@@ -68,6 +68,19 @@ Goldens en `api/crates/domain/tests/golden/tasks/` (8 escenarios, 355 pasos):
 7. `logros_tareas`: `project_master`, `ascension` y `task_centurion`.
 8. `logro_por_patch`: terminar por `PATCH` y evaluar logros después.
 
+## Escenarios de Pomodoro
+
+Goldens en `api/crates/domain/tests/golden/pomodoro/` (6 escenarios, 341 pasos):
+
+1. `sesion_xp`: 15 XP sin importar los minutos, valores por defecto, `started_at` con y sin zona,
+   `total_today_minutes` y subida de nivel.
+2. `sesion_incompleta`: se guarda sin XP, sin logros y fuera de los totales y de las horas.
+3. `tarea_y_proyecto`: herencia del proyecto, proyecto explícito, referencias inexistentes,
+   `pomodoro_hours` y qué queda al borrar la tarea o el proyecto.
+4. `logros_pomodoro`: `focus_centurion` (100), `focus_legend` (250) y `ascension` por nivel.
+5. `rango_dias`: el día es el de `finished_at`, orden de `today` y `range`, y rangos raros.
+6. `validacion_sesion`: lo que la API acepta sin mirar y lo que rechaza por tipo.
+
 ## Cómo los usa la v2
 
 - `grimoire-domain` tiene un test que lee cada golden y reproduce la secuencia con las
@@ -82,7 +95,7 @@ Goldens en `api/crates/domain/tests/golden/tasks/` (8 escenarios, 355 pasos):
 ### Diferencias permitidas
 
 Decididas por Johan el 2026-10-30, salvo las dos primeras, que vienen de fase-0 y del
-ADR 0005, y la 10, que tiene su fecha.
+ADR 0005, y las que dicen su fecha.
 
 | # | Diferencia | v1 (lo que graba el golden) | v2 | Motivo |
 |---|---|---|---|---|
@@ -110,6 +123,16 @@ ADR 0005, y la 10, que tiene su fecha.
 | 22 | `pomodoro_hours` del proyecto | En cada proyecto | Llega con Pomodoro | Aún no hay sesiones. Su UI se oculta hasta entonces. |
 | 23 | `GET /tasks` | Todas las tareas | Abiertas y completadas en los últimos 90 días (`completed_on`); las anteriores, en `GET /tasks/history`, paginada | `GET /tasks` pasó de 10 ms de CPU con 500 tareas. Decidido por Johan el 2026-10-31. Ningún golden lo muestra: la réplica completa en el día actual. |
 | 24 | Recordatorio vencido al abrir | En web avisa lo vencido hace menos de 24 h, sondeando la API cada 60 s | No avisa lo que venció antes de abrir, ni en web ni en el APK; en web revisa la lista ya cargada | Decidido por Johan el 2026-10-31 (un `remind_at` pasado no se dispara). Ningún golden lo cubre: el backend no procesa `remind_at`. |
+| 25 | `finished_at` y día de la sesión | Hora del servidor al recibir la request | `ends_at` del cliente; `local_date` guardado | Una sesión sincronizada tarde conserva su día. Aprobada por Johan el 2026-11-01, como las filas 26 a 34 (`fase-2-pomodoro.md`, decisión 2). |
+| 26 | Fase vencida con la app cerrada | No se registra: vuelve agotada y en pausa | Se registra completa, con su hora real, dentro del límite de la fila 34 | Decisión de Johan. Del cliente: ningún golden lo cubre. |
+| 27 | Repetir el `POST` de una sesión | Otra sesión y otros 15 XP | `id` obligatorio; repetir da 200 sin efecto | Contrato de la cola (ADR 0004). |
+| 28 | Validación de la sesión | 0, −5, 100 000 y un `started_at` en 2030 pagan (`validacion_sesion`) | 422 fuera de 1–90 minutos, si `started_at` ≥ `finished_at` o si `finished_at` está más de 5 min en el futuro | Es un bug. Solo en la API, sin `CHECK`, por si la migración trae valores así. |
+| 29 | Referencia inexistente al crear una sesión | Guarda el id colgante (`task_id: 999`) | Guarda `NULL` y responde 200 | Una sesión nunca se rechaza por una referencia (decisión 6). |
+| 30 | Borrar la tarea o el proyecto de una sesión | La sesión conserva el id colgante | `ON DELETE SET NULL` | Mismo efecto visible: «Sesión libre». Se migra igual. |
+| 31 | Horas del proyecto | `pomodoro_hours` con `round()` de float: 87 min → 1.4 | `pomodoro_minutes` entero; el cliente muestra horas con mitades hacia arriba: 87 min → 1.5 | Sin float en la API, como la fila 1. ±0,1 h solo en mitades exactas. Reemplaza a la fila 22. |
+| 32 | `streak` en la respuesta de una sesión | `null` | No se manda | No significa nada en una sesión. |
+| 33 | `GET /pomodoro/range` | Existe; lo usa el calendario | No existe todavía | Llega con Calendario (fase 5+). Los datos se migran igual. |
+| 34 | Sesión vencida detectada tarde | No se registra | Hasta 12 h tras `ends_at`, 12 h justas incluidas: completa. Después: incompleta, sin XP y fuera de horas y totales | Limita la fila 26. Del cliente: ningún golden lo cubre. |
 
 ## Hallazgos
 
@@ -182,3 +205,28 @@ porta igual.
     de 24 h. Con la app cerrada no avisa.
   - **Sin cubrir:** `pomodoro_hours` del proyecto queda en 0 en todos los escenarios; se
     caracteriza con Pomodoro.
+- **Pomodoro** (2026-11-01): goldens en `api/crates/domain/tests/golden/pomodoro/`. Al regenerar, los
+  de Hábitos y Tareas salieron idénticos. Lo decidido sobre cada punto está en las filas 25 a 34.
+  - **El XP no depende de los minutos:** 1, 25 y 90 minutos pagan 15, sin multiplicador
+    (`sesion_xp`).
+  - **`work_minutes` no se valida:** 0, −5 y 100 000 dan 200 y pagan 15 XP. Con −5, el total del día
+    queda en −5 y `started_at` queda después de `finished_at`. Un `started_at` en 2030 también pasa
+    (`validacion_sesion`). Solo se rechaza por tipo (422).
+  - **`finished_at` es siempre la hora del servidor al recibir la request**, y el día de la sesión
+    sale de ahí. Un bloque que cruza la medianoche cuenta en el día en que terminó (`rango_dias`).
+  - **Referencias sin validar y colgantes:** `task_id` o `project_id` en 999 dan 200. Borrar la tarea o
+    el proyecto deja el id en la sesión; solo `task_title` pasa a `null` (`tarea_y_proyecto`).
+  - **Un proyecto explícito manda sobre el de la tarea**, y las horas se le cuentan a él. Una tarea
+    completada sigue aceptando sesiones.
+  - **`pomodoro_hours` redondea con `round()` de float:** 87 minutos dan 1.4, no 1.5. Las incompletas
+    no suman (`sesion_incompleta`).
+  - **Logros:** los de foco saltan en la 100.ª y la 250.ª completada, y las incompletas no cuentan.
+    `ascension` también salta aquí, en la 167.ª (2505 XP). Las sesiones no dan `first_blood`.
+  - **`/range` incluye las incompletas** y ordena ascendente; `/today` ordena descendente, siempre por
+    `started_at`. Un rango invertido da `[]`.
+  - **Repetir un `POST` crea otra sesión y paga otra vez:** no hay id del cliente.
+  - **El temporizador de la v1 no registra lo que venció con la app cerrada**
+    (`usePomodoro.ts`, `restoreSnapshot`): vuelve con la fase agotada y en pausa, y esa sesión se
+    pierde. Esto lo dice el código; ningún golden lo cubre, porque es del cliente.
+  - **Cortar un bloque de menos de 1 minuto no registra nada** (`partialResult`), y la duración de la
+    sesión sale de la configuración vigente al terminar, no de la que había al empezar.

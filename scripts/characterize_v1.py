@@ -426,10 +426,136 @@ def logro_por_patch():
     ]
 
 
+# ---------- pomodoro ----------
+
+def session(hoy, **kw):
+    return step(hoy, "POST /pomodoro/sessions", kw)
+
+
+def sesion_xp():
+    """Una sesión completa da 15 XP sin importar sus minutos, sin multiplicador. Sin cuerpo:
+    25 minutos y completada. Sin `started_at`, se deduce del final (`ahora − minutos`); con
+    zona se convierte a la hora local; sin zona se guarda tal cual. `finished_at` es siempre
+    `ahora`. `total_today_minutes` suma las completadas del día. Sube de nivel como todo XP."""
+    d = "2026-03-02"
+    s = [
+        session(d),
+        session(d, work_minutes=90, completed=True),
+        session(d, work_minutes=1),
+        session(d, work_minutes=30, started_at="2026-03-02T16:00:00Z"),
+        session(d, work_minutes=30, started_at="2026-03-02T10:00:00"),
+        step(d, "GET /pomodoro/today"),
+        step(d, "GET /user"),
+    ]
+    s += [session(d) for _ in range(22)]  # 27 sesiones × 15 = 405 XP: nivel 2
+    s.append(step(d, "GET /user"))
+    return s
+
+
+def sesion_incompleta():
+    """`completed: false` se guarda pero no paga: 0 XP, sin logros y fuera de
+    `total_today_minutes`. Sigue en `GET /pomodoro/today`. No cuenta para las horas del proyecto."""
+    d = "2026-03-02"
+    return [
+        project(d, "foco"),
+        session(d, work_minutes=7, completed=False),
+        session(d, work_minutes=25, completed=False, project_id="{foco}"),
+        step(d, "GET /user"),
+        step(d, "GET /pomodoro/today"),
+        step(d, "GET /projects"),
+        session(d, work_minutes=25, project_id="{foco}"),
+        step(d, "GET /pomodoro/today"),
+        step(d, "GET /projects"),
+    ]
+
+
+def tarea_y_proyecto():
+    """Con tarea, hereda su proyecto si no se manda otro; un proyecto explícito manda sobre el
+    de la tarea. Sin validar: tarea o proyecto inexistentes dan 200. `task_title` sale de la
+    tarea. Horas del proyecto: suma de completadas / 60, a un decimal. Borrar tarea y proyecto
+    con sesiones: se ve qué queda en la sesión."""
+    d = "2026-03-02"
+    return [
+        project(d, "tesis"), project(d, "otro"),
+        task(d, "con", project_id="{tesis}"), task(d, "sin"),
+        session(d, work_minutes=33, task_id="{con}"),
+        session(d, work_minutes=34, project_id="{tesis}"),
+        session(d, work_minutes=35, task_id="{con}", project_id="{otro}"),
+        session(d, work_minutes=36, task_id="{sin}"),
+        session(d, work_minutes=37, task_id=999),
+        session(d, work_minutes=38, project_id=999),
+        step(d, "GET /pomodoro/today"),
+        step(d, "GET /projects"),
+        step(d, "POST /tasks/{con}/complete"),
+        session(d, work_minutes=20, task_id="{con}"),
+        step(d, "DELETE /tasks/{sin}"),
+        step(d, "GET /pomodoro/today"),
+        step(d, "DELETE /projects/{otro}"),
+        step(d, "GET /pomodoro/today"),
+        step(d, "GET /projects"),
+    ]
+
+
+def logros_pomodoro():
+    """`pomodoro_complete`: `focus_centurion` en la 100.ª completada y `focus_legend` en la 250.ª.
+    Las incompletas no cuentan. Los logros de nivel también saltan al pagar (`ascension` en la
+    167.ª, con 2505 XP). `first_blood` es de hábitos: las sesiones no lo desbloquean."""
+    d = "2026-03-02"
+    s = [session(d), step(d, "GET /achievements")]
+    s += [session(d, completed=False, work_minutes=5) for _ in range(3)]
+    s += [session(d) for _ in range(2, 100)]  # hasta la 99.ª
+    s += [step(d, "GET /achievements"), session(d), step(d, "GET /achievements")]  # la 100.ª
+    s += [session(d) for _ in range(101, 167)]
+    s += [step(d, "GET /user"), session(d), step(d, "GET /achievements"), step(d, "GET /user")]  # la 167.ª
+    s += [session(d) for _ in range(168, 250)]
+    s += [step(d, "GET /achievements"), session(d), step(d, "GET /achievements"), step(d, "GET /user")]  # la 250.ª
+    return s
+
+
+def rango_dias():
+    """El día de una sesión es el de `finished_at`, no el de `started_at`: un bloque que cruza la
+    medianoche cuenta en el día en que terminó. `today` ordena de la más reciente a la más antigua
+    por `started_at`; `range` al revés, e incluye las incompletas. `total_today_minutes` se reinicia
+    cada día. Sin fechas o con un rango vacío."""
+    return [
+        session("2026-03-02", work_minutes=25, started_at="2026-03-02T08:00:00"),
+        session("2026-03-02", work_minutes=25, started_at="2026-03-02T09:00:00"),
+        session("2026-03-03", work_minutes=25, started_at="2026-03-02T23:50:00"),
+        session("2026-03-03", work_minutes=7, completed=False, started_at="2026-03-03T07:00:00"),
+        step("2026-03-03", "GET /pomodoro/today"),
+        step("2026-03-04", "GET /pomodoro/today"),
+        step("2026-03-04", "GET /pomodoro/range?start=2026-03-02&end=2026-03-03"),
+        step("2026-03-04", "GET /pomodoro/range?start=2026-03-03&end=2026-03-03"),
+        step("2026-03-04", "GET /pomodoro/range?start=2026-03-05&end=2026-03-01"),
+        step("2026-03-04", "GET /pomodoro/range?start=2026-03-02"),
+        session("2026-03-04", work_minutes=10),
+    ]
+
+
+def validacion_sesion():
+    """Lo que la API acepta sin mirar: minutos en 0, negativos o enormes (y pagan igual), arranque
+    en el futuro o después del final. Rechaza por tipo: 422. Una sesión negativa resta del total."""
+    d = "2026-03-02"
+    return [
+        session(d, work_minutes=0),
+        session(d, work_minutes=-5),
+        session(d, work_minutes=100000),
+        session(d, work_minutes=25, started_at="2030-01-01T00:00:00"),
+        session(d, work_minutes="muchos"),
+        session(d, work_minutes=25.5),
+        session(d, started_at="ayer"),
+        session(d, completed="quizas"),
+        step(d, "GET /pomodoro/today"),
+        step(d, "GET /user"),
+    ]
+
+
 MODULES = {
     "habits": (diario_simple, diario_lv, racha_rota, dia_perfecto, semanal_2x, deshacer, logros),
     "tasks": (crear_y_validar, completar_xp, descompletar_piso, kanban_estado, checklist,
               proyectos, logros_tareas, logro_por_patch),
+    "pomodoro": (sesion_xp, sesion_incompleta, tarea_y_proyecto, logros_pomodoro, rango_dias,
+                 validacion_sesion),
 }
 SCENARIOS = {f.__name__: f for fs in MODULES.values() for f in fs}
 
@@ -496,6 +622,7 @@ def run_child(backend: Path, name: str) -> None:
             "la base del escenario no arranca vacía de hábitos"
         assert c.get("/tasks").json() == [] and c.get("/projects").json() == [], \
             "la base del escenario no arranca vacía de tareas y proyectos"
+        assert c.get("/pomodoro/today").json() == [], "la base del escenario trae sesiones"
 
         ids: dict[str, int] = {}
         for s in steps:

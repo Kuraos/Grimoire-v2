@@ -1,0 +1,4697 @@
+{
+  "escenario": "logros_pomodoro",
+  "descripcion": "`pomodoro_complete`: `focus_centurion` en la 100.ª completada y `focus_legend` en la 250.ª. Las incompletas no cuentan. Los logros de nivel también saltan al pagar (`ascension` en la 167.ª, con 2505 XP). `first_blood` es de hábitos: las sesiones no lo desbloquean.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 25,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "completed": false,
+        "work_minutes": 5
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 0,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 25,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "completed": false,
+        "work_minutes": 5
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 0,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 25,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "completed": false,
+        "work_minutes": 5
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 0,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 25,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 30,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 50,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 45,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 75,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 60,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 100,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 75,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 125,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 90,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 150,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 105,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 175,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 120,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 200,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 135,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 225,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 150,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 250,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 165,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 275,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 180,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 300,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 195,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 325,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 210,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 350,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 225,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 375,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 240,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 400,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 255,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 425,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 270,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 450,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 285,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 475,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 300,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 500,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 315,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 525,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 330,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 550,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 345,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 575,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 360,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 600,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 375,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 625,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 390,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 650,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 405,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": true,
+          "streak": null,
+          "total_today_minutes": 675,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 420,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 700,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 435,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 725,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 450,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 750,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 465,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 775,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 480,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 800,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 495,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 825,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 510,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 850,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 525,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 875,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 540,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 900,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 555,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 925,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 570,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 950,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 585,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 975,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 600,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1000,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 615,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1025,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 630,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1050,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 645,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1075,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 660,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1100,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 675,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1125,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 690,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1150,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 705,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1175,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 720,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1200,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 735,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1225,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 750,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1250,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 765,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1275,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 780,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1300,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 795,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1325,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 810,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1350,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 825,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1375,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 840,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1400,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 855,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1425,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 870,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1450,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 885,
+          "new_level": 2,
+          "title": "Aprendiz de las Sombras",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1475,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 900,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": true,
+          "streak": null,
+          "total_today_minutes": 1500,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 915,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1525,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 930,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1550,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 945,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1575,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 960,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1600,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 975,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1625,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 990,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1650,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1005,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1675,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1020,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1700,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1035,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1725,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1050,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1750,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1065,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1775,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1080,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1800,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1095,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1825,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1110,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1850,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1125,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1875,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1140,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1900,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1155,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1925,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1170,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1950,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1185,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 1975,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1200,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2000,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1215,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2025,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1230,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2050,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1245,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2075,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1260,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2100,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1275,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2125,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1290,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2150,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1305,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2175,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1320,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2200,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1335,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2225,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1350,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2250,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1365,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2275,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1380,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2300,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1395,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2325,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1410,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2350,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1425,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2375,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1440,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2400,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1455,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2425,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1470,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2450,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1485,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2475,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1500,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2500,
+          "achievement_unlocked": "focus_centurion"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "focus_centurion"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1515,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2525,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1530,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2550,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1545,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2575,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1560,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2600,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1575,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2625,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1590,
+          "new_level": 3,
+          "title": "Escriba Errante",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2650,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1605,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": true,
+          "streak": null,
+          "total_today_minutes": 2675,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1620,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2700,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1635,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2725,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1650,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2750,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1665,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2775,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1680,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2800,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1695,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2825,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1710,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2850,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1725,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2875,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1740,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2900,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1755,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2925,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1770,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2950,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1785,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 2975,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1800,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3000,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1815,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3025,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1830,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3050,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1845,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3075,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1860,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3100,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1875,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3125,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1890,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3150,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1905,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3175,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1920,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3200,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1935,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3225,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1950,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3250,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1965,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3275,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1980,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3300,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 1995,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3325,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2010,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3350,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2025,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3375,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2040,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3400,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2055,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3425,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2070,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3450,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2085,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3475,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2100,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3500,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2115,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3525,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2130,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3550,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2145,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3575,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2160,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3600,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2175,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3625,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2190,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3650,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2205,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3675,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2220,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3700,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2235,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3725,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2250,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3750,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2265,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3775,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2280,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3800,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2295,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3825,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2310,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3850,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2325,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3875,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2340,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3900,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2355,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3925,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2370,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3950,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2385,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 3975,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2400,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4000,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2415,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4025,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2430,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4050,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2445,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4075,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2460,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4100,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2475,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4125,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2490,
+          "new_level": 4,
+          "title": "Guardián del Umbral",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4150,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 2490,
+          "level": 4,
+          "title": "Guardián del Umbral",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 1600,
+          "xp_for_next_level": 2500,
+          "xp_into_level": 890,
+          "xp_span": 900
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2505,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": true,
+          "streak": null,
+          "total_today_minutes": 4175,
+          "achievement_unlocked": "ascension"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "ascension",
+          "focus_centurion"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 2505,
+          "level": 5,
+          "title": "Astrónomo Nocturno",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 2500,
+          "xp_for_next_level": 3600,
+          "xp_into_level": 5,
+          "xp_span": 1100
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2520,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4200,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2535,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4225,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2550,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4250,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2565,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4275,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2580,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4300,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2595,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4325,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2610,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4350,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2625,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4375,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2640,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4400,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2655,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4425,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2670,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4450,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2685,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4475,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2700,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4500,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2715,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4525,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2730,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4550,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2745,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4575,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2760,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4600,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2775,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4625,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2790,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4650,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2805,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4675,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2820,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4700,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2835,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4725,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2850,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4750,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2865,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4775,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2880,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4800,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2895,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4825,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2910,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4850,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2925,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4875,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2940,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4900,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2955,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4925,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2970,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4950,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 2985,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 4975,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3000,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5000,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3015,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5025,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3030,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5050,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3045,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5075,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3060,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5100,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3075,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5125,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3090,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5150,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3105,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5175,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3120,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5200,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3135,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5225,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3150,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5250,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3165,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5275,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3180,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5300,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3195,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5325,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3210,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5350,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3225,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5375,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3240,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5400,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3255,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5425,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3270,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5450,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3285,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5475,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3300,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5500,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3315,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5525,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3330,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5550,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3345,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5575,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3360,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5600,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3375,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5625,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3390,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5650,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3405,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5675,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3420,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5700,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3435,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5725,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3450,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5750,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3465,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5775,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3480,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5800,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3495,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5825,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3510,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5850,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3525,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5875,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3540,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5900,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3555,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5925,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3570,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5950,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3585,
+          "new_level": 5,
+          "title": "Astrónomo Nocturno",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 5975,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3600,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": true,
+          "streak": null,
+          "total_today_minutes": 6000,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3615,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6025,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3630,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6050,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3645,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6075,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3660,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6100,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3675,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6125,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3690,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6150,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3705,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6175,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3720,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6200,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3735,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6225,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "ascension",
+          "focus_centurion"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {},
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 3750,
+          "new_level": 6,
+          "title": "Tejedor de Hábitos",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 6250,
+          "achievement_unlocked": "focus_legend"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "ascension",
+          "focus_centurion",
+          "focus_legend"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 3750,
+          "level": 6,
+          "title": "Tejedor de Hábitos",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 3600,
+          "xp_for_next_level": 4900,
+          "xp_into_level": 150,
+          "xp_span": 1300
+        }
+      }
+    }
+  ]
+}

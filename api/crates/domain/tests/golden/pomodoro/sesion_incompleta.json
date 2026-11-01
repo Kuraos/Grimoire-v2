@@ -1,0 +1,232 @@
+{
+  "escenario": "sesion_incompleta",
+  "descripcion": "`completed: false` se guarda pero no paga: 0 XP, sin logros y fuera de `total_today_minutes`. Sigue en `GET /pomodoro/today`. No cuenta para las horas del proyecto.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /projects",
+      "cuerpo": {
+        "name": "Foco"
+      },
+      "alias": "foco",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Foco",
+          "description": null,
+          "status": "active",
+          "color": "#9b7fc4",
+          "category": null,
+          "vault_note_path": null,
+          "created_at": "2026-03-02T12:00:00",
+          "tasks_total": 0,
+          "tasks_pending": 0,
+          "pomodoro_hours": 0.0
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 7,
+        "completed": false
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 0,
+          "new_xp": 0,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 0,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 25,
+        "completed": false,
+        "project_id": "{foco}"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 0,
+          "new_xp": 0,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 0,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 0,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 0,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /pomodoro/today",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "task_id": null,
+            "project_id": null,
+            "work_minutes": 7,
+            "completed": false,
+            "started_at": "2026-03-02T11:53:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 2,
+            "task_id": null,
+            "project_id": 1,
+            "work_minutes": 25,
+            "completed": false,
+            "started_at": "2026-03-02T11:35:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /projects",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "name": "Foco",
+            "description": null,
+            "status": "active",
+            "color": "#9b7fc4",
+            "category": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "tasks_total": 0,
+            "tasks_pending": 0,
+            "pomodoro_hours": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 25,
+        "project_id": "{foco}"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 25,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /pomodoro/today",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "task_id": null,
+            "project_id": null,
+            "work_minutes": 7,
+            "completed": false,
+            "started_at": "2026-03-02T11:53:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 2,
+            "task_id": null,
+            "project_id": 1,
+            "work_minutes": 25,
+            "completed": false,
+            "started_at": "2026-03-02T11:35:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 3,
+            "task_id": null,
+            "project_id": 1,
+            "work_minutes": 25,
+            "completed": true,
+            "started_at": "2026-03-02T11:35:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /projects",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 1,
+            "name": "Foco",
+            "description": null,
+            "status": "active",
+            "color": "#9b7fc4",
+            "category": null,
+            "vault_note_path": null,
+            "created_at": "2026-03-02T12:00:00",
+            "tasks_total": 0,
+            "tasks_pending": 0,
+            "pomodoro_hours": 0.4
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -12,12 +12,14 @@ import type { ApiTask } from './types'
  *   `{ kind: 'task', taskId, remindAt }`.
  * - Cada módulo solo agenda y cancela las de su `kind`. La reconciliación de tareas nunca toca una
  *   notificación de otro `kind`, ni una sin `extra`. Por eso aquí no existe `cancelAll`.
- * - Los ids de tareas viven en [TASK_ID_MIN, TASK_ID_MAX]. Por debajo queda libre para los módulos
- *   con ids fijos, como Pomodoro.
+ * - Agendar con un id existente reemplaza la notificación, sin importar su `kind`. Por eso los ids se
+ *   reparten: 0 a FIXED_ID_MAX, reservados para las fijas (Pomodoro = 1000), y los de tareas viven en
+ *   [TASK_ID_MIN, TASK_ID_MAX], sin salir de ahí ni con el hash ni al resolver una colisión.
  * - `getPending` del plugin devuelve todo lo guardado, también lo ya disparado. Estar en esa lista
  *   no significa que falte sonar.
  */
 
+export const FIXED_ID_MAX = 9_999
 export const TASK_ID_MIN = 1_000_000
 export const TASK_ID_MAX = 2 ** 31 - 1
 const TASK_KIND = 'task'
@@ -39,10 +41,13 @@ export function hashTaskId(taskId: string): number {
   return TASK_ID_MIN + (h >>> 0) % (TASK_ID_MAX - TASK_ID_MIN + 1)
 }
 
+/** Al probar el siguiente id, el final del rango da la vuelta al principio, nunca a los reservados. */
+export const nextTaskId = (id: number) => (id === TASK_ID_MAX ? TASK_ID_MIN : id + 1)
+
 /** El UUID en un entero, saltando lo ocupado: la colisión se resuelve aquí. */
 function freeId(taskId: string, used: Set<number>): number {
   let id = hashTaskId(taskId)
-  while (used.has(id)) id = id === TASK_ID_MAX ? TASK_ID_MIN : id + 1
+  while (used.has(id)) id = nextTaskId(id)
   return id
 }
 

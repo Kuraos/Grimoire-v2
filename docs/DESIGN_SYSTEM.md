@@ -147,8 +147,7 @@ xl   24px   iluminación (Cinzel)
 ```
 
 La cifra (34px) no es un peldaño suelto: es el rol `.gr-figure`, que además fija
-`tabular-nums`. Los 56px del temporizador a pantalla completa son el único tamaño
-por encima de la escala, y es deliberado.
+`tabular-nums`. La cifra del temporizador en la esfera mide 44px, como la rúbrica.
 
 **`fontSize` y `borderRadius` reemplazan la escala de Tailwind, no la extienden.**
 `text-lg` y `rounded-xl` no existen en este proyecto. Un mockup que los use está
@@ -408,8 +407,8 @@ dejando la de escritorio detrás de `lg:`.
   en una columna sigue la jerarquía: la `rubric` de la vista va primero.
 - Tablas anchas (Erario, Entrenamiento): en teléfono se vuelven lista de filas
   apiladas, no tabla con scroll horizontal.
-- El temporizador a pantalla completa (56 px) se mantiene: es el caso de uso estrella
-  del teléfono.
+- El temporizador es la esfera de `PomodoroTimer`, dentro de su tarjeta. No hay modo a
+  pantalla completa, ni en la v1 ni en la v2 (idea en `ROADMAP.md`, «Después del cambio»).
 - Gráficos: mismo componente, menos densidad (menos ticks, etiquetas abreviadas); no
   se cambia el tipo de gráfico por pantalla.
 

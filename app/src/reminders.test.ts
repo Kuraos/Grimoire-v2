@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { dueBetween, hashTaskId, reconcileReminders, reminderPlan, TASK_ID_MAX, TASK_ID_MIN, type PendingNotification } from './reminders'
+import { dueBetween, FIXED_ID_MAX, hashTaskId, nextTaskId, reconcileReminders, reminderPlan, TASK_ID_MAX, TASK_ID_MIN, type PendingNotification } from './reminders'
 
 const plugin = vi.hoisted(() => ({
   pending: [] as { id: number; body?: string; extra?: unknown }[],
@@ -156,6 +156,17 @@ test('los ids se quedan en su rango, también al dar la vuelta', () => {
     expect(h).toBeGreaterThanOrEqual(TASK_ID_MIN)
     expect(h).toBeLessThanOrEqual(TASK_ID_MAX)
   }
+})
+
+test('el id de una tarea nunca cae en los reservados 0–9 999, ni con el hash ni al dar la vuelta', () => {
+  expect(FIXED_ID_MAX).toBe(9_999)
+  expect(TASK_ID_MIN).toBeGreaterThan(FIXED_ID_MAX)
+  for (let i = 0; i < 100_000; i++) {
+    const h = hashTaskId(`019a0000-0000-7000-8000-${i}`)
+    if (h < TASK_ID_MIN || h > TASK_ID_MAX) throw new Error(`hash fuera de rango: ${h}`)
+  }
+  expect(nextTaskId(TASK_ID_MAX)).toBe(TASK_ID_MIN)
+  expect(nextTaskId(TASK_ID_MIN)).toBe(TASK_ID_MIN + 1)
 })
 
 test('al aplicar: cancela antes de agendar, y agenda con exacta, canal y extra', async () => {

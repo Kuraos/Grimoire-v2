@@ -1,0 +1,257 @@
+{
+  "escenario": "validacion_sesion",
+  "descripcion": "Lo que la API acepta sin mirar: minutos en 0, negativos o enormes (y pagan igual), arranque en el futuro o después del final. Rechaza por tipo: 422. Una sesión negativa resta del total.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 0
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 15,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 0,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": -5
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 30,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": -5,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 100000
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 45,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 99995,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 25,
+        "started_at": "2030-01-01T00:00:00"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 60,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 100020,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": "muchos"
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "int_parsing",
+              "loc": [
+                "body",
+                "work_minutes"
+              ],
+              "msg": "Input should be a valid integer, unable to parse string as an integer",
+              "input": "muchos"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 25.5
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "int_from_float",
+              "loc": [
+                "body",
+                "work_minutes"
+              ],
+              "msg": "Input should be a valid integer, got a number with a fractional part",
+              "input": 25.5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "started_at": "ayer"
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "datetime_from_date_parsing",
+              "loc": [
+                "body",
+                "started_at"
+              ],
+              "msg": "Input should be a valid datetime or date, input is too short",
+              "input": "ayer",
+              "ctx": {
+                "error": "input is too short"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "completed": "quizas"
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "bool_parsing",
+              "loc": [
+                "body",
+                "completed"
+              ],
+              "msg": "Input should be a valid boolean, unable to interpret input",
+              "input": "quizas"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /pomodoro/today",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "id": 4,
+            "task_id": null,
+            "project_id": null,
+            "work_minutes": 25,
+            "completed": true,
+            "started_at": "2030-01-01T00:00:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 2,
+            "task_id": null,
+            "project_id": null,
+            "work_minutes": -5,
+            "completed": true,
+            "started_at": "2026-03-02T12:05:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 1,
+            "task_id": null,
+            "project_id": null,
+            "work_minutes": 0,
+            "completed": true,
+            "started_at": "2026-03-02T12:00:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          },
+          {
+            "id": 3,
+            "task_id": null,
+            "project_id": null,
+            "work_minutes": 100000,
+            "completed": true,
+            "started_at": "2025-12-23T01:20:00",
+            "finished_at": "2026-03-02T12:00:00",
+            "task_title": null
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 60,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 60,
+          "xp_span": 400
+        }
+      }
+    }
+  ]
+}
