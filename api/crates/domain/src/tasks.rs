@@ -6,11 +6,20 @@
 
 use std::ops::RangeInclusive;
 
-use chrono::NaiveDate;
+use chrono::{Days, NaiveDate};
 
 /// v1: `TaskBase.xp_reward`.
 pub const XP_REWARD: RangeInclusive<i64> = 5..=50;
 pub const DEFAULT_XP_REWARD: i64 = 15;
+
+/// Días de completadas que trae la lista; las anteriores van por la ruta paginada
+/// (caracterizacion-v1.md, fila 23).
+pub const RECENT_DONE_DAYS: u64 = 90;
+
+/// Primer día de completadas que trae la lista.
+pub fn recent_done_start(today: NaiveDate) -> NaiveDate {
+    today - Days::new(RECENT_DONE_DAYS)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskStatus {

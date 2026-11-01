@@ -1,11 +1,11 @@
 //! Rutas de tareas y checklist. Todas pasan por la cola sin conexión (ADR 0008): repetir una
 //! escritura con el mismo id da lo mismo. Las reglas están en `grimoire_domain::tasks`.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
 use axum::Json;
 use axum::extract::rejection::JsonRejection;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use chrono::{DateTime, NaiveDate, SecondsFormat, Utc};
 use grimoire_domain::achievements::{
@@ -13,11 +13,12 @@ use grimoire_domain::achievements::{
 };
 use grimoire_domain::tasks::{
     CompleteDecision, CompleteRejected, TaskStatus, UncompleteDecision, UncompleteInput,
-    UncompleteRejected, XP_REWARD, complete as decide_complete, uncomplete as decide_uncomplete,
-    valid_checklist_text, valid_priority, valid_rank,
+    UncompleteRejected, XP_REWARD, complete as decide_complete, recent_done_start,
+    uncomplete as decide_uncomplete, valid_checklist_text, valid_priority, valid_rank,
 };
 use grimoire_domain::xp::{XpChange, award_xp};
 use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 use uuid::Uuid;
 use worker::wasm_bindgen::JsValue;
 use worker::{D1Result, query};
@@ -51,6 +52,9 @@ struct TaskRow {
     remind_at: Option<String>,
     tags: Option<String>,
     created_at: String,
+    /// Solo en la lista (`list_sql`): la checklist ya agregada por SQLite.
+    #[serde(default, skip_serializing)]
+    checklist_json: Option<String>,
 }
 
 impl TaskRow {
@@ -109,35 +113,126 @@ fn select_items(s: &AppState, task_id: &str) -> Result<worker::D1PreparedStateme
 
 // ---------- GET /tasks ----------
 
-/// Todas las tareas con su checklist, en dos consultas y sin N+1. Filtros y orden son del
-/// cliente; aquí solo el orden del tablero.
+/// Una fila por tarea, con su checklist como JSON: el worker no deserializa ítem por ítem, que era
+/// lo que pesaba (ADR 0007). Subconsulta correlacionada y no `JOIN` con un agregado: usa el índice
+/// `(task_id, position)` y lee cada ítem una vez; el `JOIN` leía más del doble de filas. Sin
+/// `ORDER BY` en el agregado, que los pasa por un ordenador: el índice ya los da por `position`, y
+/// `list_keeps_items_in_position_order` lo comprueba.
+fn list_sql(tail: &str) -> String {
+    format!(
+        "SELECT {TASK_COLUMNS}, (SELECT json_object('n', COUNT(*), 'd', COALESCE(SUM(done), 0), \
+         'items', json_group_array(json_object('id', id, 'task_id', task_id, 'text', text, \
+         'done', json(iif(done, 'true', 'false')), 'position', position))) \
+         FROM checklist_items WHERE task_id = t.id) AS checklist_json FROM tasks t {tail}"
+    )
+}
+
+#[derive(Deserialize)]
+struct Checklist<'a> {
+    n: i64,
+    d: i64,
+    #[serde(borrow)]
+    items: &'a RawValue,
+}
+
+/// Misma forma que `TaskOut`, con la checklist tal como la armó SQLite.
+#[derive(Serialize)]
+pub struct ListedTask {
+    #[serde(flatten)]
+    task: TaskRow,
+    completed: bool,
+    checklist_total: i64,
+    checklist_done: i64,
+    checklist: Box<RawValue>,
+}
+
+fn listed(mut task: TaskRow) -> Result<ListedTask, AppError> {
+    let raw = task.checklist_json.take().unwrap_or_default();
+    let c: Checklist = serde_json::from_str(&raw)
+        .map_err(|_| AppError::Internal("checklist agregada inválida".into()))?;
+    Ok(ListedTask {
+        completed: task.status == "done",
+        checklist_total: c.n,
+        checklist_done: c.d,
+        checklist: c.items.to_owned(),
+        task,
+    })
+}
+
+/// ?1 primer día de completadas de la lista.
+const RECENT_TASKS: &str = "WHERE t.status <> 'done' OR t.completed_on >= ?1 ORDER BY t.rank, t.id";
+/// ?1 día y ?2 id del cursor, sin incluirlo. `completed_on` puede venir vacío en lo migrado.
+const OLDER_TASKS: &str = "WHERE t.status = 'done' AND (COALESCE(t.completed_on, ''), t.id) < (?1, ?2) \
+     ORDER BY COALESCE(t.completed_on, '') DESC, t.id DESC LIMIT ?3";
+const HISTORY_PAGE: usize = 50;
+
+fn listed_rows(res: &D1Result) -> Result<Vec<ListedTask>, AppError> {
+    res.results::<TaskRow>()?.into_iter().map(listed).collect()
+}
+
+/// Abiertas y completadas en los últimos 90 días (fila 23). Filtros y orden son del cliente; aquí
+/// solo el orden del tablero.
 #[worker::send]
-pub async fn list(State(s): State<AppState>) -> Result<Json<Vec<TaskOut>>, AppError> {
+pub async fn list(State(s): State<AppState>) -> Result<Json<Vec<ListedTask>>, AppError> {
+    let from = recent_done_start(today(&s.tz)?).to_string();
     let res =
-        s.db.batch(vec![
-            s.db.prepare(format!(
-                "SELECT {TASK_COLUMNS} FROM tasks ORDER BY rank, id"
-            )),
-            s.db.prepare(format!(
-                "SELECT {ITEM_COLUMNS} FROM checklist_items ORDER BY task_id, position"
-            )),
-        ])
-        .await?;
+        s.db.batch(vec![query!(&s.db, &list_sql(RECENT_TASKS), from)?])
+            .await?;
     log_d1("GET /tasks", &res);
-    let mut items: HashMap<String, Vec<ItemRow>> = HashMap::new();
-    for item in res[1].results::<ItemRow>()? {
-        items.entry(item.task_id.clone()).or_default().push(item);
-    }
-    Ok(Json(
-        res[0]
-            .results::<TaskRow>()?
-            .into_iter()
-            .map(|t| {
-                let checklist = items.remove(&t.id).unwrap_or_default();
-                task_out(t, checklist)
-            })
-            .collect(),
-    ))
+    Ok(Json(listed_rows(&res[0])?))
+}
+
+#[derive(Deserialize)]
+pub struct HistoryQuery {
+    /// `next_cursor` de la página anterior: `día,id`.
+    cursor: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct HistoryPage {
+    tasks: Vec<ListedTask>,
+    next_cursor: Option<String>,
+}
+
+/// Las completadas que la lista ya no trae, de la más reciente a la más antigua.
+#[worker::send]
+pub async fn history(
+    State(s): State<AppState>,
+    Query(q): Query<HistoryQuery>,
+) -> Result<Json<HistoryPage>, AppError> {
+    let (day, id) = match &q.cursor {
+        None => (recent_done_start(today(&s.tz)?).to_string(), String::new()),
+        Some(c) => {
+            let (day, id) = c
+                .split_once(',')
+                .ok_or_else(|| AppError::Invalid("Cursor inválido".into()))?;
+            if !day.is_empty() {
+                parse_day(day)?;
+            }
+            (day.to_owned(), parse_uuid(id)?)
+        }
+    };
+    let res =
+        s.db.batch(vec![query!(
+            &s.db,
+            &list_sql(OLDER_TASKS),
+            day,
+            id,
+            (HISTORY_PAGE + 1) as f64
+        )?])
+        .await?;
+    log_d1("GET /tasks/history", &res);
+    let mut tasks = listed_rows(&res[0])?;
+    let more = tasks.len() > HISTORY_PAGE;
+    tasks.truncate(HISTORY_PAGE);
+    let next_cursor = more.then(|| tasks.last()).flatten().map(|t| {
+        format!(
+            "{},{}",
+            t.task.completed_on.as_deref().unwrap_or(""),
+            t.task.id
+        )
+    });
+    Ok(Json(HistoryPage { tasks, next_cursor }))
 }
 
 // ---------- validación ----------
@@ -1152,6 +1247,101 @@ mod tests {
             .unwrap();
         c.execute(ADD_ITEM, params!["i4", "t", "Cuatro"]).unwrap();
         assert_eq!(pos("i4"), 3);
+    }
+
+    fn listed_json(
+        c: &Connection,
+        tail: &str,
+        binds: &[&dyn rusqlite::ToSql],
+    ) -> Vec<(String, String)> {
+        let sql = list_sql(tail);
+        let mut q = c.prepare(&sql).unwrap();
+        q.query_map(binds, |r| Ok((r.get("id")?, r.get("checklist_json")?)))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect()
+    }
+
+    /// El índice da los ítems por `position`, aunque se hayan insertado en otro orden. Forma de la
+    /// checklist agregada: la misma que `ItemRow` serializado, con `done` booleano.
+    #[test]
+    fn list_keeps_items_in_position_order() {
+        let c = db();
+        add_task(&c, "t", None);
+        add_task(&c, "sin", None);
+        for (id, done, pos) in [("z", 1, 2), ("a", 0, 0), ("m", 1, 1)] {
+            c.execute(
+                "INSERT INTO checklist_items (id, task_id, text, done, position) \
+                 VALUES (?1, 't', ?1, ?2, ?3)",
+                params![id, done, pos],
+            )
+            .unwrap();
+        }
+        let rows = listed_json(&c, "ORDER BY t.id", &[]);
+        let sin: serde_json::Value = serde_json::from_str(&rows[0].1).unwrap();
+        assert_eq!(sin, serde_json::json!({"n": 0, "d": 0, "items": []}));
+        let t: serde_json::Value = serde_json::from_str(&rows[1].1).unwrap();
+        assert_eq!(
+            (&t["n"], &t["d"]),
+            (&serde_json::json!(3), &serde_json::json!(2))
+        );
+        let ids: Vec<&str> = t["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| i["id"].as_str().unwrap())
+            .collect();
+        assert_eq!(ids, ["a", "m", "z"]);
+        assert_eq!(
+            t["items"][0],
+            serde_json::json!({"id": "a", "task_id": "t", "text": "a", "done": false, "position": 0})
+        );
+        assert_eq!(t["items"][1]["done"], true);
+    }
+
+    fn add_done(c: &Connection, id: &str, on: Option<&str>) {
+        add_task(c, id, None);
+        c.execute(
+            "UPDATE tasks SET status = 'done', completed_on = ?2 WHERE id = ?1",
+            params![id, on],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn list_has_open_and_recent_done_only() {
+        let c = db();
+        add_task(&c, "abierta", None);
+        add_done(&c, "borde", Some("2026-08-03"));
+        add_done(&c, "vieja", Some("2026-08-02"));
+        add_done(&c, "migrada", None);
+        let ids: Vec<String> = listed_json(&c, RECENT_TASKS, &[&"2026-08-03"])
+            .into_iter()
+            .map(|r| r.0)
+            .collect();
+        assert_eq!(ids, ["abierta", "borde"]);
+    }
+
+    /// Lo que la lista no trae sale en páginas, sin saltos ni repeticiones, también lo migrado sin
+    /// fecha y con empates de día.
+    #[test]
+    fn history_pages_through_everything_older() {
+        let c = db();
+        add_task(&c, "abierta", None);
+        add_done(&c, "reciente", Some("2026-08-03"));
+        add_done(&c, "b", Some("2026-08-02"));
+        add_done(&c, "a", Some("2026-08-02"));
+        add_done(&c, "c", Some("2026-01-01"));
+        add_done(&c, "migrada", None);
+        let page = |day: &str, id: &str, n: i64| -> Vec<String> {
+            listed_json(&c, OLDER_TASKS, &[&day, &id, &n])
+                .into_iter()
+                .map(|r| r.0)
+                .collect()
+        };
+        assert_eq!(page("2026-08-03", "", 2), ["b", "a"]);
+        assert_eq!(page("2026-08-02", "a", 2), ["c", "migrada"]);
+        assert_eq!(page("", "migrada", 2), Vec::<String>::new());
     }
 
     #[test]

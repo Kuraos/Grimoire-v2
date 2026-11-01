@@ -240,7 +240,51 @@ decisiones tomadas sobre la marcha.)
       No se añade índice: a 2 013 filas por lectura, los 5 M diarios de D1 dan para unas 2 400.
     - Mover escribe una sola fila, lo que pedía la decisión 1.
     - `complete` solo escanea mientras `project_master` o `task_centurion` siguen bloqueados.
-  - **Sin medir:** CPU en producción. `GET /tasks` serializa 355 KB, así que es el candidato a
-    pasar de 10 ms. El plan pedía 2 000 tareas; Johan fijó 500. Si la mediana pasa de 10 ms con 500,
-    se acota como dice la 2.2.2.
-  - **`0005` y este worker no están en producción.**
+  - **CPU en producción** (2026-10-31, Bogotá; versión `b07b7e19`, `0005` aplicada por Johan).
+    `cpuTime` de `wrangler tail`, 20 requests por ruta, una por segundo, todas 200 y `outcome: ok`,
+    con el seed de arriba (500 tareas; el plan pedía 2 000 y Johan fijó 500):
+
+    | Request | n | CPU mediana | CPU mín–máx | > 10 ms | Wall mediana | Filas leídas |
+    |---|---|---|---|---|---|---|
+    | `GET /tasks` | 20 | **15,5 ms** | 12–61 ms | **20 de 20** | 36 ms | 2 013 |
+    | `GET /projects` | 20 | 2 ms | 1–3 ms | 0 de 20 | 15 ms | 464 |
+
+    **`GET /tasks` no cumple el criterio de 10 ms:** toca acotarla, según esta misma tarea. Ningún
+    request falló, pero el mínimo ya pasa del límite, así que no es ruido. No se ha acotado todavía.
+  - **El seed sigue en la base remota** (500 tareas, 20 proyectos, 1 013 ítems): sirve para volver a
+    medir, y hay que borrarlo antes de la 2.2.5.
+- **`GET /tasks` acotado y lectura compacta** (2026-10-31, Bogotá):
+  - **Datos reales de la v1** (Johan, de una copia): 95 tareas (90 abiertas, 5 completadas), 10
+    proyectos, 320 ítems (máximo 4 por tarea) y 0 completadas hace más de 90 días. La ventana no
+    recorta nada hoy: lo que crece son las abiertas. Por eso el cambio principal es la checklist.
+  - **Lectura compacta:** SQLite arma la checklist de cada tarea en una columna JSON y el worker la
+    copia con `RawValue`, sin deserializar ítem por ítem. La forma de la respuesta no cambia:
+    mismos bytes en el paso 1, y los goldens pasan. `json_group_array` queda sin `ORDER BY`: el
+    índice `(task_id, position)` entrega el orden y `list_keeps_items_in_position_order` lo fija.
+    SQLite no lo garantiza formalmente; si el test cae, el arreglo es volver al `ORDER BY`.
+  - **Filas leídas de `GET /tasks` en local**, antes y después de cada paso (10 requests por caso,
+    todas iguales). Seed `realista`: 100 abiertas, 5 recientes, 367 ítems. Seed `pesado`: 300
+    abiertas, 200 hechas repartidas en dos años, 1 015 ítems:
+
+    | Paso | Realista | Pesado | Tareas (R / P) | Bytes (P) |
+    |---|---|---|---|---|
+    | 0. Base: dos consultas, ítems deserializados | 577 | 2 015 | 105 / 500 | 357 628 |
+    | 1a. `JOIN` con agregado (descartado) | 1 258 | 4 341 | 105 / 500 | 357 628 |
+    | 1b. Correlacionada, `ORDER BY` en el agregado (descartado) | 1 048 | 3 529 | 105 / 500 | 357 628 |
+    | 1c. Correlacionada, sin ese `ORDER BY` | 681 | 2 420 | 105 / 500 | 357 628 |
+    | 2. 1c más la ventana de 90 días | 681 | 1 746 | 105 / 324 | 229 867 |
+
+    - **La lectura compacta sube las filas leídas** (681 frente a 577): cada tarea cuenta una
+      búsqueda en el índice. Lo que debe bajar es el CPU del worker, y eso solo se ve en producción.
+    - A 681 filas, los 5 M diarios de D1 dan para unas 7 300 lecturas.
+    - En 1a y 1b el aumento viene de materializar el agregado y del ordenador, que cuentan cada ítem
+      más de una vez. El tiempo local no distingue los casos: 18–20 ms y 22–29 ms.
+  - **`GET /tasks/history`:** de la más reciente a la más antigua, 50 por página, con cursor `día,id`.
+    Con el seed `pesado`, 999 filas leídas en la primera página, porque recorre y ordena todas las
+    tareas. Sin índice por ahora: es una ruta poco frecuente. `check_window` en
+    `replay_golden.py` comprueba el borde de 90 días, las dos páginas sin saltos ni repeticiones, un
+    cursor inválido (422) y que descompletar desde ahí devuelve la tarea a la lista.
+  - **Goldens contra `wrangler dev`:** los 8 pasan como en la 2.2.2, con reintentos. La réplica ya
+    no manda `local_date`, para que las fechas de los goldens no caigan fuera de la ventana.
+  - **Sin medir:** CPU en producción con estos cambios. La opción B (ítems al abrir la tarea) solo
+    entra si el seed `realista` queda por encima de 10 ms de mediana.

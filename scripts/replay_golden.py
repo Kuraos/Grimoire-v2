@@ -16,7 +16,7 @@ import sys
 import urllib.error
 import urllib.request
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -207,7 +207,8 @@ class Scenario:
             if alias:
                 self.ids[alias] = body["id"]
         elif method == "POST" and path.endswith("/complete"):
-            body = {"id": str(uuid.uuid4()), "local_date": step["hoy"]}
+            # sin `local_date`: las fechas de los goldens quedarían fuera de la ventana (fila 23)
+            body = {"id": str(uuid.uuid4())}
         elif method == "POST" and path.endswith("/uncomplete"):
             body = {"grant_id": self.grants.get(path.split("/")[2])}
         # fila 16: el rechazo de regla es 409. Fila 15: repetir un DELETE da 204.
@@ -285,6 +286,42 @@ class Scenario:
             self.retry(i, step, method, path, body, got)
 
 
+def check_window(api):
+    """Fila 23: la lista trae abiertas y lo completado en 90 días; lo demás sale paginado."""
+    today = (datetime.now(timezone.utc) - timedelta(hours=5)).date()
+    api.reset()
+
+    def new(title):
+        uid = str(uuid.uuid4())
+        status, _ = api.call("POST", "/tasks", {"id": uid, "title": title, "rank": "a0"})
+        assert status == 201
+        return uid
+
+    def done(title, days_ago):
+        uid = new(title)
+        day = (today - timedelta(days=days_ago)).isoformat()
+        status, _ = api.call("POST", f"/tasks/{uid}/complete", {"id": str(uuid.uuid4()), "local_date": day})
+        assert status == 200
+        return uid
+
+    opened, edge = new("abierta"), done("borde", 90)
+    old = [done(f"vieja {i}", 91 + i % 3) for i in range(51)]
+    _, listed = api.call("GET", "/tasks")
+    assert {t["id"] for t in listed} == {opened, edge}, "ventana"
+    status, page = api.call("GET", "/tasks/history")
+    assert status == 200 and len(page["tasks"]) == 50 and page["next_cursor"], "primera página"
+    status, rest = api.call("GET", "/tasks/history?cursor=" + page["next_cursor"])
+    assert status == 200 and len(rest["tasks"]) == 1 and rest["next_cursor"] is None, "segunda página"
+    assert {t["id"] for t in page["tasks"] + rest["tasks"]} == set(old), "sin saltos ni repeticiones"
+    assert api.call("GET", "/tasks/history?cursor=basura")[0] == 422
+    task = rest["tasks"][0]
+    status, _ = api.call("POST", f"/tasks/{task['id']}/uncomplete", {"grant_id": task["grant_id"]})
+    assert status == 200, "descompletar desde el historial"
+    _, listed = api.call("GET", "/tasks")
+    assert task["id"] in {t["id"] for t in listed}, "reabierta vuelve a la lista"
+    print("ventana y /tasks/history: OK")
+
+
 def main():
     url, persist = sys.argv[1].rstrip("/"), sys.argv[2]
     token = next(line.split("=", 1)[1].strip().strip('"')
@@ -302,6 +339,7 @@ def main():
               f"{len(sc.diffs)} diferencias permitidas, xp final {user['xp']}")
         for i, call, fila in sc.diffs:
             print(f"  paso {i}: {call} (fila {fila})")
+    check_window(api)
     print("OK")
 
 

@@ -81,6 +81,7 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
             )
             .route("/habit-categories/{id}", delete(categories::delete))
             .route("/tasks", get(tasks::list).post(tasks::create))
+            .route("/tasks/history", get(tasks::history))
             .route("/tasks/{id}", patch(tasks::update).delete(tasks::remove))
             .route("/tasks/{id}/complete", post(tasks::complete))
             .route("/tasks/{id}/uncomplete", post(tasks::uncomplete))

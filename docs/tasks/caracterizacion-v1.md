@@ -108,6 +108,7 @@ ADR 0005, y la 10, que tiene su fecha.
 | 20 | Filtro `tag` | Subcadena en el servidor (`a` trae `casa`) | Token exacto sin distinguir mayúsculas, en el cliente | Es un falso positivo. Igual que Hábitos: filtro en el cliente. |
 | 21 | Lista de etiquetas del filtro | `GET /tags`: hábitos, tareas y diario | Derivada de las tareas cargadas | Sin ruta nueva; módulo de etiquetas en la fase 5+. |
 | 22 | `pomodoro_hours` del proyecto | En cada proyecto | Llega con Pomodoro | Aún no hay sesiones. Su UI se oculta hasta entonces. |
+| 23 | `GET /tasks` | Todas las tareas | Abiertas y completadas en los últimos 90 días (`completed_on`); las anteriores, en `GET /tasks/history`, paginada | `GET /tasks` pasó de 10 ms de CPU con 500 tareas. Decidido por Johan el 2026-10-31. Ningún golden lo muestra: la réplica completa en el día actual. |
 
 ## Hallazgos
 

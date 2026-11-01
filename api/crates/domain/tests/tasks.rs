@@ -4,8 +4,8 @@ use chrono::NaiveDate;
 use grimoire_domain::achievements::{TaskFacts, earned_on_task_complete};
 use grimoire_domain::tasks::{
     CompleteDecision, CompleteRejected, TaskStatus, UncompleteDecision, UncompleteInput,
-    UncompleteRejected, complete, uncomplete, valid_checklist_text, valid_priority,
-    valid_project_status, valid_rank,
+    UncompleteRejected, complete, recent_done_start, uncomplete, valid_checklist_text,
+    valid_priority, valid_project_status, valid_rank,
 };
 
 fn d(s: &str) -> NaiveDate {
@@ -118,6 +118,11 @@ fn done_is_not_writable() {
     assert_eq!(TaskStatus::parse_writable("done"), None);
     assert_eq!(TaskStatus::parse_writable("doing"), Some(TaskStatus::Doing));
     assert_eq!(TaskStatus::parse_writable("inventado"), None);
+}
+
+#[test]
+fn recent_window_is_90_days_back() {
+    assert_eq!(recent_done_start(d("2026-11-01")), d("2026-08-03"));
 }
 
 #[test]
