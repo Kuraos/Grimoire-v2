@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { App as CapApp } from "@capacitor/app";
 import { IconArrowDown, IconArrowUp, IconCheck, IconFilter, IconPlus, IconFolder, IconTrash, IconEdit, IconList, IconLayoutKanban, IconChecklist } from "@tabler/icons-react";
 import { useIsDesktop } from "../hooks/useMediaQuery";
+import { isNative, notificationAccess, openExactSettings, type NotificationAccess } from "../notify";
 import { dismissQueueEntry } from "../api/queryClient";
 import { projectActions, useProjects } from "../api/projects";
 import { rankAtEnd, remindAtToLocal, remindAtToUtc, sortTasks, stepNeighbours, taskActions, useTaskHistory, useTasks } from "../api/tasks";
@@ -118,6 +120,8 @@ export default function Tasks() {
         <button className="btn" onClick={openNewProject} aria-label="Nuevo proyecto" title="Nuevo proyecto"><IconFolder size={14} /> <span className="hidden lg:inline">Proyecto</span></button>
         <button className="btn btn-primary" onClick={openNewTask}><IconPlus size={14} /> Tarea</button>
       </PageHeader>
+
+      {tasks.some((t) => !t.completed && t.remind_at && new Date(t.remind_at).getTime() > Date.now()) && <ReminderAccessNotice />}
 
       {/* Un rechazo no se pierde con el toast: queda aquí hasta que se lea. */}
       {rejected.map((e) => (
@@ -242,6 +246,30 @@ export default function Tasks() {
       {projectModal && <ProjectForm project={editProject} onClose={() => setProjectModal(false)} />}
       {moving && <MoveSheet task={moving} tasks={tasks} visible={onBoard} onClose={() => setMovingId(null)} />}
     </div>
+  );
+}
+
+/** Solo en el APK, y solo si falta algo para que los recordatorios suenen a su hora (ADR 0003). */
+function ReminderAccessNotice() {
+  const [access, setAccess] = useState<NotificationAccess>("ok");
+  useEffect(() => {
+    if (!isNative()) return;
+    const check = () => { notificationAccess().then(setAccess).catch(() => {}); };
+    check();
+    // al volver de Ajustes
+    const handle = CapApp.addListener("appStateChange", ({ isActive }) => { if (isActive) check(); });
+    return () => { void handle.then((h) => h.remove()); };
+  }, []);
+  if (access === "ok") return null;
+  return (
+    <Card>
+      <p className="gr-sangrado text-xs text-[var(--text-body)]">
+        {access === "denied"
+          ? "Los recordatorios no sonarán: activa las notificaciones en Ajustes → Apps → Grimoire."
+          : "Los recordatorios pueden sonar con retraso: Android los trata como inexactos."}
+      </p>
+      {access === "inexact" && <button className="btn mt-2" onClick={() => void openExactSettings()}>Permitir alarmas exactas</button>}
+    </Card>
   );
 }
 
@@ -478,8 +506,14 @@ function TaskForm({ task, tasks, projects, onDelete, onClose }: {
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Fecha límite"><input type="date" className="input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></Field>
-        <Field label="Recordatorio"><input type="datetime-local" className="input" value={remindAt} onChange={(e) => setRemindAt(e.target.value)} /></Field>
+        <Field label="Recordatorio (hora de Bogotá)"><input type="datetime-local" className="input" value={remindAt} onChange={(e) => setRemindAt(e.target.value)} /></Field>
       </div>
+      {/* No se puede detectar ni activar desde la app (Hallazgos de la 2.2.6). */}
+      {remindAt && isNative() && (
+        <p className="mb-3 text-xs italic text-[var(--text-muted)]">
+          Para que suene con la app cerrada, Grimoire debe tener el inicio automático activado en el gestor del teléfono.
+        </p>
+      )}
       <Field label="Categoría"><input className="input" value={category} onChange={(e) => setCategory(e.target.value)} /></Field>
       <Field label="Etiquetas"><TagInput value={tags} onChange={setTags} /></Field>
       <Field label={`XP por completar (${xp})`}>

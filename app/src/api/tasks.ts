@@ -292,17 +292,18 @@ export function stepNeighbours(column: Pick<ApiTask, 'id' | 'rank'>[], id: strin
   return [rest[j - 1]?.rank ?? null, rest[j]?.rank ?? null]
 }
 
-/** `datetime-local` (hora del dispositivo) → instante UTC, sin milisegundos (invariante 3). */
-export const remindAtToUtc = (local: string) =>
-  local ? new Date(local).toISOString().replace(/\.\d+Z$/, 'Z') : null
+// La UI muestra y edita en America/Bogota, sin importar la zona del dispositivo. Colombia no tiene
+// horario de verano: el desfase es fijo.
+const BOGOTA_OFFSET = '-05:00'
+const BOGOTA_OFFSET_MS = 5 * 3_600_000
 
-/** Instante UTC → valor de `datetime-local`. */
-export function remindAtToLocal(utc: string | null): string {
-  if (!utc) return ''
-  const d = new Date(utc)
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
-}
+/** `datetime-local`, en hora de Bogotá → instante UTC, sin milisegundos (invariante 3). */
+export const remindAtToUtc = (local: string) =>
+  local ? new Date(`${local.slice(0, 16)}:00${BOGOTA_OFFSET}`).toISOString().replace(/\.\d+Z$/, 'Z') : null
+
+/** Instante UTC → valor de `datetime-local`, en hora de Bogotá. */
+export const remindAtToLocal = (utc: string | null) =>
+  utc ? new Date(new Date(utc).getTime() - BOGOTA_OFFSET_MS).toISOString().slice(0, 16) : ''
 
 // ---------- Lecturas ----------
 

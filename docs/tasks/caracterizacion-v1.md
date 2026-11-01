@@ -109,6 +109,7 @@ ADR 0005, y la 10, que tiene su fecha.
 | 21 | Lista de etiquetas del filtro | `GET /tags`: hábitos, tareas y diario | Derivada de las tareas cargadas | Sin ruta nueva; módulo de etiquetas en la fase 5+. |
 | 22 | `pomodoro_hours` del proyecto | En cada proyecto | Llega con Pomodoro | Aún no hay sesiones. Su UI se oculta hasta entonces. |
 | 23 | `GET /tasks` | Todas las tareas | Abiertas y completadas en los últimos 90 días (`completed_on`); las anteriores, en `GET /tasks/history`, paginada | `GET /tasks` pasó de 10 ms de CPU con 500 tareas. Decidido por Johan el 2026-10-31. Ningún golden lo muestra: la réplica completa en el día actual. |
+| 24 | Recordatorio vencido al abrir | En web avisa lo vencido hace menos de 24 h, sondeando la API cada 60 s | No avisa lo que venció antes de abrir, ni en web ni en el APK; en web revisa la lista ya cargada | Decidido por Johan el 2026-10-31 (un `remind_at` pasado no se dispara). Ningún golden lo cubre: el backend no procesa `remind_at`. |
 
 ## Hallazgos
 

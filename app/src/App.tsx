@@ -12,6 +12,7 @@ import { useIsDesktop } from "./hooks/useMediaQuery";
 import { motionTokens } from "./theme-tokens";
 import Habits from "./pages/Habits";
 import Tasks from "./pages/Tasks";
+import { TaskReminders } from "./reminders";
 import { useApp } from "./context";
 import { ConfirmHost } from "./confirm";
 import { ToastAchievement } from "./components/layout/ToastAchievement";
@@ -84,6 +85,7 @@ export default function App() {
         </main>
       </div>
       <BottomNav onOpenSettings={abrirAjustes} />
+      <TaskReminders />
       {/* Solo con teclado físico: en teléfono no se muestra ni se reemplaza */}
       {desktop && <CommandPalette pomo={SIN_POMODORO} />}
       <ToastAchievement toasts={toasts} dismissToast={dismissToast} />

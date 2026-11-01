@@ -405,3 +405,49 @@ decisiones tomadas sobre la marcha.)
       Si hubo subtareas, se pudieron borrar a mano o con la tarea (`ON DELETE CASCADE`). Esos dos
       pasos quedan solo con el reporte de Johan.
     - Quedan en producción 1 tarea y 1 proyecto de prueba. Se borran al vaciar la base (fase 4).
+- **2.2.6** (2026-11-01, Bogotá; Infinix X6831, Android 13, XOS, contra producción):
+  - **Contrato:** `extra.kind`, ids de tareas desde 1 000 000 y nada de `cancelAll` (comentario de
+    `reminders.ts` y ADR 0003). El `extra` lleva además `remindAt`: `getPending` devuelve la hora
+    como texto de Java (`Sat Oct 31 23:47:00 GMT-05:00 2026`), así que no se compara `schedule.at`.
+  - **`getPending` devuelve también lo ya disparado:** el plugin guarda el registro hasta que se
+    descarta. Por eso una alarma con hora pasada y sin cambios se deja como está: ni se reagenda ni
+    se cancela.
+  - **Sin conexión:** la reconciliación usa la lista con la cola encima, así que completar sin señal
+    cancela al instante.
+  - **XOS retiene la alarma si Grimoire no tiene el inicio automático.** Con la app cerrada,
+    Android dispara la alarma a su hora, pero la entrega nunca termina: queda `InFlight` y no hay
+    `Start proc` ni notificación.
+    - **Sin el ajuste:** 2 de 2 no sonaron. Una cerrada con `am kill` y otra desde Recientes
+      (`Killing … remove task`).
+    - **Con Johan activándolo en Phone Master («Inicio automático»), no leído por `adb`:** el proceso
+      muerto a las 00:47:40 arrancó con `Start proc … for broadcast`, y sonó. La prueba anterior a
+      esa no cuenta: el proceso seguía vivo.
+    - **Hay 1 caso a cada lado de cada condición, no una estadística.** El log no muestra un bloqueo
+      explícito para Grimoire. `Griffin/ComponentManager: Limit start proc` sí aparece para otras 12
+      apps al arrancar, y por eso es el sospechoso, sin confirmar. **Sin explicar:** en la 0.4 sonó
+      con la app cerrada desde Recientes, sin este ajuste anotado.
+    - No se puede leer ni activar desde la app. El formulario lo recuerda al poner una hora.
+    - **Sin probar:** si el ajuste sobrevive a reinstalar el APK.
+  - **Retraso:** con el ajuste, el recordatorio de las 00:50:00 se entregó a las 00:52:28, aunque la
+    alarma era exacta (`window=0`) y la pantalla estaba bloqueada. Causa desconocida y un solo caso:
+    a la 01:33 no se midió el retraso. Pomodoro depende de esto, así que **hay que medirlo allá.**
+  - **Reinicio: sobrevive.** `LocalNotificationRestoreReceiver` está registrado para
+    `BOOT_COMPLETED` y arrancó a la 01:30:13 sin abrir la app, y «Prueba rec A» sonó a la 01:33 (Johan).
+    Lo vencido sin entregar **no** se recuperó: «Prueba rec B», retenida a las 00:26, siguió sin
+    sonar tras el reinicio. Coincide con la regla de no disparar lo pasado.
+  - **Recorrido en el teléfono**, comprobando alarmas con `dumpsys alarm`:
+    - Agendar: exacta, `window=0`.
+    - Editar la hora: mismo id, y la alarma vieja desaparece.
+    - Completar: se cancela.
+    - Reabrir: se reagenda.
+    - Quitar la hora: se cancela.
+    - Las demás tareas no se tocaron en ninguno de esos pasos.
+    - La primera vez, el script de prueba editó otra tarjeta y pareció una alarma duplicada; no era
+      un fallo de la app.
+  - **Mutaciones:** caen las 23 (`reminders.test.ts` y el test de Bogotá en `tasks.test.ts`), incluidas
+    otro `kind` tocado, `cancelAll`, colisión sin resolver y hora pasada agendada.
+  - **Sin probar:** `notificationAccess` en Android 14+ (pendiente de la tablet, 0.4): el teléfono es
+    API 33 y tiene la alarma exacta concedida, así que el aviso de la vista no se ha visto en
+    pantalla. La rama web tampoco se probó en un navegador real.
+  - **Sin deploy:** el worker no cambió. XP en producción: 969 = suma de `xp_log`. Quedan «Prueba rec
+    A» a «E» en producción, sin alarmas futuras; se borran al vaciar la base (fase 4).

@@ -54,6 +54,9 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
   comparan antes de pasarlas a UTC. La tolerancia se fija al escribir el script,
   comprobándola en la copia de los datos reales. Una entrada o marca que no case queda sin
   `mark_id`; **deshacer una marca sin `mark_id` no devuelve XP**.
+- **`remind_at` de las tareas:** en la v1 es una fecha naive en hora de Bogotá; la migración
+  la convierte a RFC 3339 UTC, igual que las demás fechas. La UI de la v2 la muestra y la edita
+  en `America/Bogota`.
 - **Claves `rank` de las tareas:** las que genere la migración no terminan en `0`. Entre `x` y
   `x0` no cabe ninguna clave (nada ordena antes de `0`), así que una tarjeta soltada ahí no
   podría quedar entre las dos: `rankBetween` la deja después de ambas.

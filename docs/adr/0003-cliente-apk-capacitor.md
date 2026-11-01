@@ -18,7 +18,13 @@ compilación cruzada como fuentes de fallo.
   exacta a la hora de fin en vez de mantener un temporizador vivo. Desde Android 14
   `SCHEDULE_EXACT_ALARM` viene negado por defecto: la app lo detecta
   (`checkExactNotificationSetting`) y lleva al usuario a Ajustes; si lo niega, cae a
-  alarma inexacta y lo dice.
+  alarma inexacta y lo dice. Los permisos y el canal viven en `app/src/notify.ts`, para que
+  los use cualquier módulo.
+- **Espacio de notificaciones por tipo.** Toda notificación agendada lleva `extra.kind`, que
+  dice de qué módulo es; las de tareas llevan `{ kind: "task", taskId, remindAt }`. Cada módulo
+  solo agenda y cancela las de su `kind`: la reconciliación de tareas (`app/src/reminders.ts`)
+  nunca toca otro `kind` ni una notificación sin `extra`, y nadie usa `cancelAll`. Los ids de
+  tareas van de 1 000 000 a 2³¹ − 1, y lo de abajo queda para ids fijos, como el de Pomodoro.
 - Autenticación: token propio guardado en almacenamiento seguro del dispositivo, enviado
   como `Authorization: Bearer`. Cloudflare Access no encaja bien con una app nativa.
 - Distribución: APK firmada publicada en GitHub Releases, instalada por sideload. Sin

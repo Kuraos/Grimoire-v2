@@ -463,12 +463,14 @@ test('los órdenes de la lista son los de la v1', () => {
   expect(sortTasks(list, 'due_date').map((t) => t.id)).toEqual(['baja', 'media', 'alta', 'sin'])
 })
 
-test('el recordatorio va en UTC sin milisegundos y vuelve a la hora del dispositivo', () => {
+test('el recordatorio viaja en UTC sin milisegundos y se edita en hora de Bogotá', () => {
   expect(remindAtToUtc('')).toBeNull()
-  const utc = remindAtToUtc('2026-11-02T08:30')!
-  expect(utc).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
-  expect(remindAtToLocal(utc)).toBe('2026-11-02T08:30')
   expect(remindAtToLocal(null)).toBe('')
+  expect(remindAtToUtc('2026-11-02T08:30')).toBe('2026-11-02T13:30:00Z')
+  expect(remindAtToLocal('2026-11-02T13:30:00Z')).toBe('2026-11-02T08:30')
+  // cruza de día, y algunos navegadores agregan segundos
+  expect(remindAtToUtc('2026-11-02T21:00:00')).toBe('2026-11-03T02:00:00Z')
+  expect(remindAtToLocal('2026-11-03T02:00:00Z')).toBe('2026-11-02T21:00')
 })
 
 // ---------- Una sola cola para todos los recursos ----------
