@@ -51,7 +51,7 @@ export function serializeQueue(): string {
   )
 }
 
-const PERSISTED_QUERIES = ['habits/list', 'habits/heatmap', 'user', 'habit-categories']
+const PERSISTED_QUERIES = ['habits/list', 'habits/heatmap', 'user', 'habit-categories', 'tasks/list', 'projects']
 
 function serializeCache(): string {
   const state = dehydrate(queryClient, {

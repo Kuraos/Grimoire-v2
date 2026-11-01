@@ -63,7 +63,9 @@ export function applyQueue(
   }
   for (const { request: r, status } of entries) {
     if (status !== 'pending' && status !== 'success') continue
-    const [, , id, action, markId] = r.path.split('/')
+    // la cola es de toda la app: un `POST /tasks` aquí sería un hábito fantasma
+    const [, resource, id, action, markId] = r.path.split('/')
+    if (resource !== 'habits') continue
     const body = r.body as Record<string, never> | undefined
     const target = id ?? (body?.id as string | undefined)
     if (target && status === 'pending') pendingIds.add(target)

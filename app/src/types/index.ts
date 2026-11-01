@@ -89,6 +89,66 @@ export interface CompleteOut {
   achievements_unlocked: UnlockedAchievement[];
 }
 
+// Tareas y proyectos de la v2. `Task` y `Project`, más abajo, son los de la v1 que aún usan los
+// componentes portados; se reemplazan cuando esos componentes pasen a ids de texto (2.2.5).
+
+export interface ApiChecklistItem {
+  id: string;
+  task_id: string;
+  text: string;
+  done: boolean;
+  position: number;
+}
+
+export interface ApiTask {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  priority: "high" | "medium" | "low";
+  project_id: string | null;
+  due_date: string | null;
+  xp_reward: number;
+  status: "todo" | "doing" | "done";
+  /** Clave fraccionaria del tablero: `ORDER BY rank, id`. */
+  rank: string;
+  /** La concesión vigente, para descompletar. `null` en una tarea migrada sin XP. */
+  grant_id: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  completed_on: string | null;
+  remind_at: string | null;
+  tags: string | null;
+  created_at: string;
+  checklist: ApiChecklistItem[];
+  checklist_done: number;
+  checklist_total: number;
+}
+
+/** Lo que se edita de una tarea. Entrar o salir de `done` solo es por completar y descompletar. */
+export type TaskInput = Partial<
+  Pick<ApiTask, "description" | "category" | "priority" | "project_id" | "due_date" | "xp_reward" | "remind_at" | "tags">
+> & { title: string };
+
+export interface TaskHistoryPage {
+  tasks: ApiTask[];
+  next_cursor: string | null;
+}
+
+export interface ApiProject {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  color: string;
+  category: string | null;
+  created_at: string;
+  tasks_total: number;
+  tasks_pending: number;
+}
+
+export type ProjectInput = Partial<Pick<ApiProject, "description" | "status" | "color" | "category">> & { name: string };
+
 export interface Project {
   id: number;
   name: string;

@@ -41,8 +41,9 @@ Lo que la 2.1.6 cambió respecto a la decisión de arriba:
 - **Persistencia propia** con `@capacitor/preferences`, sin `query-persist-client`: su
   `maxAge` por defecto borraría una cola de más de 24 h y su throttle puede perder lo último.
   Se guarda todo lo `pending` (también lo que iba en vuelo: repetirlo es idempotente) y lo
-  rechazado. Las lecturas de la lista también, para poder abrir sin señal: nombres de hábitos
-  en claro en el dispositivo. El token sigue en el Keystore.
+  rechazado. Las lecturas de la lista también, para poder abrir sin señal: nombres de hábitos,
+  títulos de tareas y nombres de proyectos en claro en el dispositivo. El token sigue en el
+  Keystore.
 - **La vista optimista es derivada** (`applyQueue`), no un cambio en la caché: sobrevive a
   refetches y reinicios y no hay nada que revertir. Racha, constancia y XP no se predicen.
 - **Categorías fuera de la cola:** repetir su `DELETE` da 404, así que no cumplen el contrato.

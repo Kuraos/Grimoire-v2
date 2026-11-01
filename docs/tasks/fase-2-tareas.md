@@ -302,3 +302,48 @@ decisiones tomadas sobre la marcha.)
     filas. El borrado encontró 472 tareas y 10 proyectos `Bench`, no los 500 y 20 anotados arriba;
     no se sabe por qué. Mandar los dos `DELETE` juntos con `--command` falló en remoto con
     `incomplete input`, aunque funciona en local; por separado funcionan.
+- **2.2.4** (2026-10-31, Bogotá):
+  - **La cola (`queryClient.ts`) no cambió.** Dos cambios al lado: `applyQueue` de Hábitos ahora
+    ignora las rutas de otros recursos, porque un `POST /tasks` en cola se habría visto como un
+    hábito fantasma; y `sync.ts` también guarda en disco `tasks/list` y `projects`, para abrir sin
+    señal. El historial no se guarda. Por eso títulos de tareas y nombres de proyectos quedan en
+    claro en el dispositivo, igual que los hábitos (ADR 0008, actualizado).
+  - **Tipos:** `ApiTask`, `ApiProject` y `ApiChecklistItem` conviven con `Task` y `Project` de la
+    v1, que aún usan `KanbanBoard`, `TaskCard`, `PomodoroIsland` y `CommandPalette` con ids enteros.
+    La 2.2.5 debe reemplazar los de la v1 en los componentes que porte.
+  - **Vista contra el worker real:** un test temporal (no queda en el repo) hizo 23 escrituras
+    contra `wrangler dev` con una D1 local aparte, cada una mandada dos veces: proyecto, tareas,
+    checklist, mover, completar, descompletar y borrar. En cada paso, `applyTaskQueue` coincidió
+    campo por campo con `GET /tasks`, y `applyProjectQueue` con `GET /projects` en id, nombre, estado
+    y color. **Sin probar contra producción.**
+  - **Largo de `rankBetween` tras 1 000 inserciones:** 33 caracteres siempre al final (avanza un
+    dígito), 167 siempre al principio y 168 siempre en el mismo hueco (parten a la mitad, unos 6 por
+    carácter). Sigue sin rebalanceo (decisión 1); se revisa con los datos migrados.
+  - **Claves de la migración:** entre `x` y `x0` no cabe ninguna clave, y la tarjeta queda después
+    de las dos, sin error. La migración (fase 4) no debe generar claves que terminen en `0`.
+  - **Mutaciones:** caen las 28, en `tasks.test.ts`. Una 29.ª sobrevivió, y era una guarda sin
+    efecto en `rankBetween`, que se borró. Qué test cae:
+    - `rankBetween`: `after` que no avanza, punto medio fuera del hueco y sin prefijo común caen en
+      `la clave queda entre sus vecinas…` y `mil inserciones…`.
+    - `rankAtEnd` sin filtrar por columna: `al final de una columna…`.
+    - `move` como `PATCH` al entrar o salir de `done`, y reordenar con `status`: `soltar en cada
+      columna…`.
+    - Descompletar sin `grant_id`: `completar y descompletar sin señal…`, `soltar en cada columna…`,
+      `descompletar una tarea migrada…`.
+    - Concesión fija: `los ids nacen una sola vez…`. Día al sincronizar: `completar conserva el día…`.
+    - Vista sin ordenar y sin desempate: `la vista sale en el orden del tablero…`.
+    - Rechazado superpuesto: `un 409 de completar…`, `lo rechazado no se superpone…`.
+    - Vista sin la concesión: `completar y descompletar sin señal…`.
+    - Completar lo hecho, concesión vieja que reabre, columna ignorada y `PATCH` que saca de `done`:
+      su test `… igual que el servidor` o `descompletar lleva a la columna…`.
+    - Otros recursos en cada vista (tareas, hábitos, proyectos): `cada vista ignora…`.
+    - Borrar proyecto sin soltar tareas: `borrar un proyecto…`.
+    - Conteos viejos, ítem en posición 0 y borrar ítem sin efecto: `la checklist pendiente se ve…`;
+      posición 0 también tumba `un proyecto, una tarea…` y, en cascada, el test siguiente.
+    - Proyecto nuevo al final: `crear, editar y borrar un proyecto…`.
+    - Sin persistir tareas o proyectos: `las tareas sobreviven al arranque…`.
+  - **Límites para la 2.2.5:**
+    - Una tarea del historial descompletada sin conexión sale de `useTaskHistory` al instante, pero
+      solo entra a `useTasks` al sincronizar.
+    - Los conteos `tasks_total` y `tasks_pending` no se predicen.
+    - El toast de sincronización de `context.tsx` dice «marcas» también para tareas completadas.
