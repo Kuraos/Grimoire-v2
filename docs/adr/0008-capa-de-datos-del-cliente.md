@@ -44,6 +44,11 @@ Lo que la 2.1.6 cambió respecto a la decisión de arriba:
   rechazado. Las lecturas de la lista también, para poder abrir sin señal: nombres de hábitos,
   títulos de tareas y nombres de proyectos en claro en el dispositivo. El token sigue en el
   Keystore.
+- **Sin respaldo automático de Android** (`android:allowBackup="false"`): esa caché, y el
+  diario más adelante, no deben irse a Google Drive. El servidor es la fuente de verdad, así
+  que reinstalar o cambiar de teléfono solo pierde lo que siga en cola sin sincronizar. Según
+  la documentación de Android, con `targetSdk` 31 o mayor esto apaga el respaldo en la nube,
+  pero en algunos fabricantes no apaga la transferencia directa entre dispositivos.
 - **La vista optimista es derivada** (`applyQueue`), no un cambio en la caché: sobrevive a
   refetches y reinicios y no hay nada que revertir. Racha, constancia y XP no se predicen.
 - **Categorías fuera de la cola:** repetir su `DELETE` da 404, así que no cumplen el contrato.
