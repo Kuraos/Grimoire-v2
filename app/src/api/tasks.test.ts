@@ -488,7 +488,7 @@ test('cada vista ignora lo de los otros recursos', () => {
 
 const project = (over: Partial<ApiProject> = {}): ApiProject => ({
   id: 'p', name: 'Tesis', description: null, status: 'active', color: '#9b7fc4', category: null,
-  created_at: '2026-01-01T05:00:00Z', tasks_total: 3, tasks_pending: 1, ...over,
+  created_at: '2026-01-01T05:00:00Z', tasks_total: 3, tasks_pending: 1, pomodoro_minutes: 0, ...over,
 })
 
 test('crear, editar y borrar un proyecto se ven sin esperar, sin predecir los conteos', () => {

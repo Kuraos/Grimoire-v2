@@ -51,7 +51,7 @@ export function serializeQueue(): string {
   )
 }
 
-const PERSISTED_QUERIES = ['habits/list', 'habits/heatmap', 'user', 'habit-categories', 'tasks/list', 'projects']
+const PERSISTED_QUERIES = ['habits/list', 'habits/heatmap', 'user', 'habit-categories', 'tasks/list', 'projects', 'pomodoro/today']
 
 function serializeCache(): string {
   const state = dehydrate(queryClient, {
@@ -62,26 +62,35 @@ function serializeCache(): string {
   return JSON.stringify(state.queries)
 }
 
-/** Un solo escritor por clave: la última versión gana aunque Preferences tarde. */
+/**
+ * Un solo escritor por clave: la última versión gana aunque Preferences tarde. La promesa termina
+ * cuando lo pedido hasta ese momento ya está en disco, también si otra llamada iba en curso.
+ */
 function writer(key: string, read: () => string) {
-  let running = false
+  let running: Promise<void> | null = null
   let dirty = false
-  return async () => {
+  return (): Promise<void> => {
     dirty = true
-    if (running) return
-    running = true
-    try {
-      while (dirty) {
-        dirty = false
-        await Preferences.set({ key, value: read() })
+    running ??= (async () => {
+      try {
+        while (dirty) {
+          dirty = false
+          await Preferences.set({ key, value: read() })
+        }
+      } catch (e) {
+        console.error('No se pudo guardar', key, e)
+      } finally {
+        running = null
       }
-    } catch (e) {
-      console.error('No se pudo guardar', key, e)
-    } finally {
-      running = false
-    }
+    })()
+    return running
   }
 }
+
+let writeQueue: (() => Promise<void>) | null = null
+
+/** Espera a que la cola, tal como está ahora, quede en disco. Antes de `bootSync`, no hace nada. */
+export const saveQueueNow = (): Promise<void> => writeQueue?.() ?? Promise.resolve()
 
 async function restore() {
   const [queue, cache] = await Promise.all([
@@ -106,9 +115,10 @@ export function bootSync(): Promise<void> {
       // datos ilegibles: se sigue sin ellos para no dejar la app sin abrir
       console.error('No se pudo restaurar la cola', e)
     }
-    const writeQueue = writer(QUEUE_KEY, serializeQueue)
+    const write = writer(QUEUE_KEY, serializeQueue)
+    writeQueue = write
     queryClient.getMutationCache().subscribe((e) => {
-      if (e.type === 'added' || e.type === 'removed' || e.type === 'updated') void writeQueue()
+      if (e.type === 'added' || e.type === 'removed' || e.type === 'updated') void write()
     })
     const writeCache = writer(CACHE_KEY, serializeCache)
     let cacheTimer: ReturnType<typeof setTimeout> | undefined

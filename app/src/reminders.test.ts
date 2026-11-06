@@ -30,7 +30,7 @@ const agendada = (over: Partial<PendingNotification> & { taskId?: string; remind
   const { taskId = 'a', remindAt = LATER, ...rest } = over
   return { id: hashTaskId(taskId), body: 'Leer', extra: { kind: 'task', taskId, remindAt }, ...rest }
 }
-const POMODORO = { id: 7, body: 'Fin del pomodoro', extra: { kind: 'pomodoro' } }
+const POMODORO = { id: 1000, body: '25 minutos de foco', extra: { kind: 'pomodoro', sessionId: 's1', phase: 'work', endsAt: 0 } }
 
 beforeEach(() => {
   plugin.pending = []

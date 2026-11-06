@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { v7 as uuidv7 } from 'uuid'
 import type { ApiProject, ApiTask, ProjectInput } from '../types'
 import { get, type ApiRequest } from './client'
+import { sessionMinuteDeltas } from './pomodoro'
 import { enqueue, useQueue, type QueueEntry } from './queryClient'
 import { projectCountDeltas } from './tasks'
 
@@ -28,7 +29,7 @@ export const projectRequests = {
 }
 
 /**
- * Los conteos del servidor más lo que cambia la cola sobre `tasks`, la lista sin nada encima. No se
+ * Los conteos y los minutos de foco del servidor más lo que cambia la cola sobre `tasks`, la lista sin nada encima. No se
  * cuentan desde cero: el servidor también cuenta las completadas que la lista ya no trae.
  */
 export function applyProjectQueue(
@@ -56,6 +57,7 @@ export function applyProjectQueue(
         created_at: new Date().toISOString(),
         tasks_total: 0,
         tasks_pending: 0,
+        pomodoro_minutes: 0,
         ...(body as unknown as ProjectInput & { id: string }),
       }, ...out] // la lista va de la más reciente a la más antigua
     } else if (r.method === 'PATCH') {
@@ -65,12 +67,16 @@ export function applyProjectQueue(
     }
   }
   const deltas = projectCountDeltas(tasks, entries)
+  // las sesiones sin sincronizar suman sus minutos, como los conteos (decisión 5)
+  const minutes = sessionMinuteDeltas(entries, tasks)
   out = out.map((p) => {
     const d = deltas.get(p.id)
-    return d ? {
+    const m = minutes.get(p.id) ?? 0
+    return d || m ? {
       ...p,
-      tasks_total: Math.max(0, p.tasks_total + d.total),
-      tasks_pending: Math.max(0, p.tasks_pending + d.pending),
+      tasks_total: Math.max(0, p.tasks_total + (d?.total ?? 0)),
+      tasks_pending: Math.max(0, p.tasks_pending + (d?.pending ?? 0)),
+      pomodoro_minutes: p.pomodoro_minutes + m,
     } : p
   })
   return { projects: out, pendingIds }

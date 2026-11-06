@@ -145,6 +145,32 @@ export interface ApiProject {
   created_at: string;
   tasks_total: number;
   tasks_pending: number;
+  /** Suma de las sesiones completas; las horas, con `pomodoroHours` (fila 31). */
+  pomodoro_minutes: number;
+}
+
+/** Una sesión de `GET /pomodoro/today`. Instantes en UTC, RFC 3339. */
+export interface ApiPomodoroSession {
+  id: string;
+  task_id: string | null;
+  project_id: string | null;
+  work_minutes: number;
+  completed: boolean;
+  started_at: string;
+  finished_at: string;
+  task_title: string | null;
+}
+
+/** La respuesta de `POST /pomodoro/sessions`. `total_today_minutes` es del día de la sesión, que
+ *  no es hoy si sincronizó tarde: ver `sessionDayTotal`. */
+export interface SessionOut {
+  xp_earned: number;
+  new_xp: number;
+  new_level: number;
+  title: string;
+  leveled_up: boolean;
+  total_today_minutes: number;
+  achievements_unlocked: UnlockedAchievement[];
 }
 
 export type ProjectInput = Partial<Pick<ApiProject, "description" | "status" | "color" | "category">> & { name: string };

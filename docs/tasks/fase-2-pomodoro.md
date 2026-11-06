@@ -330,3 +330,78 @@ tomadas sobre la marcha.)
   - **CPU en producción: pendiente.** Exige deploy y `0006` en remoto, y eso solo cuando Johan lo
     pida. Criterio de la decisión 5: si la mediana de `GET /projects` pasa de 10 ms, se cambia a un
     contador en `projects`.
+
+- **Decisión 5, criterio revisado con Hermes** (2026-11-05): según los docs de límites de Workers,
+  el tiempo de CPU no incluye la espera de las consultas a D1. Por eso la subconsulta de
+  `pomodoro_minutes` no cuenta contra los 10 ms; en local, `GET /projects` tarda 13 ms y
+  `GET /pomodoro/today`, 12 ms. El costo real son filas leídas: 3 707 por `GET /projects` con el seed
+  de 5 000 sesiones. La v1 tiene 22 sesiones (18 completas) entre el 2026-08-09 y el 2026-09-23,
+  ≈ 0,5/día, así que el seed equivale a décadas de uso. **Sin contador por ahora.** Se revisa con
+  las filas leídas reales tras migrar la v1 (fase 4). El deploy con `0006` llega en la 2.3.6.
+
+- **2.3.4, temporizador y capa de datos** (2026-11-05, Bogotá):
+  - **Transiciones como funciones puras.** El repo no tiene librería para probar hooks, así que
+    `closePhase`, `startTimer`, `pauseTimer`, `resetTimer`, `skipPhase`, `startFocusTimer`,
+    `applyConfig` y `restoreSnapshot` reciben el estado y `now`, y el hook solo los aplica. La regla
+    de cierre es una sola (`closePhase`) para abrir la app y para un tick: decide cuánto hace que
+    venció, no quién lo detectó.
+  - **Decisiones sobre la marcha:**
+    - Un bloque detectado más de 12 h tarde se registra incompleto y **el ciclo no avanza**: queda
+      el foco listo, como tras abandonar.
+    - Cambiar la configuración solo toca una fase sin empezar. La v1 también reiniciaba una pausa a
+      medias, y así cambiaban los minutos de un bloque ya empezado (decisión 8).
+    - Un bloque sin `sessionId` en el estado restaurado no se registra: no hay un id que no duplique.
+  - **Decidir una vez: bandeja en disco** (`grimoire-pomodoro-outbox-v1`). La request se arma al
+    detectar el cierre, con el id del bloque. Se escribe en la bandeja, se encola, y la bandeja se
+    vacía cuando la cola ya está en disco. Para eso, `saveQueueNow` en `sync.ts`: el escritor de la
+    cola ahora devuelve una promesa que termina cuando lo pedido está escrito. Al arrancar, lo que
+    quede en la bandeja y no esté en la cola se encola en orden. Con dos decisiones para el mismo
+    id, gana la primera. Estado y bandeja se escriben en una sola fila de promesas, así que guardar
+    el estado nunca adelanta a la bandeja.
+  - **Límite conocido:** si la sesión ya sincronizó y salió de la cola, y un crash dejó el estado
+    viejo en disco, el cierre se detecta otra vez y se reenvía con el mismo id. El servidor responde
+    200 sin efecto (fila 27).
+  - **`total_today_minutes`:** `sessionDayTotal` devuelve `{ day, minutes }`, con `day` sacado del
+    `finished_at` de la request. `usePomodoroToday` devuelve `day` junto al total. La query es
+    `['pomodoro', 'today', día]` con `?date=`: al pasar la medianoche, la lista cambia de día sola.
+  - **Para la 2.3.5:** el contexto llama a `bootPomodoro` después de `bootSync`, a `recordSession`
+    desde `onWorkEnd` y a `savePomodoro` en cada cambio del estado. Usa el `notice` que devuelve
+    (`denied`, `failed`) para avisar en la vista.
+  - **Mutaciones** (`npm test` con cada regla rota a propósito; el archivo se restaura después):
+
+    | Regla rota | Tests que caen |
+    |---|---|
+    | 12 h: `<=` → `<` | `12 h justas…` (pomodoro.test), `borde de 12 h…` (usePomodoro.test) |
+    | 5 s → 60 s | `congelada más de 5 s…`, `un descanso vencido no registra nada…` |
+    | Id nuevo al cerrar en vez del del bloque | 7: los 4 de arranques con cierre (`vencido al abrir sin conexión…`, `12 h justas…`, los 2 de crash), `vencido con la app cerrada…`, `borde de 12 h…`, `restaurar dos veces…` |
+    | Id nuevo al reanudar | `empezar da un id; pausar y reanudar lo conservan…` |
+    | Encolar lo de la bandeja aunque ya esté en la cola | `crash con la decisión en la bandeja…`, `crash después de encolar…`, `dos decisiones para el mismo id…` |
+    | Vaciar la bandeja antes de que la cola llegue a disco | `la bandeja se vacía solo cuando la cola ya está en disco` |
+    | `kind: 'pomodoro'` → `'task'` | `guardar primero y agendar después…`, `el aviso del descanso…`, `reconciliar tareas no toca…` |
+    | `cancel({ id: 1000 })` → `cancelAll()` | `pausar y reiniciar cancelan solo el 1000…`, `reconciliar tareas no toca…` |
+    | Id 1000 → 1001 | `guardar primero…`, `pausar y reiniciar…`, `reconciliar tareas…` |
+    | Agendar antes de guardar | `guardar primero y agendar después…` |
+    | Minutos del cierre desde la configuración | `cambiar la configuración a media sesión…` |
+    | Configuración aplicada a una fase empezada | `cambiar la configuración a media sesión…` |
+    | Mínimo de 1 minuto → 0 | `menos de un minuto no registra; un minuto justo sí` |
+    | Horas con `Number((m / 60).toFixed(1))` | `rounds exact halves up, unlike the v1` (utils.test) |
+    | Horas truncadas | `rounds exact halves up, unlike the v1` |
+    | Sin la suma en `applyProjectQueue` | `las sesiones en cola suman sus minutos…` |
+    | Un descanso vencido registra | `un descanso vencido no registra nada…` |
+    | Día de la sesión = hoy | `una sesión pendiente se ve en su día…`, `el total de una sesión sincronizada…` |
+
+    En la primera pasada sobrevivieron 4, y cada una se resolvió antes de la tabla:
+    - **Primera decisión gana:** la guarda de `recordSession` era redundante, porque el arranque
+      vacía la bandeja antes y `drainOutbox` salta lo ya encolado. Se borró; la regla vive en
+      `drainOutbox` y se agregó `dos decisiones para el mismo id…`.
+    - **Orden bandeja/cola:** el mock escribía al instante, así que el orden no se notaba. El test
+      retiene ahora la escritura de la cola.
+    - **Mitades hacia arriba:** la mutación `Math.round(m / 60 * 10)` no rompe la regla, porque en JS
+      `87 / 60 * 10` da 14,5 exacto y `Math.round` sube las mitades; de 0 a 600 min da lo mismo que la
+      función entera. El error de la v1 venía del `round` de Python, que redondea las mitades al par.
+      Se cambió por las dos mutaciones de la tabla.
+    - **Descanso vencido:** la mutación estaba mal escrita (el `closed: null` final la pisaba). Se
+      corrigió y cae.
+  - **Lint:** `oxlint` avisa `Date.now` en render y un ref leído en render en `usePomodoro` y en
+    `usePomodoroToday`. Son avisos de la misma forma que los de `Tasks.tsx` y que el hook de la v1;
+    no se tocaron.
