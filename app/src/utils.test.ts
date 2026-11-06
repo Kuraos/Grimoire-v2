@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   streakMultiplier, TIER_META,
   moneyDecimals, formatMoney, parseMoney, entrySign, budgetState,
-  formatWeight, parseWeight,
+  formatWeight, parseWeight, pomodoroHours,
 } from "./utils";
 
 describe("streakMultiplier", () => {
@@ -160,5 +160,19 @@ describe("parseWeight", () => {
   it("caps at a thousand kilos", () => {
     expect(parseWeight("1000")).toBe(1_000_000);
     expect(parseWeight("1001")).toBeNull();
+  });
+});
+
+describe("pomodoroHours", () => {
+  it("rounds exact halves up, unlike the v1", () => {
+    expect(pomodoroHours(87)).toBe(1.5);
+    expect(pomodoroHours(3)).toBe(0.1);
+  });
+  it("rounds everything else to the nearest tenth", () => {
+    expect(pomodoroHours(0)).toBe(0);
+    expect(pomodoroHours(2)).toBe(0);
+    expect(pomodoroHours(25)).toBe(0.4);
+    expect(pomodoroHours(86)).toBe(1.4);
+    expect(pomodoroHours(60)).toBe(1);
   });
 });

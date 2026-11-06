@@ -357,6 +357,12 @@ export function formatDuration(seconds: number | null): string {
   return m ? `${h} h ${String(m).padStart(2, "0")}` : `${h} h`;
 }
 
+/** Minutos de foco -> horas a un decimal, mitades hacia arriba: 87 -> 1.5 (la v1 daba 1.4 con
+ *  `round` de float; caracterizacion-v1.md, fila 31). Décimas = minutos / 6, en enteros. */
+export function pomodoroHours(minutes: number): number {
+  return Math.floor((minutes + 3) / 6) / 10;
+}
+
 /** Estado de una asignación: cardenillo hasta el 85%, ámbar hasta el 100%,
  *  sangre de buey por encima. Los umbrales son dominio, no decoración: viven
  *  aquí para poder probarlos sin montar el componente. */

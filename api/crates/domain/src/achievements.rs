@@ -94,6 +94,30 @@ pub fn earned_on_task_complete(f: TaskFacts) -> Vec<&'static str> {
     earned
 }
 
+/// Lo que hay que saber después de una sesión completa. Una incompleta no revisa logros (v1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PomodoroFacts {
+    /// Nivel con el XP de la sesión ya sumado.
+    pub level: u32,
+    /// Sesiones completas en total, con esta incluida.
+    pub completed_sessions: u32,
+}
+
+pub const FOCUS_CENTURION: &str = "focus_centurion";
+pub const FOCUS_LEGEND: &str = "focus_legend";
+const FOCUS: [(u32, &str); 2] = [(100, FOCUS_CENTURION), (250, FOCUS_LEGEND)];
+
+/// Todos los logros que se cumplen, en el orden de la v1: nivel y luego foco. La v1 solo informaba
+/// el primero (caracterizacion-v1.md, fila 4). Las sesiones no dan `first_blood`.
+pub fn earned_on_pomodoro(f: PomodoroFacts) -> Vec<&'static str> {
+    LEVELS
+        .iter()
+        .filter(|(min, _)| f.level >= *min)
+        .chain(FOCUS.iter().filter(|(min, _)| f.completed_sessions >= *min))
+        .map(|(_, key)| *key)
+        .collect()
+}
+
 const DISCIPLINE_DAYS: u64 = 7;
 
 /// Primer día que mira `total_discipline`.
