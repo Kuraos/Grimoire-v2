@@ -1,4 +1,4 @@
-import { IconSquare, IconSquareCheck, IconCalendarDue, IconTrash, IconEdit, IconChecklist, IconClock } from "@tabler/icons-react";
+import { IconSquare, IconSquareCheck, IconCalendarDue, IconTrash, IconEdit, IconChecklist, IconClock, IconPlayerPlay } from "@tabler/icons-react";
 import { todayISO } from "../../utils";
 import type { ApiTask } from "../../types";
 import { parseTags } from "./TagInput";
@@ -13,7 +13,7 @@ const PRIORITY: Record<string, { label: string; color: string }> = {
  * En teléfono, tocar el texto abre el formulario, que también borra: tres iconos de 44 px le
  * quitaban el ancho al título. En `lg:`, las acciones de la v1 en la fila.
  */
-export function TaskCard({ task, projectColor, pending, onComplete, onUncomplete, onDelete, onEdit }: {
+export function TaskCard({ task, projectColor, pending, onComplete, onUncomplete, onDelete, onEdit, onFocus }: {
   task: ApiTask;
   projectColor?: string;
   /** Hay cambios que aún no llegan al servidor. */
@@ -22,6 +22,8 @@ export function TaskCard({ task, projectColor, pending, onComplete, onUncomplete
   onUncomplete?: (t: ApiTask) => void;
   onDelete?: (t: ApiTask) => void;
   onEdit?: (t: ApiTask) => void;
+  /** Arranca un pomodoro sobre esta tarea. */
+  onFocus?: (t: ApiTask) => void;
 }) {
   const pr = PRIORITY[task.priority] ?? PRIORITY.medium;
   const overdue = task.due_date && !task.completed && task.due_date < todayISO();
@@ -54,6 +56,12 @@ export function TaskCard({ task, projectColor, pending, onComplete, onUncomplete
           {pending && <span className="inline-flex items-center gap-0.5"><IconClock size={11} /> pendiente</span>}
         </div>
       </div>
+      {/* Enfocar es la acción del día sobre una tarea (v1): visible también en teléfono. */}
+      {onFocus && !task.completed && (
+        <button onClick={() => onFocus(task)} title="Iniciar un pomodoro con esta tarea" aria-label={`Iniciar un pomodoro con ${task.title}`} className="gr-tactil shrink-0 text-[var(--text-faint)] hover:text-[var(--purple-main)]">
+          <IconPlayerPlay size={14} />
+        </button>
+      )}
       {onEdit && (
         <button onClick={() => onEdit(task)} title="Editar" aria-label={`Editar ${task.title}`} className="hidden text-[var(--text-faint)] hover:text-[var(--purple-main)] lg:block">
           <IconEdit size={14} />

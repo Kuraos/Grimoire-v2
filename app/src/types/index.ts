@@ -89,8 +89,7 @@ export interface CompleteOut {
   achievements_unlocked: UnlockedAchievement[];
 }
 
-// Tareas y proyectos de la v2. `Task` y `Project`, más abajo, son los de la v1 que aún usan los
-// componentes portados; se reemplazan cuando esos componentes pasen a ids de texto (2.2.5).
+// Tareas, proyectos y sesiones de la v2: ids de texto (UUID) e instantes en UTC.
 
 export interface ApiChecklistItem {
   id: string;
@@ -174,61 +173,6 @@ export interface SessionOut {
 }
 
 export type ProjectInput = Partial<Pick<ApiProject, "description" | "status" | "color" | "category">> & { name: string };
-
-export interface Project {
-  id: number;
-  name: string;
-  description: string | null;
-  status: string;
-  color: string;
-  category: string | null;
-  vault_note_path: string | null;
-  created_at: string;
-  tasks_total: number;
-  tasks_pending: number;
-  pomodoro_hours: number;
-}
-
-export interface ChecklistItem {
-  id: number;
-  task_id: number;
-  text: string;
-  done: boolean;
-  position: number;
-}
-
-export interface Task {
-  id: number;
-  title: string;
-  description: string | null;
-  category: string | null;
-  priority: "high" | "medium" | "low";
-  project_id: number | null;
-  due_date: string | null;
-  xp_reward: number;
-  completed: boolean;
-  completed_at: string | null;
-  status: "todo" | "doing" | "done";
-  position: number;
-  remind_at: string | null;
-  tags: string | null;
-  vault_note_path: string | null;
-  created_at: string;
-  checklist: ChecklistItem[];
-  checklist_done: number;
-  checklist_total: number;
-}
-
-export interface PomodoroSession {
-  id: number;
-  task_id: number | null;
-  project_id: number | null;
-  work_minutes: number;
-  completed: boolean;
-  started_at: string;
-  finished_at: string | null;
-  task_title: string | null;
-}
 
 export interface CalendarEvent {
   id: number;

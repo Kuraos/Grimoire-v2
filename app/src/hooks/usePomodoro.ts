@@ -259,6 +259,21 @@ export function restoreSnapshot(raw: unknown, config: PomodoroConfig, now: numbe
 
 // ---------- El hook ----------
 
+/**
+ * Aplica una transición: **primero** registra el bloque cerrado y **después** cambia el estado.
+ * `recordSession` entra así en la fila de disco antes que el `savePomodoro` del estado nuevo, que ya
+ * no tiene el `sessionId`; al revés, un crash en ese hueco perdería la sesión. El orden no depende
+ * de cómo guarde la vista: sincrónico al cambiar o en un efecto, da igual.
+ */
+export function commitTransition(
+  tr: Transition,
+  setTimer: (next: PomodoroSnapshot) => void,
+  onWorkEnd: (result: WorkResult) => void,
+): void {
+  if (tr.closed) onWorkEnd(tr.closed);
+  setTimer(tr.next);
+}
+
 export function usePomodoro(
   config: PomodoroConfig,
   handlers: PomodoroHandlers,
@@ -280,10 +295,8 @@ export function usePomodoro(
     setTimerState(next);
   }, []);
 
-  /** Aplica una transición. El registro sale antes del render, y por eso antes de guardar el estado. */
   const apply = useCallback((tr: Transition) => {
-    setTimer(tr.next);
-    if (tr.closed) hRef.current.onWorkEnd(tr.closed);
+    commitTransition(tr, setTimer, (r) => hRef.current.onWorkEnd(r));
   }, [setTimer]);
 
   const finishPhase = useCallback(() => {
@@ -323,6 +336,8 @@ export function usePomodoro(
     if (next !== t) setTimer(next);
   }, [config, setTimer]);
 
+  /** Reemplaza el estado por el restaurado de disco (`bootPomodoro`), que ya cerró lo vencido. */
+  const load = useCallback((t: PomodoroSnapshot) => setTimer(t), [setTimer]);
   const start = useCallback(() => setTimer(startTimer(timerRef.current, Date.now(), config)), [config, setTimer]);
   const pause = useCallback(() => setTimer(pauseTimer(timerRef.current, Date.now())), [setTimer]);
   const startFocus = useCallback(() => apply(startFocusTimer(timerRef.current, Date.now(), config)), [config, apply]);
@@ -347,6 +362,7 @@ export function usePomodoro(
     progress,
     cycleDone,
     snapshot: timer,
+    load,
     start,
     startFocus,
     pause,

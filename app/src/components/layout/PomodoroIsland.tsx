@@ -3,14 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, type Transition } from "motion/react";
 import NumberFlow from "@number-flow/react";
 import { IconArrowUpRight, IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
-import type { Phase, usePomodoro } from "../../hooks/usePomodoro";
-import type { Task } from "../../types";
+import type { Phase } from "../../hooks/usePomodoro";
+import type { PomodoroState } from "../../pomodoro-context";
 
-// TODO(fase-N): antes salía de usePomodoroCtx() (pomodoro-context, que llama a la API).
 export type PomodoroIslandState = Pick<
-  ReturnType<typeof usePomodoro>,
-  "running" | "secondsLeft" | "totalSeconds" | "phase" | "progress" | "pause" | "start"
-> & { activeTask: Task | null };
+  PomodoroState,
+  "running" | "secondsLeft" | "totalSeconds" | "phase" | "progress" | "pause" | "start" | "activeTask"
+>;
 
 /**
  * El Pomodoro, visible desde cualquier vista. Adaptado de la «status island» de
@@ -77,7 +76,18 @@ export function PomodoroIsland({ pomo }: { pomo: PomodoroIslandState }) {
             }}
             onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
           >
-            <motion.div layout="position" className="flex h-11 items-center gap-2.5 pl-3.5 pr-4">
+            {/* El toque la abre: en táctil no hay hover. Se cierra tocando fuera, con Escape o al
+                salir el foco. Solo abre, porque el toque también da foco y el `onFocus` ya abrió. */}
+            <motion.div
+              layout="position"
+              role="button"
+              tabIndex={0}
+              aria-expanded={expanded}
+              aria-label="Abrir el pomodoro"
+              onClick={() => setOpen(true)}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpen(true))}
+              className="flex h-11 cursor-pointer items-center gap-2.5 pl-3.5 pr-4"
+            >
               <svg width="18" height="18" viewBox="0 0 18 18" className="-rotate-90 shrink-0" aria-hidden>
                 <circle cx="9" cy="9" r={R} fill="none" stroke="var(--gr-edge-strong)" strokeWidth="2" />
                 <circle

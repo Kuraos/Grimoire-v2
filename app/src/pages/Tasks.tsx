@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { App as CapApp } from "@capacitor/app";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { IconArrowDown, IconArrowUp, IconCheck, IconFilter, IconPlus, IconFolder, IconTrash, IconEdit, IconList, IconLayoutKanban, IconChecklist } from "@tabler/icons-react";
 import { useIsDesktop } from "../hooks/useMediaQuery";
-import { isNative, notificationAccess, openExactSettings, type NotificationAccess } from "../notify";
+import { isNative } from "../notify";
+import { usePomodoroCtx } from "../pomodoro-context";
+import { AUTOSTART_HINT, ReminderAccessNotice } from "../components/ui/ReminderAccessNotice";
 import { dismissQueueEntry } from "../api/queryClient";
 import { projectActions, useProjects } from "../api/projects";
 import { rankAtEnd, remindAtToLocal, remindAtToUtc, sortTasks, stepNeighbours, taskActions, useTaskHistory, useTasks } from "../api/tasks";
@@ -18,7 +20,7 @@ import { parseTags, TagInput } from "../components/ui/TagInput";
 import { TagFilterBar } from "../components/ui/TagFilterBar";
 import { Modal, Field } from "../components/ui/Modal";
 import { confirm } from "../confirm";
-import { CATEGORY_COLORS, isoDate } from "../utils";
+import { CATEGORY_COLORS, isoDate, pomodoroHours } from "../utils";
 import type { ApiChecklistItem, ApiProject, ApiTask } from "../types";
 
 const PROJECT_CATEGORIES = ["Académico", "Personal", "TCG", "Trabajo"];
@@ -80,6 +82,12 @@ export default function Tasks() {
   const openEditProject = (p: ApiProject) => { setEditProject(p); setProjectModal(true); };
 
   const projColor = (id: string | null) => projects.find((p) => p.id === id)?.color;
+
+  // Vincular, arrancar y llevar al temporizador: quedarse en Tareas dejaría el pomodoro corriendo
+  // sin más que la isla (v1). Si había un foco vivo, se cierra como abandonado.
+  const nav = useNavigate();
+  const pomo = usePomodoroCtx();
+  const startFocus = pomo ? (t: ApiTask) => { pomo.startWithTask(t); nav("/pomodoro"); } : undefined;
 
   // La línea de contexto de la cabecera. Cuenta sobre `projects`, que llega sin
   // filtrar, y no sobre lo filtrado: si no, elegir un proyecto en el filtro haría
@@ -155,6 +163,8 @@ export default function Tasks() {
                     por hacer anunciaba «0/5 pend.» — se leía como que no queda
                     nada pendiente, justo lo contrario. */}
                 <span>{p.tasks_total - p.tasks_pending}/{p.tasks_total} hechas</span>
+                {/* con la cola encima: una sesión sin sincronizar ya suma (decisión 5) */}
+                <span className="text-[var(--purple-main)]">{pomodoroHours(p.pomodoro_minutes)}h foco</span>
               </div>
             </div>
             {/* La rueda cuenta las tareas cerradas del proyecto. Al lado del
@@ -223,7 +233,7 @@ export default function Tasks() {
             {listed.length === 0 && older.length === 0 && <p className="text-xs text-[var(--text-muted)]">Sin tareas.</p>}
             {listed.map((t) => (
               <TaskCard key={t.id} task={t} pending={pendingIds.has(t.id)} projectColor={projColor(t.project_id)}
-                onComplete={taskActions.complete} onUncomplete={taskActions.uncomplete} onEdit={openEditTask} onDelete={remove} />
+                onComplete={taskActions.complete} onUncomplete={taskActions.uncomplete} onEdit={openEditTask} onDelete={remove} onFocus={startFocus} />
             ))}
             {older.map((t) => (
               <TaskCard key={t.id} task={t} projectColor={projColor(t.project_id)}
@@ -246,30 +256,6 @@ export default function Tasks() {
       {projectModal && <ProjectForm project={editProject} onClose={() => setProjectModal(false)} />}
       {moving && <MoveSheet task={moving} tasks={tasks} visible={onBoard} onClose={() => setMovingId(null)} />}
     </div>
-  );
-}
-
-/** Solo en el APK, y solo si falta algo para que los recordatorios suenen a su hora (ADR 0003). */
-function ReminderAccessNotice() {
-  const [access, setAccess] = useState<NotificationAccess>("ok");
-  useEffect(() => {
-    if (!isNative()) return;
-    const check = () => { notificationAccess().then(setAccess).catch(() => {}); };
-    check();
-    // al volver de Ajustes
-    const handle = CapApp.addListener("appStateChange", ({ isActive }) => { if (isActive) check(); });
-    return () => { void handle.then((h) => h.remove()); };
-  }, []);
-  if (access === "ok") return null;
-  return (
-    <Card>
-      <p className="gr-sangrado text-xs text-[var(--text-body)]">
-        {access === "denied"
-          ? "Los recordatorios no sonarán: activa las notificaciones en Ajustes → Apps → Grimoire."
-          : "Los recordatorios pueden sonar con retraso: Android los trata como inexactos."}
-      </p>
-      {access === "inexact" && <button className="btn mt-2" onClick={() => void openExactSettings()}>Permitir alarmas exactas</button>}
-    </Card>
   );
 }
 
@@ -511,7 +497,7 @@ function TaskForm({ task, tasks, projects, onDelete, onClose }: {
       {/* No se puede detectar ni activar desde la app (Hallazgos de la 2.2.6). */}
       {remindAt && isNative() && (
         <p className="mb-3 text-xs italic text-[var(--text-muted)]">
-          Para que suene con la app cerrada, Grimoire debe tener el inicio automático activado en el gestor del teléfono.
+          {AUTOSTART_HINT}
         </p>
       )}
       <Field label="Categoría"><input className="input" value={category} onChange={(e) => setCategory(e.target.value)} /></Field>

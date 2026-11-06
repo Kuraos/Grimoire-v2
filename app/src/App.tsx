@@ -5,13 +5,16 @@ import { App as CapApp } from "@capacitor/app";
 import { Sidebar } from "./components/layout/Sidebar";
 import { BottomNav } from "./components/layout/BottomNav";
 import { TopBar } from "./components/layout/TopBar";
-import { CommandPalette, type CommandPalettePomodoro } from "./components/layout/CommandPalette";
+import { CommandPalette } from "./components/layout/CommandPalette";
+import { PomodoroIsland } from "./components/layout/PomodoroIsland";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 import { PageHeader } from "./components/layout/PageHeader";
 import { useIsDesktop } from "./hooks/useMediaQuery";
 import { motionTokens } from "./theme-tokens";
 import Habits from "./pages/Habits";
 import Tasks from "./pages/Tasks";
+import Pomodoro from "./pages/Pomodoro";
+import { usePomodoroCtx } from "./pomodoro-context";
 import { TaskReminders } from "./reminders";
 import { useApp } from "./context";
 import { ConfirmHost } from "./confirm";
@@ -27,8 +30,6 @@ function viewEnter() {
   };
 }
 
-// TODO(fase-2): estado real del Pomodoro (pomodoro-context no se portó).
-const SIN_POMODORO: CommandPalettePomodoro = { running: false, start: () => {}, pause: () => {}, tasks: [], startWithTask: () => {} };
 // TODO(fase-N): Ajustes se rehace (SettingsModal de la v1 no se portó).
 const abrirAjustes = () => {};
 
@@ -40,7 +41,7 @@ function Pendiente({ titulo }: { titulo: string }) {
 }
 
 const PENDIENTES: [string, string][] = [
-  ["/", "Inicio"], ["/pomodoro", "Pomodoro"], ["/calendario", "Calendario"],
+  ["/", "Inicio"], ["/calendario", "Calendario"],
   ["/diario", "Diario"], ["/entrenamiento", "Entrenamiento"], ["/erario", "Erario"],
   ["/estadisticas", "Estadísticas"], ["/logros", "Logros"], ["/revision", "Revisión semanal"],
 ];
@@ -49,6 +50,7 @@ export default function App() {
   const location = useLocation();
   const desktop = useIsDesktop();
   const { user, toasts, dismissToast, levelUp, dismissLevelUp } = useApp();
+  const pomo = usePomodoroCtx();
 
   // Atrás de Android: primero cierra la hoja o el modal abierto, después navega.
   useEffect(() => {
@@ -61,6 +63,25 @@ export default function App() {
     });
     return () => { handle.then((h) => h.remove()); };
   }, []);
+
+  /* Espacio arranca y detiene el Pomodoro (v1), salvo que el foco esté en algo que Espacio ya
+     activa —un campo, un botón— o haya un diálogo abierto (`data-overlay`). */
+  useEffect(() => {
+    if (!pomo) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat) return;
+      const el = e.target as HTMLElement | null;
+      if (!el) return;
+      const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) || el.isContentEditable;
+      const activable = el.closest?.("button, a[href], summary, [role='button'], [role='checkbox'], [role='switch']");
+      if (typing || activable || document.querySelector("[data-overlay]")) return;
+      e.preventDefault();
+      if (pomo.running) pomo.pause();
+      else pomo.start();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pomo]);
 
   return (
     <div className="gr-cielo flex h-dvh overflow-hidden">
@@ -79,6 +100,7 @@ export default function App() {
                 ))}
                 <Route path="/habitos" element={<Habits />} />
                 <Route path="/tareas" element={<Tasks />} />
+                <Route path="/pomodoro" element={<Pomodoro />} />
               </Routes>
             </motion.div>
           </ErrorBoundary>
@@ -87,7 +109,8 @@ export default function App() {
       <BottomNav onOpenSettings={abrirAjustes} />
       <TaskReminders />
       {/* Solo con teclado físico: en teléfono no se muestra ni se reemplaza */}
-      {desktop && <CommandPalette pomo={SIN_POMODORO} />}
+      {pomo && <PomodoroIsland pomo={pomo} />}
+      {desktop && pomo && <CommandPalette pomo={pomo} />}
       <ToastAchievement toasts={toasts} dismissToast={dismissToast} />
       <LevelUpOverlay levelUp={levelUp} dismissLevelUp={dismissLevelUp} />
       <ConfirmHost />

@@ -166,7 +166,8 @@ export function PomodoroTimer({
 
   return (
     <div className="flex flex-wrap items-center gap-7">
-      <div className="relative h-[320px] w-[320px] shrink-0">
+      {/* Hasta 320 px, y menos si la tarjeta no da: a 393 px de ancho no cabía (decisión 4). */}
+      <div className="relative aspect-square w-full max-w-[320px] shrink-0">
         <Dial totalMinutes={totalMinutes} elapsedMinutes={elapsedMinutes} />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
           {figure}

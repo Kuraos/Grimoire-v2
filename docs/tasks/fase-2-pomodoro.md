@@ -405,3 +405,60 @@ tomadas sobre la marcha.)
   - **Lint:** `oxlint` avisa `Date.now` en render y un ref leído en render en `usePomodoro` y en
     `usePomodoroToday`. Son avisos de la misma forma que los de `Tasks.tsx` y que el hook de la v1;
     no se tocaron.
+
+- **2.3.5, vista Pomodoro** (2026-11-05, Bogotá):
+  - **Cambio de orden en la capa:** `commitTransition` (en `usePomodoro.ts`) llama primero a
+    `onWorkEnd` y después a `setTimer`. Así `recordSession` entra en la fila de disco antes que el
+    `savePomodoro` del estado sin `sessionId`, guarde la vista sincrónico o en un efecto. Test:
+    `al cerrar un bloque, la sesión entra a la fila de disco antes que el estado sin su id`, que
+    retiene todas las escrituras y guarda en el mismo instante del cambio. **Mutación inversa**
+    (estado primero, sesión después): cae ese test, y solo ese.
+  - **Contexto** (`pomodoro-context.tsx`): va dentro de `TokenGate`, así que `bootPomodoro` corre
+    después de `bootSync`. Hasta que restaura, el contexto vale `null`: la vista muestra un
+    esqueleto, y la isla y la paleta no aparecen. El hook arranca con un estado provisional y
+    `load()` lo reemplaza por el restaurado, sin remontar la app. Guarda en un efecto sobre
+    estado, configuración y vínculo: el tick no cambia el estado, así que no guarda cada segundo.
+    Si `bootPomodoro` encuentra un temporizador corriendo, agenda el aviso y puede pedir permiso:
+    hasta que se responda, la vista sigue en el esqueleto.
+  - **Componentes:** ninguno nuevo. `ReminderAccessNotice` se movió de `Tasks.tsx` a
+    `components/ui/` con un `subject`, y `AUTOSTART_HINT` es el texto del formulario de tareas. Se
+    borraron `Task`, `Project`, `ChecklistItem` y `PomodoroSession` de la v1: nadie los usaba.
+  - **`total_today_minutes`:** ninguna vista lo muestra. El log y la cabecera suman desde
+    `usePomodoroToday`, que es del día en que se mira; el toast dice «1 sesión · +15 XP», sin total.
+  - **Recorrido en el navegador** contra `wrangler dev` con D1 aparte, datos inventados y un token
+    desechable (`--env-file`; el de `.dev.vars` no se usó). Contexto táctil 393 × 852 (`hasTouch`,
+    `isMobile`, `pointer: coarse` verificado) y ratón a 1280 × 800:
+    - **Iniciar desde una tarea:** ▶ en `TaskCard` lleva a `/pomodoro`, vincula la tarea y hereda su
+      proyecto. El foco en pausa que había llevaba menos de 1 min: no mandó nada.
+    - **Bloque corto (1 min):** un solo `POST` con el id del bloque, la tarea, su proyecto y
+      `completed: true`; 15 XP. El descanso arrancó solo, con la app abierta y a tiempo.
+    - **Abandonar a los 65 s de un bloque de 3:** `work_minutes: 1`, `completed: false`, 0 XP.
+    - **Sin conexión (3 min):** cero requests. El log la mostró «pendiente», la cabecera dijo «1 sin
+      sincronizar» y «Ondas y fluidos» pasó a 0.1 h (1 + 3 min) en Tareas. Al reconectar, un solo
+      `POST` y 200; las horas siguieron en 0.1 h, ahora del servidor.
+    - **Toast:** otro bloque de 1 min sin conexión; al reconectar, «Sincronizado · 1 sesión · +15 XP».
+    - La falta de conexión se simuló con el navegador; `@capacitor/network` sigue sin probarse en
+      modo avión. **El dedo en un teléfono real no se ha probado.**
+  - **Lo que solo salió al mirar las capturas:**
+    - «1 sesion» sin tilde, heredado de la v1.
+    - **Tocar la isla no la abría:** solo se abría al pasar el ratón o con foco de teclado, así que
+      en táctil no había cómo pausar desde otra vista. Ahora un toque la abre; se cierra tocando
+      fuera, con Escape o al salir el foco. Solo abre: el toque también da foco, y alternar la cerraba.
+    - **Los bloques de la recta caían corridos:** en táctil, `.gr-tactil` fija `position: relative`
+      en un `@media` fuera de capa, que le gana a `absolute`. Cada bloque quedaba en el flujo, 2 px
+      más a la derecha por cada uno anterior, y los recientes salían después de «ahora». Va
+      `!absolute`. No hay otro `gr-tactil` con `absolute` en la app.
+    - **El filo de «ahora» tapaba el toque** sobre los bloques recientes: `pointer-events-none`.
+    - **En teléfono un toque no puede elegir un solo bloque:** la hora mide ~15 px y el área
+      táctil 44 px, y dos pomodoros seguidos están a ~8 px. Tocar lista las sesiones a ±1,5 h del
+      bloque, con hora y minutos primero, porque el título es lo que se corta.
+    - La banda «La jornada · 06:00 → 24:00» partía en dos líneas y la cifra en «30 / MIN»; en
+      teléfono el rótulo es «La jornada», porque el eje ya dice las horas.
+    - La esfera (`w-full max-w-[320px]`, `aspect-square`) cabe a 393 px sin desbordar, y en
+      `lg:` sigue al lado del mando, como en la v1.
+  - **Procesos huérfanos:** `TaskStop` sobre `npx wrangler dev` termina el shell pero deja vivo el
+    árbol (`wrangler` → `workerd`). El de la 2.3.3 seguía escuchando en el 8787 al empezar esta
+    tarea, y matar solo `workerd` hizo que `wrangler` levantara otro. Se cierra el árbol con
+    `taskkill /T` desde el `npx`. Al terminar, ningún `workerd` y el 8787 y el 5173 libres.
+  - **Lint:** se suman avisos de la misma forma (`Date.now` y un ref en render, y que el contexto
+    exporte un hook). No se tocaron.

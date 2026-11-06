@@ -7,7 +7,7 @@ const disk = vi.hoisted(() => new Map<string, string>())
 const net = vi.hoisted(() => ({ connected: false, listener: null as null | ((s: { connected: boolean }) => void) }))
 const log = vi.hoisted(() => [] as string[])
 /** Para retener la escritura de la cola en disco, como un Preferences lento. */
-const gate = vi.hoisted(() => ({ hold: false, release: [] as (() => void)[] }))
+const gate = vi.hoisted(() => ({ hold: false, holdAll: false, release: [] as (() => void)[] }))
 const plugin = vi.hoisted(() => ({
   display: 'granted',
   scheduleFails: false,
@@ -19,7 +19,7 @@ vi.mock('@capacitor/preferences', () => ({
   Preferences: {
     get: async ({ key }: { key: string }) => ({ value: disk.get(key) ?? null }),
     set: async ({ key, value }: { key: string; value: string }) => {
-      if (gate.hold && key === 'grimoire-queue-v1') await new Promise<void>((r) => gate.release.push(r))
+      if (gate.holdAll || (gate.hold && key === 'grimoire-queue-v1')) await new Promise<void>((r) => gate.release.push(r))
       log.push(`set ${key}`)
       disk.set(key, value)
     },
@@ -118,6 +118,7 @@ beforeEach(() => {
   disk.clear()
   log.length = 0
   gate.hold = false
+  gate.holdAll = false
   gate.release = []
   net.connected = false
   net.listener = null
@@ -251,6 +252,36 @@ test('dos decisiones para el mismo id en la bandeja: se encola la primera', asyn
   disk.set(OUTBOX_KEY, JSON.stringify([decide(true), decide(false)]))
   const { q } = await start(NOW)
   expect(queuedSessions(q)).toEqual([expect.objectContaining({ id: SID, completed: true })])
+})
+
+test('al cerrar un bloque, la sesión entra a la fila de disco antes que el estado sin su id', async () => {
+  const { pomodoro } = await start(NOW)
+  const { commitTransition, closePhase, DEFAULT_CONFIG } = await import('../hooks/usePomodoro')
+  const links = { taskId: null, projectId: null }
+  const tr = closePhase({
+    phase: 'work', running: true, endsAt: NOW, remainingMs: 0, workCount: 0,
+    workStartedAt: NOW - 25 * MIN, minutes: 25, sessionId: SID,
+  }, NOW + 1_000, DEFAULT_CONFIG)
+  // el contexto más impaciente: guarda en el mismo instante en que cambia el estado
+  gate.holdAll = true
+  log.length = 0
+  commitTransition(
+    tr,
+    (next) => void pomodoro.savePomodoro({ config: DEFAULT_CONFIG, links, timer: next }),
+    (r) => void pomodoro.recordSession(pomodoro.sessionRequests.create(r, links)),
+  )
+  // soltar las escrituras de una en una: cada una puede dejar en fila la siguiente
+  for (let i = 0; i < 20 && log.filter((l) => l === `set ${STATE_KEY}`).length === 0; i++) {
+    await settle()
+    gate.release.splice(0).forEach((r) => r())
+  }
+  gate.holdAll = false
+  gate.release.splice(0).forEach((r) => r())
+  await settle()
+  expect(log.indexOf(`set ${OUTBOX_KEY}`)).toBeGreaterThanOrEqual(0)
+  expect(log.indexOf(`set ${OUTBOX_KEY}`)).toBeLessThan(log.indexOf(`set ${STATE_KEY}`))
+  // y para cuando el estado llega a disco, la sesión ya está en la cola guardada
+  expect(log.indexOf(`set ${QUEUE_KEY}`)).toBeLessThan(log.indexOf(`set ${STATE_KEY}`))
 })
 
 // ---------- Notificación ----------
