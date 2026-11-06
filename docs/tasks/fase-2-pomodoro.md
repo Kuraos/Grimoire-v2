@@ -267,3 +267,23 @@ En el ADR 0006, «Sesiones de pomodoro».
 
 (Agregar aquí lo que se descubra: mediciones, APIs que no funcionaron como dicen los docs, decisiones
 tomadas sobre la marcha.)
+
+- **2.3.1, serie A** (2026-11-01, Bogotá; Infinix X6831, Android 13, con USB, inicio automático activo).
+  6 muestras con `at` cada 240 s, pantalla apagada (`mWakefulness=Asleep`) y proceso muerto y comprobado
+  unos 40 s antes de cada una. El retraso es `when` de la notificación menos la hora pedida:
+
+  | Muestra | 0 | 1 | 2 | 3 | 4 | 5 |
+  |---|---|---|---|---|---|---|
+  | Retraso (s) | 0,548 | 0,555 | 0,528 | 0,559 | 0,528 | 0,542 |
+
+  Mediana 0,545 s y máximo 0,559 s. En las 6 hubo `Start proc … for broadcast` a menos de 0,1 s. **El
+  retraso de 2,5 min de la 2.2.6 no se repitió en esta condición, y sigue sin explicación.**
+
+- **2.3.1, serie B: pendiente.** El intento del 2026-11-05 no cumplió la condición: el cable se quitó
+  después de la segunda muestra (según `batterystats --history`), así que solo 4 de 6 fueron sin cable,
+  y ninguna de esas 4 en frío. XOS deja el proceso vivo 30 min tras el primer disparo
+  (`am_kill … empty for 1800s`), de modo que con muestras cada 300 s solo la primera arranca en frío.
+  Ninguna pasó de 60 s (máximo 0,891 s), pero **el caso sin cable y en frío, el de la 2.2.6, sigue sin
+  medir**. Para medirlo: desconectar antes de la primera muestra y comprobar `-plugged` al reconectar;
+  para tener varias en frío, espaciarlas más de 30 min. Sin decisión sobre `setAlarmClock` hasta
+  entonces.
