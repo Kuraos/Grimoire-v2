@@ -1,4 +1,4 @@
-"""Reproduce los goldens de tareas de la v1 contra la API de la v2 (`wrangler dev`).
+"""Reproduce los goldens de tareas y pomodoro de la v1 contra la API de la v2 (`wrangler dev`).
 
 Uso, con `wrangler dev --persist-to <dir>` corriendo y la migración aplicada en ese mismo dir:
     python scripts/replay_golden.py <url> <persist-dir>
@@ -8,7 +8,7 @@ compara con la v1; lo que difiere a propósito está en DIFS, con su fila de «D
 permitidas» (docs/tasks/caracterizacion-v1.md), y se imprime. Cualquier otra diferencia hace
 fallar el script. Cada escritura se repite una vez para comprobar la idempotencia.
 
-Solo para la base local: entre escenarios borra tareas, proyectos y XP.
+Solo para la base local: entre escenarios borra sesiones, tareas, proyectos y XP.
 """
 import json
 import subprocess
@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKER = ROOT / "api/crates/worker"
-GOLDEN = ROOT / "api/crates/domain/tests/golden/tasks"
+GOLDEN = [ROOT / "api/crates/domain/tests/golden" / d for d in ("tasks", "pomodoro")]
 USER_ID = "00000000-0000-7000-8000-000000000001"
 NOWHERE = "00000000-0000-7000-8000-0000000000ff"  # el id 999 de los goldens
 
@@ -53,6 +53,17 @@ DIFS = {
     ("logro_por_patch", 3): {"status": 422, "fila": 12},
     ("logro_por_patch", 5): {"unlocked": None, "fila": 12},
     ("logro_por_patch", 6): {"achievements": [], "fila": 12},
+    # pomodoro
+    ("validacion_sesion", 0): {"status": 422, "fila": 28},
+    ("validacion_sesion", 1): {"status": 422, "fila": 28},
+    ("validacion_sesion", 2): {"status": 422, "fila": 28},
+    ("validacion_sesion", 3): {"status": 422, "fila": 28},
+    ("validacion_sesion", 8): {"fila": 28},  # las cuatro sesiones no existen
+    ("validacion_sesion", 9): {"xp": 0, "fila": 28},
+    ("rango_dias", 6): {"skip": True, "fila": 33},
+    ("rango_dias", 7): {"skip": True, "fila": 33},
+    ("rango_dias", 8): {"skip": True, "fila": 33},
+    ("rango_dias", 9): {"skip": True, "fila": 33},
 }
 TASK_FIELDS = ("title", "description", "category", "priority", "due_date", "xp_reward", "status",
                "completed", "tags")
@@ -65,7 +76,7 @@ class Replay:
         self.url, self.persist, self.token = url, persist, token
 
     def reset(self):
-        sql = ("DELETE FROM checklist_items; DELETE FROM tasks; DELETE FROM projects; "
+        sql = ("DELETE FROM pomodoro_sessions; DELETE FROM checklist_items; DELETE FROM tasks; DELETE FROM projects; "
                "DELETE FROM xp_log; UPDATE users SET xp = 0; UPDATE achievements SET unlocked_at = NULL")
         subprocess.run(
             f'npx wrangler d1 execute grimoire --local --persist-to "{self.persist}" --command "{sql}"',
@@ -94,6 +105,8 @@ class Scenario:
         self.unlocked = set()
         self.rank = 0
         self.position_order = []
+        self.sessions = 0  # último id que la v1 asignó a una sesión
+        self.deleted = set()
 
     def fail(self, i, step, what):
         sys.exit(f"{self.name}, paso {i} ({step['llamada']}): {what}")
@@ -192,6 +205,8 @@ class Scenario:
         if dif.get("skip"):
             return
         method, path = step["llamada"].split(" ", 1)
+        if path.startswith("/pomodoro/"):
+            return self.pomodoro(i, step, method, path, dif)
         want_status = step["esperado"]["status"]
         want = step["esperado"]["cuerpo"]
         alias = step.get("alias")
@@ -243,12 +258,18 @@ class Scenario:
         if method == "GET" and path.startswith("/tasks"):
             self.check_list(i, step, path, want, got)
         elif method == "GET" and path == "/projects":
+            # la v1 congela el reloj: con `created_at` empatado, el orden es el de inserción
+            if len({p["created_at"] for p in want}) < len(want):
+                got = sorted(got, key=lambda g: [p["name"] for p in want].index(g["name"]))
             if [p["name"] for p in want] != [p["name"] for p in got]:
                 self.fail(i, step, "orden de proyectos")
             for w, g in zip(want, got):
                 for f in PROJECT_FIELDS:
                     if w[f] != g[f]:
                         self.fail(i, step, f"{f}: {w[f]!r} frente a {g[f]!r}")
+                # fila 31: minutos enteros; `round` de Python reproduce el float de la v1
+                if round(g["pomodoro_minutes"] / 60, 1) != w["pomodoro_hours"]:
+                    self.fail(i, step, f"pomodoro_minutes {g['pomodoro_minutes']}")
         elif path.endswith("/complete"):
             self.grants[path.split("/")[2]] = body["id"]
             self.check_xp(i, step, want, got)
@@ -282,8 +303,109 @@ class Scenario:
                     self.fail(i, step, f"{f}: {want[f]!r} frente a {got[f]!r}")
             self.by_v1[("project", want["id"])] = got["id"]
 
+        if method == "DELETE":
+            self.deleted.add(path.split("/")[2])
         if method != "GET":
             self.retry(i, step, method, path, body, got)
+
+    # ---------- pomodoro ----------
+
+    def ref(self, kind, v1_id):
+        """Lo que la v2 guarda para una referencia de la v1: NULL si no existe (filas 29 y 30)."""
+        uid = self.by_v1.get((kind, v1_id))
+        return None if uid is None or uid in self.deleted else uid
+
+    def session_body(self, step):
+        body = dict(step.get("cuerpo") or {})
+        for key in ("task_id", "project_id"):
+            v = body.get(key)
+            if v == 999:
+                body[key] = NOWHERE
+            elif isinstance(v, str) and v.startswith("{"):
+                body[key] = self.ids[v[1:-1]]
+        # la v1 sella `finished_at` con la hora del servidor; la v2 recibe `ends_at` (fila 25)
+        end = utc(step["hoy"] + "T12:00:00")
+        body["id"] = str(uuid.uuid4())
+        body["finished_at"] = rfc3339(end)
+        minutes = body.get("work_minutes", 25)
+        start = body.get("started_at")
+        if start is None:  # la v1 lo deducía: fin − minutos
+            body["started_at"] = rfc3339(end - timedelta(minutes=minutes if isinstance(minutes, int) else 25))
+        else:
+            try:
+                body["started_at"] = rfc3339(utc(start))
+            except ValueError:
+                pass  # «ayer»: que lo rechace la API
+        return body
+
+    def pomodoro(self, i, step, method, path, dif):
+        want_status, want = step["esperado"]["status"], step["esperado"]["cuerpo"]
+        if method == "GET" and path == "/pomodoro/today":
+            status, got = self.api.call("GET", f"{path}?date={step['hoy']}")
+            if status != 200:
+                self.fail(i, step, f"status {status}")
+            self.check_sessions(i, step, want, got)
+            return
+        body = self.session_body(step)
+        expected = dif.get("status", want_status)
+        status, got = self.api.call("POST", path, body)
+        if status != expected:
+            self.fail(i, step, f"status {status}, esperado {expected}: {got}")
+        if want_status == 200:
+            self.sessions += 1
+        if status != 200:
+            return
+        self.by_v1[("session", self.sessions)] = body["id"]
+        self.check_xp(i, step, want, got)
+        if got["total_today_minutes"] != want["total_today_minutes"]:
+            self.fail(i, step, f"total_today_minutes {got['total_today_minutes']}")
+        new = [a["key"] for a in got["achievements_unlocked"]]
+        if (new[0] if new else None) != want["achievement_unlocked"]:  # fila 4
+            self.fail(i, step, f"logro {new} frente a {want['achievement_unlocked']}")
+        self.unlocked.update(new)
+        status, again = self.api.call("POST", path, body)
+        self.retries += 1
+        if status != 200 or again["xp_earned"] != 0 or again["new_xp"] != got["new_xp"] \
+                or again["total_today_minutes"] != got["total_today_minutes"] \
+                or again["achievements_unlocked"]:
+            self.fail(i, step, f"reintento: {status} {again}")
+
+    def check_sessions(self, i, step, want, got):
+        want = [w for w in want if ("session", w["id"]) in self.by_v1]  # fila 28: rechazadas
+        if sorted(self.by_v1[("session", w["id"])] for w in want) != sorted(g["id"] for g in got):
+            self.fail(i, step, f"sesiones: {got}")
+        starts = [g["started_at"] for g in got]
+        if starts != sorted(starts, reverse=True):
+            self.fail(i, step, "orden por started_at")
+        by_id = {g["id"]: g for g in got}
+        for w in want:
+            g = by_id[self.by_v1[("session", w["id"])]]
+            for f in ("work_minutes", "completed", "task_title"):
+                if w[f] != g[f]:
+                    self.fail(i, step, f"{f}: v1 {w[f]!r} frente a v2 {g[f]!r}")
+            for f in ("started_at", "finished_at"):
+                if utc(w[f]) != utc(g[f]):
+                    self.fail(i, step, f"{f}: v1 {w[f]} frente a v2 {g[f]}")
+            for f, kind in (("task_id", "task"), ("project_id", "project")):
+                expected = self.ref(kind, w[f])
+                if expected != g[f]:
+                    self.fail(i, step, f"{f}: {g[f]} frente a {expected}")
+                if w[f] is not None and expected is None:
+                    fila = 29 if w[f] == 999 else 30
+                    if (i, step["llamada"], fila) not in self.diffs:
+                        self.diffs.append((i, step["llamada"], fila))
+
+
+def utc(s):
+    """Instante de la v1 (hora de pared en Bogotá, sin zona) o de la v2 (RFC 3339) → UTC."""
+    t = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone(timedelta(hours=-5)))
+    return t.astimezone(timezone.utc)
+
+
+def rfc3339(t):
+    return t.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def check_window(api):
@@ -328,7 +450,7 @@ def main():
                  for line in (WORKER / ".dev.vars").read_text().splitlines()
                  if line.startswith("GRIMOIRE_TOKEN"))
     api = Replay(url, persist, token)
-    for path in sorted(GOLDEN.glob("*.json")):
+    for path in [p for d in GOLDEN for p in sorted(d.glob("*.json"))]:
         golden = json.loads(path.read_text(encoding="utf-8"))
         api.reset()
         sc = Scenario(api, golden["escenario"])

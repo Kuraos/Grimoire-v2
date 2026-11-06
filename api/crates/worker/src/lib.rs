@@ -14,6 +14,7 @@ use worker::{D1Database, D1Result, Env, HttpRequest, console_error, console_log,
 
 mod categories;
 mod habits;
+mod pomodoro;
 mod projects;
 mod tasks;
 mod user;
@@ -95,6 +96,8 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
                 "/projects/{id}",
                 patch(projects::update).delete(projects::remove),
             )
+            .route("/pomodoro/sessions", post(pomodoro::create))
+            .route("/pomodoro/today", get(pomodoro::today_sessions))
             .route("/user", get(user::read))
             .with_state(state);
         router.into_service().call(req).await?

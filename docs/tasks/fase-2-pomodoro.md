@@ -287,3 +287,46 @@ tomadas sobre la marcha.)
   medir**. Para medirlo: desconectar antes de la primera muestra y comprobar `-plugged` al reconectar;
   para tener varias en frío, espaciarlas más de 30 min. Sin decisión sobre `setAlarmClock` hasta
   entonces.
+
+- **2.3.3, API** (2026-11-05, Bogotá):
+  - **Decisiones sobre la marcha:**
+    - `total_today_minutes` suma el día de la sesión (`local_date`), no el del servidor. Coincide
+      con la v1 cuando la sesión llega a tiempo. Si llega tarde, da el total del día al que pertenece.
+    - `GET /pomodoro/today` acepta `?date=YYYY-MM-DD` opcional, por defecto hoy. Lo usa la réplica
+      de los goldens, que tienen fechas fijas. No es `range` (fila 33).
+    - Un `project_id` explícito que ya no existe se guarda `NULL`, sin heredar el de la tarea: la
+      sesión no queda en un proyecto que nadie eligió.
+    - Un id registrado como incompleta no paga aunque se reenvíe como completa: el XP exige que la
+      fila guardada tenga `completed = 1` y no tenga `xp_log`.
+  - **Goldens contra `wrangler dev`:** los 6 de pomodoro pasan, y los 8 de tareas siguen pasando.
+    Cada `POST` aceptado se repite una vez: 200, 0 XP, el mismo total y ningún logro.
+
+    | Escenario | Pasos | Reintentos | Diferencias | Filas |
+    |---|---|---|---|---|
+    | `logros_pomodoro` | 262 | 253 | 0 | — |
+    | `rango_dias` | 11 | 5 | 4 | 33 |
+    | `sesion_incompleta` | 9 | 4 | 0 | — |
+    | `sesion_xp` | 30 | 27 | 0 | — |
+    | `tarea_y_proyecto` | 19 | 14 | 5 | 29, 30 |
+    | `validacion_sesion` | 10 | 0 | 6 | 28 |
+
+    La fila 31 no aparece como diferencia: `round(minutos / 60, 1)` de Python reproduce las horas
+    de la v1, incluido 87 min → 1.4. La réplica ordena los proyectos de `created_at` empatado como
+    la v1, porque la v1 congela el reloj.
+  - **Filas leídas y escritas** con `wrangler dev` y el seed de `scripts/bench_seed_pomodoro.py`:
+    5 000 sesiones en dos años, 4 503 completas y 20 proyectos. El tiempo local no es CPU:
+
+    | Request | n | Filas leídas | Filas escritas | Wall local (mediana) |
+    |---|---|---|---|---|
+    | `GET /projects` (4 751 bytes) | 11 | 3 707 | 0 | 13 ms |
+    | `POST /pomodoro/sessions`, logros de foco bloqueados | 1 | 39 + 5 000 + 20 | 11 | — |
+    | `POST /pomodoro/sessions`, desbloqueados | 4 | 35–38 + 9–12 | 9 | 20 ms (los 5) |
+    | `GET /pomodoro/today` | 10 | 10 | 0 | 12 ms |
+
+    - `GET /projects` recorre el índice `(project_id, completed)`. A 3 707 filas, los 5 M diarios
+      de D1 dan para unas 1 350 lecturas.
+    - El `COUNT` de completadas (5 000 filas) solo corre mientras `focus_centurion` o
+      `focus_legend` siguen bloqueados.
+  - **CPU en producción: pendiente.** Exige deploy y `0006` en remoto, y eso solo cuando Johan lo
+    pida. Criterio de la decisión 5: si la mediana de `GET /projects` pasa de 10 ms, se cambia a un
+    contador en `projects`.

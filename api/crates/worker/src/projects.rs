@@ -1,5 +1,5 @@
-//! Rutas de proyectos. `pomodoro_hours` llega con Pomodoro (caracterizacion-v1.md, fila 22) y
-//! `vault_note_path` solo lo escribe la migración de datos.
+//! Rutas de proyectos. `pomodoro_minutes` reemplaza a `pomodoro_hours` de la v1 (caracterizacion-v1.md,
+//! fila 31) y `vault_note_path` solo lo escribe la migración de datos.
 
 use axum::Json;
 use axum::extract::rejection::JsonRejection;
@@ -14,7 +14,9 @@ use crate::habits::{body, opt_text, parse_uuid, present};
 use crate::{AppError, AppState, log_d1, now_utc};
 
 const SELECT_PROJECT: &str = "SELECT p.id, p.name, p.description, p.status, p.color, p.category, \
-     p.created_at, COUNT(t.id) AS tasks_total, COALESCE(SUM(t.status <> 'done'), 0) AS tasks_pending \
+     p.created_at, COUNT(t.id) AS tasks_total, COALESCE(SUM(t.status <> 'done'), 0) AS tasks_pending, \
+     (SELECT COALESCE(SUM(work_minutes), 0) FROM pomodoro_sessions \
+     WHERE project_id = p.id AND completed = 1) AS pomodoro_minutes \
      FROM projects p LEFT JOIN tasks t ON t.project_id = p.id";
 
 #[derive(Deserialize, Serialize)]
@@ -28,6 +30,8 @@ pub struct Project {
     created_at: String,
     tasks_total: i64,
     tasks_pending: i64,
+    /// Suma de las sesiones completas; las horas las calcula el cliente (fila 31).
+    pomodoro_minutes: i64,
 }
 
 fn check_name(n: &str) -> Result<(), AppError> {
