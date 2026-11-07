@@ -279,14 +279,23 @@ tomadas sobre la marcha.)
   Mediana 0,545 s y máximo 0,559 s. En las 6 hubo `Start proc … for broadcast` a menos de 0,1 s. **El
   retraso de 2,5 min de la 2.2.6 no se repitió en esta condición, y sigue sin explicación.**
 
-- **2.3.1, serie B: pendiente.** El intento del 2026-11-05 no cumplió la condición: el cable se quitó
+- **2.3.1, serie B: cerrada por decisión de Johan (2026-11-07), sin medición cuantitativa.** Repetición
+  del 2026-11-06: 5 muestras de prueba sin cable, cada 35 min (01:22:16 → 03:42:16), es decir, todas
+  con la app cerrada del todo. Johan vio llegar las 5 en el teléfono en los intervalos esperados.
+  Los `when` no se leyeron: al conectar el teléfono el 2026-11-07 ya no estaban la bandeja, `logcat`,
+  `usagestats` (24 h) ni `batterystats` (reiniciado a las 18:01), así que no hay mediana ni máximo.
+  Tampoco se comprobó `-plugged`. La serie es una observación a simple vista, no una medición:
+  descarta retrasos grandes, pero no acota los de un minuto o dos. **Decisión: no se usa
+  `setAlarmClock`; se agenda como está.** El retraso de la 2.2.6 sigue sin explicación. Si vuelve a
+  aparecer en la 2.3.6, se reabre esta decisión.
+
+- Intento anterior de la serie B, que no valió. El intento del 2026-11-05 no cumplió la condición: el cable se quitó
   después de la segunda muestra (según `batterystats --history`), así que solo 4 de 6 fueron sin cable,
   y ninguna de esas 4 en frío. XOS deja el proceso vivo 30 min tras el primer disparo
   (`am_kill … empty for 1800s`), de modo que con muestras cada 300 s solo la primera arranca en frío.
   Ninguna pasó de 60 s (máximo 0,891 s), pero **el caso sin cable y en frío, el de la 2.2.6, sigue sin
   medir**. Para medirlo: desconectar antes de la primera muestra y comprobar `-plugged` al reconectar;
-  para tener varias en frío, espaciarlas más de 30 min. Sin decisión sobre `setAlarmClock` hasta
-  entonces.
+  para tener varias en frío, espaciarlas más de 30 min.
 
 - **2.3.3, API** (2026-11-05, Bogotá):
   - **Decisiones sobre la marcha:**
