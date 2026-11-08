@@ -309,12 +309,19 @@ export function usePomodoro(
 
   // Cuenta atrás. El intervalo sólo refresca la vista y comprueba el
   // vencimiento; el tiempo lo lleva el reloj, así que perder ticks no atrasa
-  // nada. 250 ms para que el segundo cambie a tiempo.
+  // nada. 250 ms para que el segundo cambie a tiempo, pero solo se redibuja cuando cambia el
+  // segundo mostrado: redibujar en cada check eran 4 renders por segundo sin nada nuevo que pintar.
   useEffect(() => {
     if (!timer.running) return;
+    let shown = Math.ceil(remainingAt(timerRef.current, Date.now()) / 1000);
     const check = () => {
-      if (remainingAt(timerRef.current, Date.now()) <= 0) finishPhase();
-      else forceTick((n) => n + 1);
+      const left = remainingAt(timerRef.current, Date.now());
+      if (left <= 0) return finishPhase();
+      const secs = Math.ceil(left / 1000);
+      if (secs !== shown) {
+        shown = secs;
+        forceTick((n) => n + 1);
+      }
     };
     const id = window.setInterval(check, 250);
     /* Con la ventana oculta o minimizada el navegador estrangula los intervalos

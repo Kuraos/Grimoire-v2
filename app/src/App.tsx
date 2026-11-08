@@ -14,7 +14,7 @@ import { motionTokens } from "./theme-tokens";
 import Habits from "./pages/Habits";
 import Tasks from "./pages/Tasks";
 import Pomodoro from "./pages/Pomodoro";
-import { usePomodoroCtx } from "./pomodoro-context";
+import { usePomodoroClock, usePomodoroCtx, type PomodoroState } from "./pomodoro-context";
 import { TaskReminders } from "./reminders";
 import { useApp } from "./context";
 import { ConfirmHost } from "./confirm";
@@ -45,6 +45,13 @@ const PENDIENTES: [string, string][] = [
   ["/diario", "Diario"], ["/entrenamiento", "Entrenamiento"], ["/erario", "Erario"],
   ["/estadisticas", "Estadísticas"], ["/logros", "Logros"], ["/revision", "Revisión semanal"],
 ];
+
+/** La isla muestra el tiempo: lee el reloj aquí dentro, para que el segundo redibuje la isla y no
+ *  `App` con todas sus rutas. */
+function ClockedIsland({ pomo }: { pomo: PomodoroState }) {
+  const clock = usePomodoroClock();
+  return clock && <PomodoroIsland pomo={{ ...pomo, ...clock }} />;
+}
 
 export default function App() {
   const location = useLocation();
@@ -109,7 +116,7 @@ export default function App() {
       <BottomNav onOpenSettings={abrirAjustes} />
       <TaskReminders />
       {/* Solo con teclado físico: en teléfono no se muestra ni se reemplaza */}
-      {pomo && <PomodoroIsland pomo={pomo} />}
+      {pomo && <ClockedIsland pomo={pomo} />}
       {desktop && pomo && <CommandPalette pomo={pomo} />}
       <ToastAchievement toasts={toasts} dismissToast={dismissToast} />
       <LevelUpOverlay levelUp={levelUp} dismissLevelUp={dismissLevelUp} />

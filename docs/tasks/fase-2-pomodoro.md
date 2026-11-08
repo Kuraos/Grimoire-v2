@@ -471,3 +471,64 @@ tomadas sobre la marcha.)
     `taskkill /T` desde el `npx`. Al terminar, ningún `workerd` y el 8787 y el 5173 libres.
   - **Lint:** se suman avisos de la misma forma (`Date.now` y un ref en render, y que el contexto
     exporte un hook). No se tocaron.
+
+- **2.3.5b, el pomodoro sin redibujar la app** (2026-11-07, Bogotá; revisión de Hermes sobre `efbfeaa`):
+  - **Cambios:**
+    - **Un tick por segundo mostrado.** `check` sigue cada 250 ms y vence en `closePhase` como
+      antes, pero `forceTick` solo corre cuando cambia `Math.ceil(left / 1000)`.
+    - **Dos contextos.** `usePomodoroCtx` (estable, con `useMemo`): acciones, `phase`,
+      `running`, `snapshot`, `config`, `links`, `tasks`, `activeTask` y `notice`. `usePomodoroClock`:
+      `secondsLeft`, `totalSeconds` y `progress`. Los dos valen `null` hasta restaurar. Solo leen el
+      reloj la isla (`ClockedIsland`, en `App.tsx`) y la esfera (`ClockedTimer`, en
+      `pages/Pomodoro.tsx`), cada una dentro de su propio componente. No hay título de pestaña. La
+      paleta no muestra el tiempo. `App`, el atajo de Espacio y las rutas leen solo el estable.
+      `PomodoroIsland` y `PomodoroTimer` siguen sin leer datos: reciben props.
+    - **Causa que no estaba en la revisión:** con el contexto partido, Tareas seguía redibujándose
+      una vez por segundo. El valor estable cambiaba en cada render del provider porque
+      `useTasks()` daba listas nuevas siempre, y la raíz era `useQueue`: `useMutationState`
+      conserva la identidad, pero el `.filter` de después creaba un arreglo nuevo en cada llamada.
+      Ahora `useQueue` memoiza el filtro y `useTasks` memoiza `applyTaskQueue`. Arreglarlo ahí
+      sirve a todos los que leen la cola, no solo al pomodoro. El test del contexto no lo vio
+      porque su `useTasks` falso devolvía siempre el mismo arreglo. Por eso existe
+      `api/useTasks.test.tsx`, con el hook real.
+    - Sin cambios en `closePhase`, `commitTransition`, la bandeja, `savePomodoro` ni `notice`. Los
+      186 tests anteriores pasan sin tocar sus aserciones.
+  - **Medición en `/tareas`** (`wrangler dev`, D1 local, token desechable, 5 tareas inventadas;
+    `console.count` temporal en `Tasks`, ya borrado; 5 s con el foco corriendo; el modo
+    desarrollo dibuja dos veces por `StrictMode`, así que los conteos se dividen entre 2):
+
+    | Versión | Conteos en 5 s | Renders reales de la ruta por segundo |
+    |---|---|---|
+    | `efbfeaa` | 40 | 4 |
+    | Contexto partido, `useQueue` sin arreglar | 10 | 1 |
+    | Este commit | 0 | 0 |
+
+    Con el temporizador en pausa, 0 en las tres. La isla siguió bajando (dígitos de NumberFlow
+    20:45 → 20:40 en 5 s), y su anillo bajó ≈ 0,029 por segundo, que es $C/1500$ con $C = 2\pi \cdot 7$.
+    La esfera de `/pomodoro` bajó 20:24 → 20:21 en 3 s y se ve bien en la captura.
+  - **Las capturas de Playwright congelan la isla:** dos capturas de la ventana con 3 s de diferencia
+    mostraron la misma cifra, aunque los dígitos internos bajaban. Con `efbfeaa` pasa igual (una
+    captura salió con los dígitos a medio girar). En headless solo se pinta un cuadro al capturar, y
+    la animación de NumberFlow avanza con los cuadros. No es una regresión, pero **una captura de la
+    isla no sirve para decir si avanza**.
+  - **Tests** (`pomodoro-context.test.tsx` y `api/useTasks.test.tsx`, con `happy-dom`, agregado como
+    devDependency con permiso de Johan y declarado solo en esos dos archivos con
+    `// @vitest-environment`; no añadió hallazgos a `npm audit`). Los timers son falsos y hay un
+    `act` por cada tick de 250 ms, porque un solo `act` para los 5 s agrupa todos los setState en un
+    render. En 5 s simulados: el lector del estable, 0 renders; el del reloj, 5 (se acepta de 4 a
+    6); `App` en `/tareas` con la ruta y la isla como contadores, ruta 0 e isla 5. Además: el
+    atajo no vuelve a registrar `keydown`, Espacio sigue pausando y reanudando, ambos contextos
+    valen `null` antes de restaurar, y `useTasks`/`useQueue` conservan la identidad entre renders.
+
+    | Mutación | Tests que caen |
+    |---|---|
+    | `forceTick` en cada check | reloj una vez por segundo; ruta e isla en `/tareas` |
+    | Valor estable sin `useMemo` | lector estable; ruta e isla en `/tareas`; atajo sin re-suscribirse |
+    | `App` lee el reloj | ruta e isla en `/tareas` |
+    | `useQueue` sin `useMemo` | identidad de `useTasks`/`useQueue` |
+    | `useTasks` sin `useMemo` | identidad de `useTasks`/`useQueue` |
+
+  - **Recorrido local:** el worker solo permite el origen de `CORS_ORIGIN` (`https://localhost`, el
+    de la APK), así que con Vite en el 5173 hay que poner `CORS_ORIGIN=http://localhost:5173` en el
+    archivo de `--env-file`, junto al token desechable. No se tocó `wrangler.toml`.
+  - Al cerrar, ningún `workerd`, `wrangler` ni `vite` vivo, y el 8787 y el 5173 libres.

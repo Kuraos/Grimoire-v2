@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { MutationCache, QueryCache, QueryClient, useMutationState, type Mutation } from '@tanstack/react-query'
 import { ApiError, send, type ApiRequest } from './client'
 
@@ -124,8 +125,10 @@ export type QueueEntry = {
 }
 
 /** La cola tal como está: lo pendiente, lo recién sincronizado y lo rechazado. */
-export const useQueue = (): QueueEntry[] =>
-  useMutationState({
+export function useQueue(): QueueEntry[] {
+  // `useMutationState` conserva la identidad mientras la cola no cambia; el filtro, no. Sin el
+  // memo cada render daba una cola nueva, y con ella listas nuevas en todo lo que se deriva de ella.
+  const all = useMutationState({
     filters: { mutationKey: API_MUTATION },
     select: (m): QueueEntry => ({
       id: m.mutationId,
@@ -133,7 +136,9 @@ export const useQueue = (): QueueEntry[] =>
       status: m.state.status,
       message: (m.state.error as Error | null)?.message,
     }),
-  }).filter((e) => e.request)
+  })
+  return useMemo(() => all.filter((e) => e.request), [all])
+}
 
 /** Descarta un rechazo ya leído. */
 export function dismissQueueEntry(id: number): void {

@@ -4,10 +4,10 @@ import { AnimatePresence, motion, type Transition } from "motion/react";
 import NumberFlow from "@number-flow/react";
 import { IconArrowUpRight, IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
 import type { Phase } from "../../hooks/usePomodoro";
-import type { PomodoroState } from "../../pomodoro-context";
+import type { PomodoroClock, PomodoroState } from "../../pomodoro-context";
 
 export type PomodoroIslandState = Pick<
-  PomodoroState,
+  PomodoroState & PomodoroClock,
   "running" | "secondsLeft" | "totalSeconds" | "phase" | "progress" | "pause" | "start" | "activeTask"
 >;
 

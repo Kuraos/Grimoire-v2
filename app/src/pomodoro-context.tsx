@@ -11,8 +11,14 @@ import { playChime } from "./sounds";
 import type { ApiTask } from "./types";
 
 type PomoHook = ReturnType<typeof usePomodoro>;
+type ClockKey = "secondsLeft" | "totalSeconds" | "progress";
 
-export interface PomodoroState extends PomoHook {
+/** Lo que cambia cada segundo con el temporizador corriendo. Va en su propio contexto para que
+ *  solo se redibuje quien muestra el tiempo, no la app entera. */
+export type PomodoroClock = Pick<PomoHook, ClockKey>;
+
+/** Lo que solo cambia en las transiciones, la configuración, el vínculo o las tareas. */
+export interface PomodoroState extends Omit<PomoHook, ClockKey> {
   config: PomodoroConfig;
   setConfig: (c: PomodoroConfig) => void;
   links: PomodoroLinks;
@@ -29,6 +35,7 @@ export interface PomodoroState extends PomoHook {
 }
 
 const Ctx = createContext<PomodoroState | null>(null);
+const ClockCtx = createContext<PomodoroClock | null>(null);
 
 const NO_LINKS: PomodoroLinks = { taskId: null, projectId: null };
 
@@ -90,7 +97,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
   const { tasks: all } = useTasks();
   const tasks = useMemo(() => all.filter((t) => t.status !== "done"), [all]);
-  const activeTask = all.find((t) => t.id === links.taskId) ?? null;
+  const activeTask = useMemo(() => all.find((t) => t.id === links.taskId) ?? null, [all, links.taskId]);
 
   /**
    * El proyecto de la tarea es un valor por defecto, no una imposición: se aplica al vincular y
@@ -119,11 +126,35 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     setLinks(next);
   }, [startFocus]);
 
-  const value: PomodoroState | null = ready
-    ? { ...pomo, config, setConfig, links, setTaskId, setProjectId, tasks, activeTask, startWithTask, notice }
-    : null;
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  /* Dos valores: el estable no cambia con el tick, así que `App` y las rutas, que solo leen ese, no
+     se redibujan mientras corre el temporizador. Las acciones del hook ya tienen identidad estable. */
+  const { phase, running, workCount, cycleDone, start, pause, reset, skip } = pomo;
+  const value = useMemo<PomodoroState | null>(() => ready
+    ? {
+      phase, running, workCount, cycleDone, snapshot, load, start, startFocus, pause, reset, skip,
+      config, setConfig, links, setTaskId, setProjectId, tasks, activeTask, startWithTask, notice,
+    }
+    : null, [
+    ready, phase, running, workCount, cycleDone, snapshot, load, start, startFocus, pause, reset, skip,
+    config, links, setTaskId, setProjectId, tasks, activeTask, startWithTask, notice,
+  ]);
+
+  const { secondsLeft, totalSeconds, progress } = pomo;
+  const clock = useMemo<PomodoroClock | null>(
+    () => (ready ? { secondsLeft, totalSeconds, progress } : null),
+    [ready, secondsLeft, totalSeconds, progress],
+  );
+
+  return (
+    <Ctx.Provider value={value}>
+      <ClockCtx.Provider value={clock}>{children}</ClockCtx.Provider>
+    </Ctx.Provider>
+  );
 }
 
-/** `null` mientras se restaura de disco. */
+/** El estado estable y las acciones. `null` mientras se restaura de disco. */
 export const usePomodoroCtx = () => useContext(Ctx);
+
+/** El tiempo que queda. Léelo solo en el componente que lo pinta: se redibuja cada segundo.
+ *  `null` mientras se restaura de disco. */
+export const usePomodoroClock = () => useContext(ClockCtx);

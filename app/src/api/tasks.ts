@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { v7 as uuidv7 } from 'uuid'
 import type { ApiChecklistItem, ApiTask, TaskHistoryPage, TaskInput } from '../types'
@@ -310,7 +311,10 @@ export const remindAtToLocal = (utc: string | null) =>
 export function useTasks() {
   const query = useQuery({ queryKey: ['tasks', 'list'], queryFn: () => get<ApiTask[]>('/tasks') })
   const queue = useQueue()
-  return { query, queue, ...applyTaskQueue(query.data ?? [], queue) }
+  // Memoizado: sin esto cada render daba listas nuevas, y quien las usa como dependencia (el
+  // contexto del pomodoro) cambiaba con cada tick del temporizador.
+  const derived = useMemo(() => applyTaskQueue(query.data ?? [], queue), [query.data, queue])
+  return { query, queue, ...derived }
 }
 
 /** Las completadas que la lista ya no trae (fila 23). Lo descompletado pasa a la lista al instante. */

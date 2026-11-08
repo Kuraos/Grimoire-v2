@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { IconClock, IconHistory, IconSettings } from "@tabler/icons-react";
 import { Card } from "../components/ui/Card";
 import { SectionBand } from "../components/ui/SectionBand";
@@ -6,7 +6,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { PageHeader } from "../components/layout/PageHeader";
 import { PomodoroTimer, PomodoroCycle } from "../components/ui/PomodoroTimer";
 import { AUTOSTART_HINT, ReminderAccessNotice } from "../components/ui/ReminderAccessNotice";
-import { usePomodoroCtx } from "../pomodoro-context";
+import { usePomodoroClock, usePomodoroCtx } from "../pomodoro-context";
 import { usePomodoroToday } from "../api/pomodoro";
 import { useProjects } from "../api/projects";
 import { useTasks } from "../api/tasks";
@@ -82,12 +82,9 @@ export default function Pomodoro() {
         <div className="min-w-0 lg:flex-[1.6]">
           <Card rank="rubric">
             <div className="gr-sangrado py-2">
-              <PomodoroTimer
+              <ClockedTimer
                 phase={pomo.phase}
-                secondsLeft={pomo.secondsLeft}
-                totalSeconds={pomo.totalSeconds}
                 running={pomo.running}
-                progress={pomo.progress}
                 subtitle={activeTask?.title}
                 onStart={pomo.start}
                 onPause={pomo.pause}
@@ -267,6 +264,13 @@ function DayLine({ sessions }: { sessions: ApiPomodoroSession[] }) {
       </div>
     </div>
   );
+}
+
+/** La esfera lee el reloj aquí dentro: el segundo redibuja solo la esfera, no la vista con el log y
+ *  la recta del día. Hasta restaurar no hay reloj, y la vista ya mostró el esqueleto. */
+function ClockedTimer(props: Omit<ComponentProps<typeof PomodoroTimer>, "secondsLeft" | "totalSeconds" | "progress">) {
+  const clock = usePomodoroClock();
+  return clock && <PomodoroTimer {...props} {...clock} />;
 }
 
 function ConfigRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
