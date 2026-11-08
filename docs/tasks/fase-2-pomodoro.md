@@ -532,3 +532,102 @@ tomadas sobre la marcha.)
     de la APK), así que con Vite en el 5173 hay que poner `CORS_ORIGIN=http://localhost:5173` en el
     archivo de `--env-file`, junto al token desechable. No se tocó `wrangler.toml`.
   - Al cerrar, ningún `workerd`, `wrangler` ni `vite` vivo, y el 8787 y el 5173 libres.
+
+- **2.3.6, prueba en el teléfono** (2026-11-07 y 2026-11-08, Bogotá; Infinix X6831, Android 13, XOS,
+  contra producción. Johan tocó el teléfono y el agente leyó por `adb` y CDP):
+  - **Antes:** `fmt`, `clippy -D warnings`, `cargo test`, `typecheck`, los 193 tests y `build` en
+    verde. En remoto solo faltaba la `0006`. Bookmark de time travel antes de migrar:
+    `00000041-00000000-0000511d-aea88900c1e158c0fdaaaba4bf30475f` (2026-11-07 22:59). Lectura de
+    referencia: `users.xp` 969 = suma de `xp_log` (66 filas), y 6 logros desbloqueados.
+  - **Migración y deploy, con el «sí» de Johan:** la `0006` se aplicó al primer intento, sin el 7403.
+    Worker `e48ada2d` → **`26b417b5-456d-42fd-9832-e76f24c5dbbd`**.
+    - **Humo sin imprimir el token:** el de producción no está en ningún archivo, así que los `GET` se
+      mandaron desde el WebView de la app, con su propio token. Ningún `POST` desde el agente.
+
+      | Ruta | Resultado |
+      |---|---|
+      | `/pomodoro/today` | 200 y `[]` |
+      | `/projects` | 200, con `pomodoro_minutes: 0` |
+      | `/tasks` y `/habits` | 200 |
+      | `/health` | 200 |
+  - **APK:** se instaló encima del anterior con `install -r` y abre. `display` y `exact_alarm` siguen
+    en `granted`, y los 3 recordatorios de tareas siguieron agendados. **El inicio automático de XOS
+    sobrevivió a reinstalar**: Johan lo miró en Phone Master. Esto cierra el «sin probar» de la 2.2.6.
+  - **Recorrido**, con bloques de 1 min. El retraso es el `when` de la notificación menos `endsAt`.
+    Los pasos van en el orden en que se hicieron.
+
+    | Paso | Hora | Resultado | Retraso |
+    |---|---|---|---|
+    | 5. Abandonar: reiniciar a 1 min 49 s | 23:10:32 → 23:12:21 | Incompleta, `work_minutes` 1, 0 XP. La 1000 sale de `dumpsys alarm` y de `getPending` | — |
+    | 1. App cerrada (`am kill`, `pidof` vacío) y pantalla bloqueada | vence 23:15:26 | Suena, y `Start proc … for broadcast` llega a los 0,07 s. Al abrir (23:15:58), un solo `POST`, `finished_at` = `ends_at` y una concesión de 15 | 0,824 s |
+    | 2. Igual, pero abriendo 12 min después | vence 23:21:51, se abre 23:34:10 | `finished_at` = `ends_at`, una concesión | 0,602 s |
+    | 3. Modo avión (23:35:55 → 23:53:49), app abierta | vence 23:36:53 | Se registra al volver la señal (23:53:54), con su hora real y una concesión | 0,05 s |
+    | 3b. Foco encadenado tras el descanso largo (ver abajo) | 23:51:53 → 23:52:53 | Completo, una concesión, en el mismo lote | **45,8 s** |
+    | 4. Pausar | vencía 00:01:25 | La 1000 sale de la alarma y de `getPending`. Pasada la hora, ni notificación ni arranque del proceso. El bloque de 14 s no se registró al abandonarlo | — |
+    | 6. ▶ de `TaskCard`, con la tarea movida antes a un proyecto | 00:02:53 y 00:04:53 | Las dos sesiones con `task_id` y `project_id`. El proyecto pasó de 0 a 2 min en D1. Son dos porque el descanso de 1 min encadenó otro foco | no se leyó |
+    | 7. `adb reboot` con el bloque corriendo | reinicio 00:09:44, vence 00:10:17, `boot_completed` 00:10:36 | `LocalNotificationRestoreReceiver` arrancó a las 00:10:48 y **no sonó**: lo que vence durante el arranque no se entrega, como en la 2.2.6. Al abrir (00:18:45), una sesión completa con `finished_at` = `ends_at`, y el descanso quedó en pausa por llegar más de 5 s tarde | no suena |
+
+    - El paso 2 se repitió, porque la primera vez la app se abrió a los 14 s. Esa sesión quedó bien
+      registrada (0,602 s) y cuenta como un caso más del paso 1.
+    - **`am kill` no siempre mata a la primera.** Justo después de salir de la app, el proceso sigue
+      vivo; repetirlo a los 2 s sí lo mata. En cada bloque se comprobó con `pidof`.
+  - **El retraso de 45,8 s (3b) sigue sin explicar.** Es el único de más de 1 s. No pasa de 60 s, así
+    que no reabre `setAlarmClock`.
+    - **Contexto:** la alarma se agendó 1 min después de entregarse la anterior, con la app viva en
+      segundo plano, la pantalla apagada y el modo avión puesto. Cuando se leyó, `deviceidle` estaba
+      en `ACTIVE`.
+    - **Lo que no se pudo ver:** el desglose de esa alarma no se leyó mientras estaba pendiente. En un
+      bloque posterior, agendado con la app abierta, `policyWhenElapsed` no mostró ninguna política
+      que la empujara: `app_standby`, `battery_saver` y `tare` daban negativo.
+    - **Para la próxima:** junto al de 2,5 min de la 2.2.6 ya son 2 retrasos grandes en unos 12
+      avisos. Si vuelve a pasar, hay que leer `policyWhenElapsed` antes de que venza la alarma.
+  - **Johan aceptó que un descanso encadene un foco con la app en segundo plano.** Tras el 4.º bloque
+    del paso 3 arrancó solo el descanso largo de 15 min. Al terminar, la app seguía viva en segundo
+    plano con la pantalla apagada: `closePhase` lo detectó a tiempo y arrancó otro foco, que se
+    registró con XP. La app no distingue «abierta» de «viva en segundo plano». Johan lo da por
+    correcto, igual que en la v1.
+  - **Lo que se vio con el dedo**, según Johan:
+    - Con un descanso corriendo, el scroll de Tareas va fluido (2.3.5b).
+    - Tocar la isla la abre, y tocar fuera la cierra.
+    - El ▶ de `TaskCard` funciona y no le quita ancho al título.
+    - La esfera cabe en la pantalla.
+
+    Anotado, sin arreglar:
+    - **La recta de la jornada no mostró bloques.** Las sesiones de ese día fueron de 00:02 a 00:10,
+      antes de las 06:00 en que empieza la recta. Es el diseño de la v1, pero un pomodoro de
+      madrugada no aparece. Por eso no se pudo probar la lista táctil de sesiones cercanas.
+    - **Si un bloque termina con la app cerrada, al abrirla no se ve el XP.** El toast «Sincronizado»
+      solo sale si la respuesta llega 2 s o más después de encolar (`FRESH_MS`). Al abrir, la sesión
+      se encola y sincroniza al instante, y las motas de oro no salen porque no se tocó ningún botón.
+    - La notificación dice «1 minutos de foco».
+    - **Dos cambios de configuración no se guardaron.** El 25 → 1 de antes del primer bloque y el
+      1 → 3 del paso 7 quedaron en el valor anterior, según `grimoire-pomodoro-v1`; un segundo
+      intento de 25 → 1 sí se guardó. El campo vuelve a 1 en cuanto queda vacío (`|| 1`), y eso podría
+      explicarlo, pero Johan dice que funciona: **sin reproducir**. La configuración quedó en 1/1/15.
+    - **El toast al quitar el modo avión no quedó confirmado.** Johan dijo que «sonó 2 veces», y no
+      se aclaró si hablaba de las notificaciones o del toast. Con 2 sesiones debía decir «2 sesiones
+      · +30 XP» una sola vez.
+  - **D1 al terminar** (solo `SELECT`):
+    - 9 filas en `pomodoro_sessions`, una por bloque: 8 completas con `work_minutes` 1 y una
+      abandonada.
+    - Cada completa tiene exactamente una concesión de 15 (`mark_id` = id), y la abandonada ninguna.
+    - `finished_at` = `ends_at` en todas. La de modo avión conserva su hora real (04:36:53Z), no la
+      de sincronizar (04:53:54Z).
+    - `local_date` dice 2026-11-07 hasta las 23:52 y 2026-11-08 desde las 00:03, lo correcto en Bogotá.
+    - **`users.xp` 1089 = suma de `xp_log` (74 filas)**, y 1089 − 969 = 120 = 8 × 15.
+    - Ningún logro nuevo (siguen 6), como debe ser: los de foco piden 100 y 250 sesiones.
+    - Las 9 sesiones y el cambio de proyecto de «Prueba rec A» quedan en producción. No se borran
+      sin preguntarle a Johan.
+  - **CPU en producción** (`cpuTime` de `wrangler tail`; todas 200 y `outcome: ok`):
+
+    | Request | n | Mediana | Mín–máx | Más de 10 ms |
+    |---|---|---|---|---|
+    | `POST /pomodoro/sessions` | 9 | 11 ms | 6–41 ms | 5 |
+    | `GET /projects` | 14 | 3 ms | 1–20 ms | 1 |
+    | `GET /pomodoro/today` | 14 | 3 ms | 1–6 ms | 0 |
+
+    El de 41 ms fue el primero de los dos `POST` que llegaron juntos al volver la señal, y el de 20 ms
+    de `GET /projects`, el primero tras el deploy. La mediana del `POST` queda en el límite de 10 ms,
+    como `complete` de hábitos. Es solo un dato: la decisión 5 ya no depende de él.
+  - Al cerrar: `adb forward --remove tcp:9229`; ningún `workerd`, `wrangler` ni `vite` vivo, y el
+    8787 y el 5173 libres.
