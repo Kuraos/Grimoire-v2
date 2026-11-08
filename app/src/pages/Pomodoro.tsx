@@ -157,7 +157,7 @@ export default function Pomodoro() {
           hueco es lo que se quiere ver. */}
       <Card rank="pozo">
         {/* En teléfono el rótulo partía en dos líneas y la cifra en «30 / MIN»: el eje ya dice las horas. */}
-        <SectionBand versal="L" label={desktop ? "a jornada · 06:00 → 24:00" : "a jornada"} fill="filete" count={`${totalMinutes} min`}>
+        <SectionBand versal="L" label={desktop ? `a jornada · ${pad(dayStart(sessions))}:00 → 24:00` : "a jornada"} fill="filete" count={`${totalMinutes} min`}>
           <DayLine sessions={sessions} />
         </SectionBand>
       </Card>
@@ -165,7 +165,7 @@ export default function Pomodoro() {
   );
 }
 
-/* La recta del día, de las 06:00 a medianoche.
+/* La recta del día, de las 06:00 a medianoche, o desde antes si hubo sesiones de madrugada.
  *
  * Una sesión completada es un bloque de arcano macizo; una abandonada, el mismo bloque en
  * discontinuo y vacío: se registran para que las horas cuadren, pero no puntúan.
@@ -178,7 +178,12 @@ export default function Pomodoro() {
  * no puede elegir uno solo: se listan las sesiones a ±1,5 h del bloque tocado, el radio del área. */
 const H0 = 6;
 const H1 = 24;
-const SPAN = H1 - H0;
+
+/** La hora entera en que empieza la recta: las 06:00, o la de la primera sesión si fue antes (2.3.6:
+ *  un pomodoro de las 00:02 no se veía). */
+export function dayStart(sessions: Pick<ApiPomodoroSession, "started_at">[]): number {
+  return Math.min(H0, ...sessions.map((s) => Math.floor(at(s.started_at).hours)));
+}
 
 const NEAR_H = 1.5;
 
@@ -189,7 +194,9 @@ const describe = (s: ApiPomodoroSession) =>
 function DayLine({ sessions }: { sessions: ApiPomodoroSession[] }) {
   const [picked, setPicked] = useState<string | null>(null);
   const now = clock(Date.now()).hours;
-  const pct = (h: number) => ((h - H0) / SPAN) * 100;
+  const start = dayStart(sessions);
+  const span = H1 - start;
+  const pct = (h: number) => ((h - start) / span) * 100;
   const center = sessions.find((s) => s.id === picked);
   const near = center
     ? sessions
@@ -201,7 +208,7 @@ function DayLine({ sessions }: { sessions: ApiPomodoroSession[] }) {
     <div>
       <div className="relative h-16">
         <div className="absolute inset-x-0 top-[30px] h-px bg-[var(--gr-edge)]" />
-        {Array.from({ length: SPAN + 1 }, (_, i) => H0 + i).map((h) => {
+        {Array.from({ length: span + 1 }, (_, i) => start + i).map((h) => {
           const major = h % 3 === 0;
           return (
             <span key={h}>
@@ -221,7 +228,6 @@ function DayLine({ sessions }: { sessions: ApiPomodoroSession[] }) {
         })}
         {sessions.map((s) => {
           const h = at(s.started_at).hours;
-          if (h < H0) return null;
           return (
             <button
               key={s.id}
@@ -235,7 +241,7 @@ function DayLine({ sessions }: { sessions: ApiPomodoroSession[] }) {
               className="gr-tactil !absolute top-[22px] h-[17px] rounded-xs"
               style={{
                 left: `${pct(h)}%`,
-                width: `${(s.work_minutes / 60 / SPAN) * 100}%`,
+                width: `${(s.work_minutes / 60 / span) * 100}%`,
                 background: s.completed ? "var(--gr-arcane)" : "transparent",
                 border: s.completed
                   ? "1px solid var(--gr-arcane-bright)"
@@ -245,7 +251,7 @@ function DayLine({ sessions }: { sessions: ApiPomodoroSession[] }) {
             />
           );
         })}
-        {now >= H0 && now <= H1 && (
+        {now >= start && now <= H1 && (
           <span className="pointer-events-none absolute top-[18px] h-6 w-px bg-[var(--gr-gilded)]"
                 style={{ left: `${pct(now)}%` }} title="Ahora" />
         )}
@@ -273,15 +279,31 @@ function ClockedTimer(props: Omit<ComponentProps<typeof PomodoroTimer>, "seconds
   return clock && <PomodoroTimer {...props} {...clock} />;
 }
 
-function ConfigRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+/* 1–90: el mismo techo que aplica `restoreConfig` y que acepta la API. Sin él se podían teclear
+   500 minutos y al reabrir volvían 90: la configuración cambiaba sola. */
+const asMinutes = (raw: string) => Math.min(90, Math.max(1, Math.trunc(Number(raw)) || 1));
+
+/**
+ * Mientras se edita, el campo muestra lo tecleado, también vacío; solo se guarda un valor de 1 a 90.
+ * Al salir se corrige lo que quedó fuera, y vacío vuelve al último válido. Antes, vaciarlo daba 1 al
+ * instante y la tecla siguiente se sumaba: borrar «25» y teclear «3» guardaba 13 (2.3.6).
+ */
+export function ConfigRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
   return (
     <div className="mb-2 flex items-center gap-2 text-xs text-[var(--text-body)]">
       <span className="flex-1">{label}</span>
       <input
-        type="number" min={1} max={90} value={value} aria-label={`${label}, minutos`}
-        /* El mismo techo que aplica `restoreConfig` y que acepta la API. Sin él se podían teclear
-           500 minutos y al reabrir volvían 90: la configuración cambiaba sola. */
-        onChange={(e) => onChange(Math.min(90, Math.max(1, Math.trunc(Number(e.target.value)) || 1)))}
+        type="number" min={1} max={90} value={draft ?? value} aria-label={`${label}, minutos`}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setDraft(raw);
+          if (raw !== "" && asMinutes(raw) === Number(raw)) onChange(Number(raw));
+        }}
+        onBlur={() => {
+          if (draft !== null && draft !== "") onChange(asMinutes(draft));
+          setDraft(null);
+        }}
         className="input w-16 text-center"
       />
       <span className="text-[var(--text-muted)]">min</span>

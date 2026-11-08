@@ -25,6 +25,18 @@ const isQueued = (m: Mutation<any, any, any, any>) => m.options.mutationKey?.[0]
 /** El resultado de una escritura de la cola. La restaurada de disco no tiene promesa. */
 export type SyncResult = { request: ApiRequest; data: unknown; ageMs: number }
 
+/**
+ * Cuánto hace que pasó lo que la escritura cuenta. Casi siempre, desde que se encoló. Una sesión de
+ * pomodoro se cuenta desde su `finished_at`: si venció con la app cerrada, se encola al abrir y
+ * sincroniza al instante, y medida desde el encolado parecería respuesta a un toque que no hubo (2.3.6).
+ */
+export function resultAge(request: ApiRequest, submittedAt: number, now: number): number {
+  const finished = request.path.startsWith('/pomodoro/sessions')
+    ? Date.parse((request.body as { finished_at?: string } | undefined)?.finished_at ?? '')
+    : NaN
+  return now - (Number.isNaN(finished) ? submittedAt : Math.min(finished, submittedAt))
+}
+
 let results: SyncResult[] = []
 let resultsListener: ((r: SyncResult[]) => void) | null = null
 
@@ -50,8 +62,8 @@ export const queryClient = new QueryClient({
     // aquí y no en los defaults: es el único punto que recibe la mutación (y su edad)
     onSuccess: (data, variables, _context, mutation) => {
       if (!isQueued(mutation)) return
-      const ageMs = Date.now() - mutation.state.submittedAt
-      results.push({ request: variables as ApiRequest, data, ageMs })
+      const request = variables as ApiRequest
+      results.push({ request, data, ageMs: resultAge(request, mutation.state.submittedAt, Date.now()) })
     },
     onError: (e, variables) => {
       const label = (variables as ApiRequest | undefined)?.label

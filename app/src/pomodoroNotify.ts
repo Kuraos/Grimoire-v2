@@ -28,7 +28,7 @@ export function pomodoroNotificationPlan(t: PomodoroSnapshot): PomodoroNotificat
   return {
     action: 'schedule',
     title: work ? 'Pomodoro completado' : 'Descanso terminado',
-    body: work ? `${t.minutes} minutos de foco` : t.phase === 'long' ? 'Ciclo completo. Empieza uno nuevo.' : 'De vuelta al foco.',
+    body: work ? `${t.minutes} ${t.minutes === 1 ? 'minuto' : 'minutos'} de foco` : t.phase === 'long' ? 'Ciclo completo. Empieza uno nuevo.' : 'De vuelta al foco.',
     at: new Date(t.endsAt),
     extra: { kind: 'pomodoro', sessionId: t.sessionId, phase: t.phase, endsAt: t.endsAt },
   }

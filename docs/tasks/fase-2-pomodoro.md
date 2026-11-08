@@ -604,9 +604,8 @@ tomadas sobre la marcha.)
       1 → 3 del paso 7 quedaron en el valor anterior, según `grimoire-pomodoro-v1`; un segundo
       intento de 25 → 1 sí se guardó. El campo vuelve a 1 en cuanto queda vacío (`|| 1`), y eso podría
       explicarlo, pero Johan dice que funciona: **sin reproducir**. La configuración quedó en 1/1/15.
-    - **El toast al quitar el modo avión no quedó confirmado.** Johan dijo que «sonó 2 veces», y no
-      se aclaró si hablaba de las notificaciones o del toast. Con 2 sesiones debía decir «2 sesiones
-      · +30 XP» una sola vez.
+    - **Lo que sonó dos veces durante el modo avión fueron notificaciones, no el toast** (lo confirmó
+      Johan): una por cada bloque que venció con el modo avión puesto, el 3 y el 3b.
   - **D1 al terminar** (solo `SELECT`):
     - 9 filas en `pomodoro_sessions`, una por bloque: 8 completas con `work_minutes` 1 y una
       abandonada.
@@ -631,3 +630,51 @@ tomadas sobre la marcha.)
     como `complete` de hábitos. Es solo un dato: la decisión 5 ya no depende de él.
   - Al cerrar: `adb forward --remove tcp:9229`; ningún `workerd`, `wrangler` ni `vite` vivo, y el
     8787 y el 5173 libres.
+
+- **2.3.7, pendientes de la prueba en el teléfono** (2026-11-08, Bogotá; solo `app/`, sin tocar
+  producción):
+  - **Plural:** la notificación dice «1 minuto de foco», y «25 minutos» desde 2. El `aria-label` del
+    reloj de la isla («1 minutos 1 segundos») usa la misma regla. El log, la banda y la cabecera ya
+    usaban «min», que no tiene plural, o ya tenían su regla («sesión», «abandonada»).
+  - **XP al abrir tras un bloque con la app cerrada:** `resultAge` (en `queryClient.ts`) mide la
+    edad de una sesión de pomodoro desde su `finished_at`, o desde el encolado si fue antes. Así, un
+    bloque que venció con la app cerrada sale en el toast («1 sesión · +15 XP») una sola vez, porque
+    los resultados se entregan una vez por lote. Uno que vence con la app abierta se encola en menos
+    de 250 ms y sigue sin toast, con las motas de antes. Hábitos y tareas siguen midiendo desde el
+    encolado.
+  - **Configuración que no se guardaba: reproducido en parte.** El test emula un dedo: borra o agrega
+    una tecla sobre lo que el campo muestra en ese momento, en `happy-dom` y con `Preferences` en
+    memoria como disco. Con el código de la 2.3.6, vaciar el campo daba 1 al instante (`|| 1`) y la
+    tecla siguiente se sumaba a ese 1:
+    - Borrar «25» y teclear «3» guardaba **13**.
+    - Borrar «1» y teclear «1» guardaba **11**.
+    - Un «1» no se podía borrar.
+
+    Encaja con el 1 → 3 del teléfono: el campo se queda en «1», se teclea 3, sale «13», se borra el 3
+    y vuelve a «1». **El 25 → 1 que quedó en 25 no se reprodujo**: borrar «25» pasa por 2 y por 1,
+    y guarda 1.
+    - **Arreglo:** mientras se edita, el campo muestra lo tecleado, aunque quede vacío, y solo guarda
+      valores de 1 a 90. Al salir corrige lo que quedó fuera del rango (0 → 1, 95 → 90), y si quedó
+      vacío vuelve al último valor válido. Guardar ya iba en serie (`serial`), así que el orden de
+      las escrituras no era la causa.
+  - **Recta de la jornada:** `dayStart` empieza en la hora entera de la primera sesión si fue antes
+    de las 06:00, y si no, a las 06:00. En escritorio la banda dice la hora de inicio.
+  - **Mutaciones** (la suite completa con cada una; el archivo se restaura después):
+
+    | Mutación | Tests que caen |
+    |---|---|
+    | Siempre «minutos» | `el aviso del foco dice «1 minuto»…` |
+    | Edad desde el encolado también para sesiones | `la frescura de una sesión se mide desde su finished_at…` |
+    | El campo vuelve a guardar `\|\| 1` en cada tecla | `borrar «25» y teclear «3»…` y `borrar «1» y teclear «3»…` |
+    | La recta siempre a las 06:00 | `la recta empieza a las 06:00, o en la hora entera…` |
+
+  - **Navegador táctil** (393 × 852, `hasTouch`, `pointer: coarse`), contra `wrangler dev` con D1
+    local, el token desechable y `CORS_ORIGIN` en el `--env-file`. Sesiones inventadas a las 00:25
+    (5 min), a las 00:32 (2 min, abandonada) y de 23:38 a 00:03 (25 min):
+    - La recta va de 00 a 24 y muestra los bloques de las 00:25 y las 00:32.
+    - Tocar el de las 00:25 lista las dos de madrugada, con la hora primero.
+    - **Borde, sin arreglar:** la sesión de 23:38 a 00:03 cuenta para el día por su `finished_at`
+      (fila 25), pero se dibuja por su `started_at`, junto a las 24, como si aún no hubiera pasado.
+      Ya pasaba así antes de este cambio.
+  - Verificación: `typecheck`, 198 tests y `build` en verde. Al cerrar, ningún `workerd`, `wrangler`
+    ni `vite` vivo, y el 8787 y el 5173 libres.

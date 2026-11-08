@@ -335,6 +335,13 @@ test('el aviso del descanso es otra fase, mismo id', async () => {
   expect(pomodoroNotificationPlan(brk)).toMatchObject({ action: 'schedule', title: 'Descanso terminado', extra: { kind: 'pomodoro', phase: 'long', sessionId: null } })
 })
 
+// En el teléfono decía «1 minutos de foco» (2.3.6).
+test('el aviso del foco dice «1 minuto» en singular y «25 minutos» en plural', async () => {
+  const { pomodoroNotificationPlan } = await import('../pomodoroNotify')
+  expect(pomodoroNotificationPlan({ ...running(NOW + MIN), minutes: 1 })).toMatchObject({ body: '1 minuto de foco' })
+  expect(pomodoroNotificationPlan(running(NOW + 25 * MIN))).toMatchObject({ body: '25 minutos de foco' })
+})
+
 test('reconciliar tareas no toca el aviso del pomodoro, ni el pomodoro las de tareas', async () => {
   const { reminderPlan } = await import('../reminders')
   const { pomodoroNotificationPlan, POMODORO_NOTIFICATION_ID } = await import('../pomodoroNotify')
@@ -418,4 +425,27 @@ test('el toast cuenta sesiones aparte, y una incompleta no cuenta', async () => 
   expect(say(r('/pomodoro/sessions', 15), r('/pomodoro/sessions', 15), r('/pomodoro/sessions', 0))).toBe('2 sesiones · +30 XP')
   expect(say(r('/habits/h/complete', 20), r('/pomodoro/sessions', 15))).toBe('1 marca · 1 sesión · +35 XP')
   expect(say(r('/pomodoro/sessions', 0))).toBeNull()
+})
+
+// 2.3.6: un bloque que venció con la app cerrada se encola al abrir y sincroniza al instante.
+test('la frescura de una sesión se mide desde su finished_at; hábitos y tareas, desde el encolado', async () => {
+  const { resultAge } = await import('./queryClient')
+  const { summarizeResults, syncedSummary } = await import('./user')
+  const session = (finishedAt: number) => ({ method: 'POST' as const, path: '/pomodoro/sessions', body: { ...body({ id: 'a' }), finished_at: new Date(finishedAt).toISOString() } })
+  const say = (request: ReturnType<typeof session> | { method: 'POST'; path: string }, data: object, submittedAt: number, now: number) => {
+    const s = summarizeResults([{ request, data, ageMs: resultAge(request, submittedAt, now) }])
+    return { toast: syncedSummary(s), burst: s.burst }
+  }
+  // venció 9 min antes de abrir: se encola y responde en 300 ms, y aun así sale en el toast
+  expect(say(session(NOW - 9 * MIN), { ...sessionOut, xp_earned: 15 }, NOW, NOW + 300)).toEqual({ toast: '1 sesión · +15 XP', burst: false })
+  // con la app abierta: se encola 200 ms después de vencer y responde 300 ms después; sin toast
+  expect(say(session(NOW - 200), { ...sessionOut, xp_earned: 15 }, NOW, NOW + 300)).toEqual({ toast: null, burst: true })
+  // hábitos y tareas siguen midiendo desde el encolado
+  const habit = { method: 'POST' as const, path: '/habits/h/complete' }
+  const task = { method: 'POST' as const, path: '/tasks/t/complete' }
+  const done = { xp_earned: 20, leveled_up: false, new_level: 1, achievements_unlocked: [] }
+  expect(say(habit, done, NOW, NOW + 300)).toEqual({ toast: null, burst: true })
+  expect(say(task, done, NOW, NOW + 300)).toEqual({ toast: null, burst: true })
+  expect(say(habit, done, NOW, NOW + 5000)).toEqual({ toast: '1 marca · +20 XP', burst: false })
+  expect(say(task, done, NOW, NOW + 5000)).toEqual({ toast: '1 tarea · +20 XP', burst: false })
 })

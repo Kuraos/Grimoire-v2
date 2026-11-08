@@ -101,7 +101,7 @@ export function PomodoroIsland({ pomo }: { pomo: PomodoroIslandState }) {
               </span>
               {/* Inter tabular: Cinzel no tiene cifras tabulares, y un reloj que
                   cambia de ancho cada segundo hace bailar la píldora entera. */}
-              <span className="tabular text-sm text-[var(--gr-ink-bright)]" aria-label={`${mins} minutos ${secs} segundos`}>
+              <span className="tabular text-sm text-[var(--gr-ink-bright)]" aria-label={`${mins} ${mins === 1 ? "minuto" : "minutos"} ${secs} ${secs === 1 ? "segundo" : "segundos"}`}>
                 <NumberFlow value={mins} format={{ minimumIntegerDigits: 2 }} />:
                 <NumberFlow value={secs} format={{ minimumIntegerDigits: 2 }} />
               </span>
