@@ -51,13 +51,30 @@ export function serializeQueue(): string {
   )
 }
 
-const PERSISTED_QUERIES = ['habits/list', 'habits/heatmap', 'user', 'habit-categories', 'tasks/list', 'projects', 'pomodoro/today']
+const PERSISTED_QUERIES = ['habits/list', 'habits/heatmap', 'user', 'habit-categories', 'tasks/list', 'projects', 'pomodoro/today', 'diary/volume']
+/** Días de diario abiertos que se guardan para leer y escribir sin señal (fase-2-diario.md, decisión 3). */
+const DIARY_DAYS = 7
+const DAY_MS = 86_400_000
+
+const bogotaDate = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(ms)
+
+/**
+ * ¿Va a disco esta lectura? Del diario, solo los días de los últimos 7 (hoy incluido) que se
+ * abrieron: el texto queda en el teléfono, sin salir a Google Drive (`allowBackup="false"`).
+ */
+export function persistedQuery(key: readonly unknown[], now: number): boolean {
+  if (key[0] === 'diary' && key[1] === 'day') {
+    const day = String(key[2])
+    return day >= bogotaDate(now - (DIARY_DAYS - 1) * DAY_MS) && day <= bogotaDate(now)
+  }
+  return PERSISTED_QUERIES.some((k) => key.join('/').startsWith(k))
+}
 
 function serializeCache(): string {
+  const now = Date.now()
   const state = dehydrate(queryClient, {
     shouldDehydrateMutation: () => false,
-    shouldDehydrateQuery: (q) =>
-      q.state.status === 'success' && PERSISTED_QUERIES.some((k) => q.queryKey.join('/').startsWith(k)),
+    shouldDehydrateQuery: (q) => q.state.status === 'success' && persistedQuery(q.queryKey, now),
   })
   return JSON.stringify(state.queries)
 }

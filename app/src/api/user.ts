@@ -36,22 +36,29 @@ export function summarizeResults(results: SyncResult[]) {
     achievements: xp.flatMap((r): UnlockedAchievement[] => r.data.achievements_unlocked),
     syncedXp: late.reduce((s, r) => s + r.data.xp_earned, 0),
     // deshacer resta: marcar y deshacer sin conexión no es una marca sincronizada
-    syncedMarks: late.filter((r) => !isTask(r) && !isSession(r)).reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
+    syncedMarks: late.filter((r) => !isTask(r) && !isSession(r) && !isEntry(r)).reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
     syncedTasks: late.filter(isTask).reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
     // una incompleta da 0 XP: no cuenta como sesión sincronizada
     syncedSessions: late.filter(isSession).reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
+    // un guardado que no paga (reescribir una entrada) no cuenta
+    syncedEntries: late.filter(isEntry).reduce((s, r) => s + Math.sign(r.data.xp_earned), 0),
   }
 }
 
 const isTask = (r: SyncResult) => r.request.path.startsWith('/tasks')
 const isSession = (r: SyncResult) => r.request.path.startsWith('/pomodoro')
+const isEntry = (r: SyncResult) => r.request.path.startsWith('/diary/')
 
-/** «2 marcas · 1 tarea · 1 sesión · +70 XP», o `null` si el lote no dejó nada que contar. */
-export function syncedSummary({ syncedMarks, syncedTasks, syncedSessions = 0, syncedXp }: Pick<ReturnType<typeof summarizeResults>, 'syncedMarks' | 'syncedTasks' | 'syncedXp'> & { syncedSessions?: number }): string | null {
+type Synced = Pick<ReturnType<typeof summarizeResults>, 'syncedMarks' | 'syncedTasks' | 'syncedXp'> &
+  { syncedSessions?: number; syncedEntries?: number }
+
+/** «2 marcas · 1 tarea · 1 sesión · 1 entrada · +75 XP», o `null` si el lote no dejó nada que contar. */
+export function syncedSummary({ syncedMarks, syncedTasks, syncedSessions = 0, syncedEntries = 0, syncedXp }: Synced): string | null {
   const parts = [
     syncedMarks > 0 && `${syncedMarks} ${syncedMarks === 1 ? 'marca' : 'marcas'}`,
     syncedTasks > 0 && `${syncedTasks} ${syncedTasks === 1 ? 'tarea' : 'tareas'}`,
     syncedSessions > 0 && `${syncedSessions} ${syncedSessions === 1 ? 'sesión' : 'sesiones'}`,
+    syncedEntries > 0 && `${syncedEntries} ${syncedEntries === 1 ? 'entrada' : 'entradas'}`,
   ].filter(Boolean)
   return parts.length > 0 && syncedXp > 0 ? `${parts.join(' · ')} · +${syncedXp} XP` : null
 }

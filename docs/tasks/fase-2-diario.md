@@ -357,3 +357,56 @@ reescribir una entrada migrada no pague de nuevo.
   - **CPU en producción: pendiente**, como en Pomodoro: exige deploy y la `0007` en remoto, y eso solo
     cuando Johan lo pida.
   - Al cerrar: ningún `wrangler` ni `workerd` vivo y el 8787 libre.
+
+- **2.4.4, capa de datos** (2026-11-14):
+  - `app/src/api/diary.ts`:
+    - `diaryRequests` arma `PUT` y `DELETE`.
+    - `applyDiaryQueue` y `applyVolumeQueue` superponen la cola a lo leído.
+    - Los borradores se escriben en disco con 1 s de espera, y `commitDiary` y `bootDiary` los encolan.
+    - Hooks: `useDiaryDay`, `useDiaryVolume`, `useDiarySearch` y `useDiaryEditor`.
+    - `ApiRequest` acepta `PUT`.
+  - **Base de cada guardado:** el `save_id` del último guardado en cola de ese día (pendiente o
+    exitoso), o el de lo leído si no hay ninguno. Uno rechazado nunca se aplicó y no cuenta.
+  - **El editor carga una vez por día:** del borrador si hay, si no de lo guardado con la cola encima,
+    y vacío sin conexión ni caché (`fetchStatus: paused`). Un refresco no pisa lo que se teclea.
+  - **Guarda** a los 30 s sin teclear, al cambiar de día o salir de la vista, con `pause` de Capacitor
+    o `visibilitychange` a `hidden`, y al cambiar etiquetas. El texto vigente va en un `ref` que se
+    asigna al cargar y al teclear, no en el render. Si no, al cambiar de día la limpieza vería el día
+    nuevo y no guardaría el anterior.
+  - **`bootDiary`** corre en `TokenGate` después de `bootSync`, para que la base salga de la caché
+    restaurada.
+  - **Caché de 7 días** (`persistedQuery` en `sync.ts`): los días abiertos entre hoy−6 y hoy, y el
+    volumen. La búsqueda no se guarda.
+  - **Toast:** «1 entrada · +5 XP» cuando una entrada sincronizada tarde paga. Antes, un `PUT` del
+    diario habría contado como «marca».
+  - Los tipos `DiaryEntry` y `DaySummary` de la v1 se reemplazan por los de la API (sin `checkin`,
+    fila 36).
+  - **Tests** (`diary.test.tsx`, 9):
+    - Un borrador sin guardar sale en un solo `PUT` tras dos reinicios.
+    - Tres guardados sin señal encadenan su base.
+    - Guardar lo mismo no encola.
+    - La copia del PC aparece y descartarla la oculta.
+    - La vista derivada, el volumen, la ventana de disco y el toast.
+    - El editor guarda al cambiar de día, en segundo plano, a los 30 s y al cambiar etiquetas.
+  - **Trampa de test:** `onlineManager` es de `@tanstack/query-core`, que `vi.resetModules` no
+    reinicia. Un arranque anterior lo deja en línea, y el test del editor veía la cola vacía porque las
+    escrituras salían y se olvidaban. Pasaba aislado y fallaba en la suite.
+  - **Mutaciones** (la suite completa con cada una; el archivo se restaura después):
+
+    | Mutación | Tests que caen |
+    |---|---|
+    | Base siempre nula | `tres guardados…`, `el teléfono sin caché…`, `el editor guarda…` |
+    | Cuenta los guardados rechazados | `lo último en cola manda…` |
+    | El arranque ignora los borradores | `escribir sin conexión y cerrar…` |
+    | No borra el borrador | `escribir sin conexión…`, `guardar lo mismo…`, `tres guardados…` |
+    | No guarda al cambiar de día | `el editor guarda…` |
+    | Sin segundo plano (`resume` en vez de `pause`) | `el editor guarda…` |
+    | Sin guardado por inactividad | `el editor guarda…` |
+    | Manda etiquetas no tocadas | `lo último en cola manda…` |
+    | Volumen sin `trim` | `el volumen suma…` |
+    | Ventana de 8 días | `en disco van los días…` |
+    | Una entrada cuenta como marca | `una entrada sincronizada tarde…` |
+    | Etiquetas sin guardar al cambiar | `el editor guarda…` |
+
+  - Verificación: `typecheck`, 207 tests y `build` en verde. `oxlint` no agrega avisos de tipos
+    nuevos: un `set-state-in-effect` (hay 13 más en el repo) y el patrón de sonda de los tests de hooks.

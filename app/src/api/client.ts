@@ -65,7 +65,7 @@ export const get = <T>(path: string) => call<T>('GET', path)
  * adentro (ADR 0008). Es JSON puro, así que se puede guardar y reintentar.
  */
 export type ApiRequest = {
-  method: 'POST' | 'PATCH' | 'DELETE'
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   path: string
   body?: unknown
   /** Lo que se le muestra a Johan si el servidor la rechaza al sincronizar. */

@@ -195,12 +195,52 @@ export interface IcsImportResult {
   warnings: string[];
 }
 
+/** La entrada de un día (`GET /diary/{date}`). Sin entrada: `id`, `save_id` y `updated_at` nulos. */
 export interface DiaryEntry {
-  id: number;
-  entry_date: string;
+  id: string | null;
+  local_date: string;
   content: string;
   tags: string | null;
-  updated_at: string;
+  /** El cliente lo manda como `base_save_id` en su próximo guardado (fase-2-diario.md, decisión 1). */
+  save_id: string | null;
+  updated_at: string | null;
+}
+
+/** Lo que un guardado pisó sin haberlo visto (decisión 1). */
+export interface DiaryConflict {
+  id: string;
+  content: string;
+  tags: string | null;
+  created_at: string;
+}
+
+/** `GET /diary/{date}`: entrada, copias en conflicto y resumen del día. */
+export interface DiaryDay {
+  entry: DiaryEntry;
+  conflicts: DiaryConflict[];
+  summary: DaySummary;
+}
+
+/** La respuesta de `PUT /diary/{date}`. `conflicts`: copias del día, con las de este guardado. */
+export interface DiarySaveOut {
+  entry: DiaryEntry;
+  conflicts: number;
+  xp_earned: number;
+  new_xp: number;
+  new_level: number;
+  title: string;
+  leveled_up: boolean;
+  achievements_unlocked: UnlockedAchievement[];
+}
+
+export interface DiaryVolume {
+  points: { local_date: string; length: number }[];
+  total: number;
+}
+
+export interface DiarySearchHit {
+  local_date: string;
+  snippet: string;
 }
 
 export interface Checkin {
@@ -275,12 +315,12 @@ export interface XPEventResponse {
   achievement_unlocked: Achievement | null;
 }
 
+/** Resumen del día del diario. Sin check-in hasta la fase 5+ (caracterizacion-v1.md, fila 36). */
 export interface DaySummary {
   habits_done: { name: string; color: string; category: string }[];
-  pomodoro_sessions: { work_minutes: number; task_title: string | null; finished_at: string | null }[];
+  pomodoro_sessions: { work_minutes: number; task_title: string | null; finished_at: string }[];
   pomodoro_minutes: number;
   xp_earned: number;
-  checkin: Checkin | null;
 }
 
 export interface Stats {

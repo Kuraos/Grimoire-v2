@@ -85,7 +85,7 @@ const task = (over: Partial<ApiTask> = {}): ApiTask => ({
 const item = (over: Partial<ApiChecklistItem> = {}): ApiChecklistItem => ({
   id: 'i', task_id: 't', text: 'Paso', done: false, position: 0, ...over,
 })
-const entry = (request: { method: 'POST' | 'PATCH' | 'DELETE'; path: string; body?: unknown }, status: 'pending' | 'success' | 'error' = 'pending') =>
+const entry = (request: { method: 'POST' | 'PUT' | 'PATCH' | 'DELETE'; path: string; body?: unknown }, status: 'pending' | 'success' | 'error' = 'pending') =>
   ({ request, status })
 
 beforeEach(() => {

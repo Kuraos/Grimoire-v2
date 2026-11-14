@@ -3,6 +3,7 @@ import { Field } from "./components/ui/Modal";
 import { loadToken, onUnauthorized, saveToken } from "./api/client";
 import { queryClient } from "./api/queryClient";
 import { bootSync, setAuthorized } from "./api/sync";
+import { bootDiary } from "./api/diary";
 
 /** Sin token no hay API: lo pide una vez y lo vuelve a pedir si el servidor lo rechaza. */
 export function TokenGate({ children }: { children: ReactNode }) {
@@ -10,7 +11,9 @@ export function TokenGate({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
+    // los borradores del diario se encolan después de restaurar la cola y la caché
     bootSync()
+      .then(bootDiary)
       .then(loadToken)
       .then((t) => {
         setAuthorized(t !== null);
