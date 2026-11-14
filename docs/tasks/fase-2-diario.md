@@ -97,13 +97,14 @@ La 1, la 3 y la 9 las fijó Johan el 2026-11-14. Las demás las propuso el plan,
      muestra el mes en curso. Reemplaza `GET /diary/dates` (fila 37).
    - `GET /diary/search?q=`: fecha y un fragmento de ~80 caracteres alrededor de la coincidencia, no
      el texto entero; las 50 más recientes (fila 38). Sin conexión no busca, y lo dice.
-   - `GET /diary/conflicts/{date}` y `DELETE /diary/conflicts/{id}` (decisión 1). Repetir el `DELETE`
-     da 204, así que cumple el contrato de la cola.
+   - `DELETE /diary/conflicts/{id}` (decisión 1). Repetir el `DELETE` da 204, así que cumple el
+     contrato de la cola. Las copias del día llegan con `GET /diary/{date}` (cambio de la 2.4.3: sin
+     `GET /diary/conflicts/{date}`).
 
 8. **Resumen del día sin check-in.** Hábitos marcados (`local_date`), sesiones y minutos completos
-   de pomodoro (`local_date`) y XP del día. El XP no tiene `local_date`: se suma `xp_log` entre
-   `D 05:00Z` y `D+1 05:00Z` (Bogotá es UTC−5 fijo, sin horario de verano). La fila de energía y ánimo
-   no se muestra hasta que lleguen los check-ins (fila 36).
+   de pomodoro (`local_date`) y XP del día. El XP no tiene `local_date`: se leen las filas de `xp_log`
+   de un día antes a un día después, y el día local de cada una lo decide la zona configurada (2.4.3).
+   La fila de energía y ánimo no se muestra hasta que lleguen los check-ins (fila 36).
 
 9. **Sin exportación a Obsidian.** El diario vive solo en la app, no en el vault. La ruta
    `export-obsidian` de la v1 no se porta, ni ahora ni en la fase 5+, y sale de «Después del cambio»
@@ -130,6 +131,7 @@ fila 4 (todos los logros desbloqueados en la respuesta).
 | 40 | Repetir el `PUT` | Idempotente por contenido | Idempotente por `save_id`; `PATCH` no existe | Contrato de la cola (ADR 0004). |
 | 41 | Exportar a Obsidian | `POST /diary/{date}/export-obsidian` | Se elimina | Decisión 9, de Johan: el diario es de la app, no del vault. |
 | 42 | Tamaño de la entrada | Sin límite | 422 sobre 200 000 caracteres | Decisión 10. |
+| 43 | Día del XP en el resumen | El de la concesión, que es siempre «ahora» | El de la concesión, que en la v2 puede ser posterior al día marcado: una marca tardía (ventana de gracia) o una escritura sincronizada al día siguiente | Salió en la 2.4.3; `xp_log` no guarda `local_date`. Solo cambia el «XP ganado» del resumen. |
 
 ---
 
@@ -296,3 +298,62 @@ reescribir una entrada migrada no pague de nuevo.
   - Verificación: `fmt`, `clippy -D warnings`, `grimoire-domain` (21 unitarios + goldens) y
     `grimoire-worker` (28) en verde. Las 7 migraciones aplican en SQLite, con `UNIQUE` y `CHECK`
     comprobados. El worker todavía no incluye la `0007` en sus tests: llega con la 2.4.3.
+
+- **2.4.3, API** (2026-11-14):
+  - **Rutas:** `GET` y `PUT /diary/{date}`, `GET /diary/volume`, `GET /diary/search` y
+    `DELETE /diary/conflicts/{id}`. `PUT` se agregó al CORS (`Access-Control-Allow-Methods`): sin eso,
+    la APK no puede guardar.
+  - **Cambio frente al plan:** las copias en conflicto llegan con `GET /diary/{date}`, no en una ruta
+    propia. `PUT` responde `conflicts`, el número de copias del día, y no si este guardado causó
+    una: así un reintento responde lo mismo.
+  - **`PUT` en un solo `batch` condicionado al `save_id` leído.** Si otro guardado ganó en medio, nada
+    se escribe y se relee, hasta 3 veces; después, 409. La copia del conflicto, el XP y los logros
+    exigen que la entrada quede con este `save_id`.
+  - **XP del día sin suponer la zona:** se leen las filas de `xp_log` de un día antes a uno después
+    (índice nuevo `xp_log_created` en la `0007`, que aún no se aplicó en remoto) y `local_date_of`
+    decide el día de cada una.
+  - **Fila 43, nueva y pendiente de aprobar:** el XP cuenta el día en que se concedió. Una marca
+    tardía, o lo que se sincroniza al día siguiente, suma su XP al día en que llegó.
+    En `resumen_dia`, la marca de ayer suma 20 a hoy.
+  - **Tests contra SQLite** (`grimoire-worker`, 8 nuevos): el mismo `save_id` desde el mismo estado
+    escribe y paga una vez; dos dispositivos sobre la misma base no pierden texto; dos que crean el
+    mismo día dejan una fila con el primer id y una concesión; vaciar y reescribir no paga;
+    etiquetas; escritas sin espacios; búsqueda con comodines; ventana del volumen.
+  - **Goldens contra `wrangler dev`** (base local nueva, token desechable), cada escritura repetida:
+    los 7 escenarios del diario en verde, y los de Tareas y Pomodoro siguen igual. `resumen_dia` se
+    traslada a hoy (ventana de gracia de las marcas) y el hábito se crea con fecha del escenario por
+    SQL.
+
+    | Escenario | Pasos | Reintentos | Diferencias permitidas |
+    |---|---|---|---|
+    | `busqueda` | 15 | 6 | 38 (×9) |
+    | `etiquetas_y_validacion` | 15 | 5 | 40 |
+    | `get_no_crea` | 8 | 1 | 37, 38 |
+    | `logros_diario` | 108 | 101 | — |
+    | `resumen_dia` | 14 | 4 | 36 (×2), 43 (×2) |
+    | `solo_espacios` | 37 | 30 | 35 (×2), 37, 38 |
+    | `xp_una_vez` | 11 | 6 | 37 |
+
+  - **Conflictos contra `wrangler dev`**, a mano: guardar sin base sobre texto ajeno deja una copia
+    con id = el `save_id` que la causó, repetirlo no la duplica, un guardado encadenado no crea otra,
+    el `DELETE` repetido da 204 y el XP queda en +5. Pasan 200 000 caracteres con tilde (400 000 bytes),
+    y 200 001 da 422.
+  - **Filas leídas y escritas** con `wrangler dev` y `scripts/bench_seed_diary.py` (1 000 entradas de
+    2 000 caracteres, una por día). El tiempo local no es CPU:
+
+    | Request | n | Filas leídas | Filas escritas | Wall local (mediana) | Respuesta |
+    |---|---|---|---|---|---|
+    | `GET /diary/{date}` | 11 | 6 | 0 | 11 ms | 2,3 KB |
+    | `GET /diary/volume` | 11 | 1 345 | 0 | 14 ms | 14,5 KB |
+    | `GET /diary/search`, 50+ coincidencias | 11 | 50 | 0 | 16 ms | 6,4 KB |
+    | `GET /diary/search`, ninguna | 11 | 1 000 | 0 | 20 ms | 2 B |
+    | `PUT`, 20 KB | 11 | 42 por guardado, más 1 000 la primera vez | 2 (12 la primera) | 19 ms | 20 KB |
+
+    - `volume` lee 345 puntos y el `COUNT` de todas las escritas recorre el índice (1 000).
+    - Una búsqueda sin coincidencias recorre todas las entradas. Con 1 000 son 1 000 filas; a 5 M
+      diarias de D1 caben unas 5 000 búsquedas.
+    - El `PUT` cuenta las escritas mientras `archivist` o `diary_century` sigan bloqueados. El seed no
+      los desbloquea; con los datos reales migrados (backfill del ADR 0006) ya no cuenta.
+  - **CPU en producción: pendiente**, como en Pomodoro: exige deploy y la `0007` en remoto, y eso solo
+    cuando Johan lo pida.
+  - Al cerrar: ningún `wrangler` ni `workerd` vivo y el 8787 libre.

@@ -30,3 +30,7 @@ CREATE TABLE diary_conflicts (
     created_at TEXT NOT NULL
 );
 CREATE INDEX diary_conflicts_day ON diary_conflicts (local_date);
+
+-- XP del día en el resumen (decisión 8): `xp_log` no tiene `local_date`, se lee por rango de
+-- `created_at`. Sin índice, cada día abierto recorrería todo el historial de XP.
+CREATE INDEX xp_log_created ON xp_log (created_at);

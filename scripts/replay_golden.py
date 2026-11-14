@@ -1,4 +1,4 @@
-"""Reproduce los goldens de tareas y pomodoro de la v1 contra la API de la v2 (`wrangler dev`).
+"""Reproduce los goldens de tareas, pomodoro y diario de la v1 contra la API de la v2 (`wrangler dev`).
 
 Uso, con `wrangler dev --persist-to <dir>` corriendo y la migración aplicada en ese mismo dir:
     python scripts/replay_golden.py <url> <persist-dir>
@@ -8,20 +8,22 @@ compara con la v1; lo que difiere a propósito está en DIFS, con su fila de «D
 permitidas» (docs/tasks/caracterizacion-v1.md), y se imprime. Cualquier otra diferencia hace
 fallar el script. Cada escritura se repite una vez para comprobar la idempotencia.
 
-Solo para la base local: entre escenarios borra sesiones, tareas, proyectos y XP.
+Solo para la base local: entre escenarios borra diario, hábitos, sesiones, tareas, proyectos y XP.
+El token sale de la variable GRIMOIRE_TOKEN o, si no está, de `.dev.vars`.
 """
 import json
+import os
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKER = ROOT / "api/crates/worker"
-GOLDEN = [ROOT / "api/crates/domain/tests/golden" / d for d in ("tasks", "pomodoro")]
+GOLDEN = [ROOT / "api/crates/domain/tests/golden" / d for d in ("tasks", "pomodoro", "diary")]
 USER_ID = "00000000-0000-7000-8000-000000000001"
 NOWHERE = "00000000-0000-7000-8000-0000000000ff"  # el id 999 de los goldens
 
@@ -64,7 +66,17 @@ DIFS = {
     ("rango_dias", 7): {"skip": True, "fila": 33},
     ("rango_dias", 8): {"skip": True, "fila": 33},
     ("rango_dias", 9): {"skip": True, "fila": 33},
+    # diario
+    ("solo_espacios", 32): {"achievements": [], "fila": 35},
+    ("etiquetas_y_validacion", 12): {"fila": 40},  # PATCH: la v2 lo manda como PUT
+    ("resumen_dia", 8): {"skip": True, "gap": -5, "fila": 36},  # sin check-ins ni sus 5 XP
+    # fila 43: la marca de ayer se registra hoy (ventana de gracia), y su XP cuenta hoy
+    ("resumen_dia", 10): {"xp_earned": 90 - 5 + 20, "fila": 43},
+    ("resumen_dia", 11): {"xp_earned": 0, "fila": 43},
 }
+# Escenarios que dependen de «hoy» de verdad: la ventana de gracia de las marcas (ADR 0005) y el
+# reloj del servidor. Sus fechas se trasladan para que el día central sea hoy.
+SHIFTED = {"resumen_dia": "2026-03-03"}
 TASK_FIELDS = ("title", "description", "category", "priority", "due_date", "xp_reward", "status",
                "completed", "tags")
 PROJECT_FIELDS = ("name", "description", "status", "color", "category", "tasks_total", "tasks_pending")
@@ -76,8 +88,12 @@ class Replay:
         self.url, self.persist, self.token = url, persist, token
 
     def reset(self):
-        sql = ("DELETE FROM pomodoro_sessions; DELETE FROM checklist_items; DELETE FROM tasks; DELETE FROM projects; "
-               "DELETE FROM xp_log; UPDATE users SET xp = 0; UPDATE achievements SET unlocked_at = NULL")
+        self.sql("DELETE FROM diary_entries; DELETE FROM diary_conflicts; DELETE FROM habit_logs; "
+                 "DELETE FROM habits; DELETE FROM pomodoro_sessions; DELETE FROM checklist_items; "
+                 "DELETE FROM tasks; DELETE FROM projects; DELETE FROM xp_log; UPDATE users SET xp = 0; "
+                 "UPDATE achievements SET unlocked_at = NULL")
+
+    def sql(self, sql):
         subprocess.run(
             f'npx wrangler d1 execute grimoire --local --persist-to "{self.persist}" --command "{sql}"',
             cwd=WORKER, shell=True, check=True, capture_output=True,
@@ -98,8 +114,10 @@ class Replay:
 
 
 class Scenario:
-    def __init__(self, api, name):
-        self.api, self.name = api, name
+    def __init__(self, api, name, module):
+        self.api, self.name, self.module = api, name, module
+        self.entries = {}  # día → {"id", "save_id", "content"} de la v2
+        self.shift = {}
         self.ids, self.by_v1, self.grants = {}, {}, {}
         self.diffs, self.retries, self.gap = [], 0, 0
         self.unlocked = set()
@@ -199,14 +217,19 @@ class Scenario:
             self.fail(i, step, f"reintento: {status} {again}")
 
     def step(self, i, step):
+        for old, new in self.shift.items():
+            step = json.loads(json.dumps(step).replace(old, new))
         dif = DIFS.get((self.name, i), {})
         if dif:
             self.diffs.append((i, step["llamada"], dif["fila"]))
+        self.gap += dif.get("gap", 0)
         if dif.get("skip"):
             return
         method, path = step["llamada"].split(" ", 1)
         if path.startswith("/pomodoro/"):
             return self.pomodoro(i, step, method, path, dif)
+        if self.module == "diary" and path not in ("/user", "/achievements"):
+            return self.diary(i, step, method, path, dif)
         want_status = step["esperado"]["status"]
         want = step["esperado"]["cuerpo"]
         alias = step.get("alias")
@@ -323,8 +346,10 @@ class Scenario:
                 body[key] = NOWHERE
             elif isinstance(v, str) and v.startswith("{"):
                 body[key] = self.ids[v[1:-1]]
-        # la v1 sella `finished_at` con la hora del servidor; la v2 recibe `ends_at` (fila 25)
-        end = utc(step["hoy"] + "T12:00:00")
+        # la v1 sella `finished_at` con la hora del servidor; la v2 recibe `ends_at` (fila 25). Nunca
+        # en el futuro: un escenario trasladado a hoy puede correr antes del mediodía.
+        end = min(utc(step["hoy"] + "T12:00:00"),
+                  datetime.now(timezone.utc).replace(microsecond=0) - timedelta(minutes=1))
         body["id"] = str(uuid.uuid4())
         body["finished_at"] = rfc3339(end)
         minutes = body.get("work_minutes", 25)
@@ -396,6 +421,115 @@ class Scenario:
                         self.diffs.append((i, step["llamada"], fila))
 
 
+    # ---------- diario ----------
+
+    def diary(self, i, step, method, path, dif):
+        want_status, want = step["esperado"]["status"], step["esperado"]["cuerpo"]
+        hoy = step["hoy"]
+        if method == "POST" and path == "/habits":
+            body = {**step["cuerpo"], "id": str(uuid.uuid4())}
+            status, got = self.api.call("POST", path, body)
+            if status != 201:
+                self.fail(i, step, f"status {status}: {got}")
+            self.ids[step["alias"]] = body["id"]
+            # una marca no puede ser anterior al hábito (ADR 0005): nace el día del escenario
+            self.api.sql(f"UPDATE habits SET created_at = '{hoy}T05:00:00Z' WHERE id = '{body['id']}'")
+            return
+        if method == "POST" and path.endswith("/complete"):
+            status, got = self.api.call("POST", self.translate_path(path),
+                                        {"id": str(uuid.uuid4()), "local_date": hoy})
+            if status != 200 or got["xp_earned"] != want["xp_earned"]:
+                self.fail(i, step, f"marca: {status} {got}")
+            self.check_xp(i, step, want, got)
+            self.unlocked.update(a["key"] for a in got["achievements_unlocked"])
+            return
+
+        rest = path[len("/diary/"):]
+        if method in ("PUT", "PATCH"):
+            return self.diary_save(i, step, rest, want_status, want)
+        if rest in ("dates", "volume"):
+            status, got = self.api.call("GET", f"/diary/volume?today={hoy}")
+            if status != 200:
+                self.fail(i, step, f"status {status}")
+            start = volume_start(date.fromisoformat(hoy)).isoformat()
+            points = [(p["entry_date"], p["length"]) if rest == "volume" else (p, None) for p in want]
+            # fila 35: sin las de solo espacios; fila 37: `dates` sale del volumen, de 12 meses
+            expected = sorted((d, n) for d, n in points
+                              if written(self.entries[d]["content"]) and d >= start)
+            got = [(p["local_date"], p["length"] if rest == "volume" else None) for p in got["points"]]
+            if got != expected:
+                self.fail(i, step, f"volumen {got} frente a {expected}")
+            if rest == "dates":
+                self.diffs.append((i, step["llamada"], 37))
+            elif len(expected) < len(want):
+                self.diffs.append((i, step["llamada"], 35))
+            return
+        if rest.startswith("search"):
+            status, got = self.api.call("GET", path)
+            # fila 38: fragmento en vez del texto; estos textos caben enteros
+            expected = [(w["entry_date"], w["content"].strip()) for w in want if written(w["content"])]
+            got = [(h["local_date"], h["snippet"]) for h in got]
+            if status != 200 or got != expected:
+                self.fail(i, step, f"búsqueda {got} frente a {expected}")
+            self.diffs.append((i, step["llamada"], 38))
+            return
+        day = rest.split("/")[0]
+        status, got = self.api.call("GET", f"/diary/{day}")
+        if status != 200:
+            self.fail(i, step, f"status {status}")
+        if rest.endswith("/summary"):  # decisión 7: viene con la entrada
+            s = got["summary"]
+            # sin orden: aquí las sesiones terminan en el mismo segundo (`session_body`)
+            sessions = sorted((x["work_minutes"], x["task_title"] or "") for x in s["pomodoro_sessions"])
+            if s["habits_done"] != want["habits_done"] \
+                    or sessions != sorted((x["work_minutes"], x["task_title"] or "")
+                                          for x in want["pomodoro_sessions"]) \
+                    or s["pomodoro_minutes"] != want["pomodoro_minutes"] \
+                    or s["xp_earned"] != dif.get("xp_earned", want["xp_earned"]):
+                self.fail(i, step, f"resumen {s}")
+            if want["checkin"] is not None:
+                self.diffs.append((i, step["llamada"], 36))
+            return
+        e = got["entry"]
+        if (e["id"] is None) != (want["id"] is None) or e["content"] != want["content"] \
+                or e["tags"] != want["tags"] or e["local_date"] != want["entry_date"] or got["conflicts"]:
+            self.fail(i, step, f"entrada {got}")
+
+    def diary_save(self, i, step, day, want_status, want):
+        src = step.get("cuerpo") or {}
+        prev = self.entries.get(day)
+        body = {"id": prev["id"] if prev else str(uuid.uuid4()), "save_id": str(uuid.uuid4()),
+                "base_save_id": prev["save_id"] if prev else None,
+                **{k: src[k] for k in ("content", "tags") if k in src}}
+        status, got = self.api.call("PUT", f"/diary/{day}", body)
+        if status != want_status:
+            self.fail(i, step, f"status {status}, esperado {want_status}: {got}")
+        if status != 200:
+            return
+        e = got["entry"]
+        if (e["content"], e["tags"], e["local_date"]) != (want["content"], want["tags"], want["entry_date"]) \
+                or got["conflicts"] != 0:
+            self.fail(i, step, f"entrada {got}")
+        self.entries[day] = {"id": e["id"], "save_id": body["save_id"], "content": e["content"]}
+        self.unlocked.update(a["key"] for a in got["achievements_unlocked"])
+        status, again = self.api.call("PUT", f"/diary/{day}", body)
+        self.retries += 1
+        if status != 200 or again["xp_earned"] != 0 or again["new_xp"] != got["new_xp"] \
+                or again["entry"] != e or again["achievements_unlocked"] or again["conflicts"]:
+            self.fail(i, step, f"reintento: {status} {again}")
+
+
+def written(content):
+    """`diary::is_written`: texto tras quitar espacios (fila 35)."""
+    return bool(content.strip())
+
+
+def volume_start(today):
+    """Primer día del mes de hace 11 meses (`diary::volume_start`)."""
+    m = today.year * 12 + today.month - 1 - 11
+    return date(m // 12, m % 12 + 1, 1)
+
+
 def utc(s):
     """Instante de la v1 (hora de pared en Bogotá, sin zona) o de la v2 (RFC 3339) → UTC."""
     t = datetime.fromisoformat(s.replace("Z", "+00:00"))
@@ -446,14 +580,20 @@ def check_window(api):
 
 def main():
     url, persist = sys.argv[1].rstrip("/"), sys.argv[2]
-    token = next(line.split("=", 1)[1].strip().strip('"')
-                 for line in (WORKER / ".dev.vars").read_text().splitlines()
-                 if line.startswith("GRIMOIRE_TOKEN"))
+    token = os.environ.get("GRIMOIRE_TOKEN") or next(
+        line.split("=", 1)[1].strip().strip('"')
+        for line in (WORKER / ".dev.vars").read_text().splitlines()
+        if line.startswith("GRIMOIRE_TOKEN"))
     api = Replay(url, persist, token)
     for path in [p for d in GOLDEN for p in sorted(d.glob("*.json"))]:
         golden = json.loads(path.read_text(encoding="utf-8"))
         api.reset()
-        sc = Scenario(api, golden["escenario"])
+        sc = Scenario(api, golden["escenario"], path.parent.name)
+        if sc.name in SHIFTED:
+            today = (datetime.now(timezone.utc) - timedelta(hours=5)).date()
+            center = date.fromisoformat(SHIFTED[sc.name])
+            for k in (-1, 0, 1):
+                sc.shift[(center + timedelta(days=k)).isoformat()] = (today + timedelta(days=k)).isoformat()
         for i, step in enumerate(golden["pasos"]):
             sc.step(i, step)
         status, user = api.call("GET", "/user")

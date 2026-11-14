@@ -13,6 +13,7 @@ use worker::js_sys::{self, Object, Reflect};
 use worker::{D1Database, D1Result, Env, HttpRequest, console_error, console_log, event};
 
 mod categories;
+mod diary;
 mod habits;
 mod pomodoro;
 mod projects;
@@ -43,7 +44,7 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
             let h = res.headers_mut();
             h.insert(
                 header::ACCESS_CONTROL_ALLOW_METHODS,
-                HeaderValue::from_static("GET, POST, PATCH, DELETE, OPTIONS"),
+                HeaderValue::from_static("GET, POST, PUT, PATCH, DELETE, OPTIONS"),
             );
             h.insert(
                 header::ACCESS_CONTROL_ALLOW_HEADERS,
@@ -98,6 +99,10 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
             )
             .route("/pomodoro/sessions", post(pomodoro::create))
             .route("/pomodoro/today", get(pomodoro::today_sessions))
+            .route("/diary/volume", get(diary::volume))
+            .route("/diary/search", get(diary::search))
+            .route("/diary/conflicts/{id}", delete(diary::discard_conflict))
+            .route("/diary/{date}", get(diary::day).put(diary::save))
             .route("/user", get(user::read))
             .with_state(state);
         router.into_service().call(req).await?

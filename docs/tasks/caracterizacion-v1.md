@@ -153,6 +153,7 @@ ADR 0005, y las que dicen su fecha.
 | 40 | Repetir el `PUT` | Idempotente por contenido | Idempotente por `save_id`; `PATCH` no existe | Contrato de la cola (ADR 0004). |
 | 41 | Exportar a Obsidian | `POST /diary/{date}/export-obsidian` | Se elimina | Decisión 9, de Johan: el diario es de la app, no del vault. |
 | 42 | Tamaño de la entrada | Sin límite | 422 sobre 200 000 caracteres | `fase-2-diario.md`, decisión 10. |
+| 43 | Día del XP en el resumen del diario | El de la concesión, que en la v1 es siempre el de la marca (`resumen_dia`) | El de la concesión, que puede ser posterior al día marcado: marca tardía en la ventana de gracia o escritura sincronizada después | `xp_log` no guarda `local_date`. Solo cambia el «XP ganado» del resumen. Salió en la 2.4.3; pendiente de aprobar por Johan. |
 
 ## Hallazgos
 
