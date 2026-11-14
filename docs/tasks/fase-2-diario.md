@@ -127,7 +127,7 @@ fila 4 (todos los logros desbloqueados en la respuesta).
 | 37 | `GET /diary/dates` | Todas las fechas con entrada | No existe: las marcas salen de `GET /diary/volume` (12 meses) | El minicalendario solo muestra el mes en curso. |
 | 38 | Búsqueda | Texto completo de todas las coincidencias | Fragmento; las 50 más recientes | No mandar el diario entero por la red, y respuesta acotada. |
 | 39 | Guardar sobre una versión que el dispositivo no vio | Gana el último | Gana el último y lo pisado se guarda aparte | Decisión 1. Ningún golden lo cubre: la v1 tiene un solo cliente. |
-| 40 | Repetir el `PUT` | Idempotente por contenido | Idempotente por `save_id` | Contrato de la cola (ADR 0004). |
+| 40 | Repetir el `PUT` | Idempotente por contenido | Idempotente por `save_id`; `PATCH` no existe | Contrato de la cola (ADR 0004). |
 | 41 | Exportar a Obsidian | `POST /diary/{date}/export-obsidian` | Se elimina | Decisión 9, de Johan: el diario es de la app, no del vault. |
 | 42 | Tamaño de la entrada | Sin límite | 422 sobre 200 000 caracteres | Decisión 10. |
 
@@ -166,6 +166,7 @@ Fuera de alcance: la misión `weekly_diary_3` (llega con Misiones; la tabla ya t
 - `solo_espacios`: entrada de espacios: 0 XP, pero cuenta (fila 35).
 - `logros_diario`: 30 y 100 entradas desbloquean `archivist` y `diary_century`.
 - `busqueda`: `%` literal, sin entradas vacías, de la más reciente a la más antigua.
+- `etiquetas_y_validacion`: etiquetas conservadas o borradas, y rechazos 422.
 - `resumen_dia`: hábitos, sesiones, minutos y XP de un día con datos de los tres módulos.
 
 Datos inventados, como siempre: nada del diario real.
@@ -257,3 +258,9 @@ reescribir una entrada migrada no pague de nuevo.
 ---
 
 ## Hallazgos
+
+- **2.4.1, caracterización** (2026-11-14): 7 escenarios, 208 pasos, v1 en `f85381f`. Los 21 goldens
+  anteriores salieron idénticos al regenerar. Lo nuevo, en «Hallazgos» de `caracterizacion-v1.md`:
+  `GET /diary/dates` no ordena, la búsqueda no pliega tildes (`café` no encuentra `CAFÉ`; la v2 hereda
+  lo mismo de SQLite si no se decide otra cosa en la 2.4.2), las etiquetas se guardan sin normalizar y
+  el XP del día del resumen incluye el del check-in.

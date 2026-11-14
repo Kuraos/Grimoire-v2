@@ -1,0 +1,202 @@
+{
+  "escenario": "xp_una_vez",
+  "descripcion": "5 XP la primera vez que una entrada se guarda con texto, sin multiplicador. Vaciarla y reescribirla no paga de nuevo: la concesión se busca en `xp_log` por id de la entrada. Una entrada de otro día paga aparte, también si es pasada o futura. Editar no cambia el XP. `GET /diary/dates` no ordena: sale en orden de inserción.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Primera entrada."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Primera entrada.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 5,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 5,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Primera entrada, corregida."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Primera entrada, corregida.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": ""
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/2026-03-02",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Otra vez."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Otra vez.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 5,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 5,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-27",
+      "cuerpo": {
+        "content": "Un día pasado."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 2,
+          "entry_date": "2026-02-27",
+          "content": "Un día pasado.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-10",
+      "cuerpo": {
+        "content": "Un día futuro."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 3,
+          "entry_date": "2026-03-10",
+          "content": "Un día futuro.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 15,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 15,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/dates",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "2026-03-02",
+          "2026-02-27",
+          "2026-03-10"
+        ]
+      }
+    }
+  ]
+}

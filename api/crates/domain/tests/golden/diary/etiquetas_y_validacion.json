@@ -1,0 +1,299 @@
+{
+  "escenario": "etiquetas_y_validacion",
+  "descripcion": "Etiquetas: texto libre separado por comas, sin normalizar. Un `PUT` sin `tags` las conserva; con `\"\"` las borra. Rechazos por tipo (422): sin `content`, `content` no texto, fecha inválida.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Con etiquetas.",
+        "tags": "reflexion, foco"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Con etiquetas.",
+          "tags": "reflexion, foco",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Sin mandar etiquetas."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Sin mandar etiquetas.",
+          "tags": "reflexion, foco",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/2026-03-02",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Sin mandar etiquetas.",
+          "tags": "reflexion, foco",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Etiquetas vacías.",
+        "tags": ""
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Etiquetas vacías.",
+          "tags": "",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/2026-03-02",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Etiquetas vacías.",
+          "tags": "",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Espacios raros.",
+        "tags": " a ,,b , "
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Espacios raros.",
+          "tags": " a ,,b , ",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/2026-03-02",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Espacios raros.",
+          "tags": " a ,,b , ",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "tags": "x"
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "missing",
+              "loc": [
+                "body",
+                "content"
+              ],
+              "msg": "Field required",
+              "input": {
+                "tags": "x"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": 5
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "string_type",
+              "loc": [
+                "body",
+                "content"
+              ],
+              "msg": "Input should be a valid string",
+              "input": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-03-02",
+      "cuerpo": {
+        "content": null
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "string_type",
+              "loc": [
+                "body",
+                "content"
+              ],
+              "msg": "Input should be a valid string",
+              "input": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-30",
+      "cuerpo": {
+        "content": "Fecha que no existe."
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "date_from_datetime_parsing",
+              "loc": [
+                "path",
+                "entry_date"
+              ],
+              "msg": "Input should be a valid date or datetime, day value is outside expected range",
+              "input": "2026-02-30",
+              "ctx": {
+                "error": "day value is outside expected range"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/ayer",
+      "cuerpo": {
+        "content": "Fecha que no es fecha."
+      },
+      "esperado": {
+        "status": 422,
+        "cuerpo": {
+          "detail": [
+            {
+              "type": "date_from_datetime_parsing",
+              "loc": [
+                "path",
+                "entry_date"
+              ],
+              "msg": "Input should be a valid date or datetime, input is too short",
+              "input": "ayer",
+              "ctx": {
+                "error": "input is too short"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PATCH /diary/2026-03-02",
+      "cuerpo": {
+        "content": "Por PATCH."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Por PATCH.",
+          "tags": " a ,,b , ",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/2026-03-02",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-02",
+          "content": "Por PATCH.",
+          "tags": " a ,,b , ",
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 5,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 5,
+          "xp_span": 400
+        }
+      }
+    }
+  ]
+}

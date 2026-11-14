@@ -1,0 +1,257 @@
+{
+  "escenario": "busqueda",
+  "descripcion": "`LIKE` con comodines escapados: `%` y `_` literales. Sin mayúsculas para ASCII, pero no para letras con tilde (`lower()` de SQLite). De la más reciente a la más antigua, con el texto entero. `q` vacío o ausente lista todas las escritas; las vacías nunca salen.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-01",
+      "cuerpo": {
+        "content": "100% concentrado"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-02-01",
+          "content": "100% concentrado",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-02",
+      "cuerpo": {
+        "content": "sin simbolos"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 2,
+          "entry_date": "2026-02-02",
+          "content": "sin simbolos",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-03",
+      "cuerpo": {
+        "content": "snake_case y CamelCase"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 3,
+          "entry_date": "2026-02-03",
+          "content": "snake_case y CamelCase",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-04",
+      "cuerpo": {
+        "content": "Café con Ana"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 4,
+          "entry_date": "2026-02-04",
+          "content": "Café con Ana",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-05",
+      "cuerpo": {
+        "content": "CAFÉ solo"
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 5,
+          "entry_date": "2026-02-05",
+          "content": "CAFÉ solo",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-02-06",
+      "cuerpo": {
+        "content": ""
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 6,
+          "entry_date": "2026-02-06",
+          "content": "",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=%25",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-01",
+            "content": "100% concentrado"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=_",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-03",
+            "content": "snake_case y CamelCase"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=camelcase",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-03",
+            "content": "snake_case y CamelCase"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=caf%C3%A9",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-04",
+            "content": "Café con Ana"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=CAF%C3%89",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-05",
+            "content": "CAFÉ solo"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=sin",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-02",
+            "content": "sin simbolos"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-05",
+            "content": "CAFÉ solo"
+          },
+          {
+            "entry_date": "2026-02-04",
+            "content": "Café con Ana"
+          },
+          {
+            "entry_date": "2026-02-03",
+            "content": "snake_case y CamelCase"
+          },
+          {
+            "entry_date": "2026-02-02",
+            "content": "sin simbolos"
+          },
+          {
+            "entry_date": "2026-02-01",
+            "content": "100% concentrado"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-02-05",
+            "content": "CAFÉ solo"
+          },
+          {
+            "entry_date": "2026-02-04",
+            "content": "Café con Ana"
+          },
+          {
+            "entry_date": "2026-02-03",
+            "content": "snake_case y CamelCase"
+          },
+          {
+            "entry_date": "2026-02-02",
+            "content": "sin simbolos"
+          },
+          {
+            "entry_date": "2026-02-01",
+            "content": "100% concentrado"
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=nada",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    }
+  ]
+}

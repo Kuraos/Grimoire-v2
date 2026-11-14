@@ -1,0 +1,108 @@
+{
+  "escenario": "get_no_crea",
+  "descripcion": "`GET` de un día sin entrada devuelve `id: null`, texto vacío y `updated_at` = ahora, y no crea la fila: un `GET` posterior sigue en `null`, y no aparece en marcas, volumen ni búsqueda. Una entrada guardada conserva su `updated_at` aunque el reloj avance.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/1888-01-01",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": null,
+          "entry_date": "1888-01-01",
+          "content": "",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/1888-01-02",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": null,
+          "entry_date": "1888-01-02",
+          "content": "",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /diary/1888-01-01",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": null,
+          "entry_date": "1888-01-01",
+          "content": "",
+          "tags": null,
+          "updated_at": "2026-03-03T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /diary/dates",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /diary/volume",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /diary/search?q=",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PUT /diary/2026-03-03",
+      "cuerpo": {
+        "content": "Con texto."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-03",
+          "content": "Con texto.",
+          "tags": null,
+          "updated_at": "2026-03-03T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-05",
+      "llamada": "GET /diary/2026-03-03",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-03",
+          "content": "Con texto.",
+          "tags": null,
+          "updated_at": "2026-03-03T12:00:00"
+        }
+      }
+    }
+  ]
+}

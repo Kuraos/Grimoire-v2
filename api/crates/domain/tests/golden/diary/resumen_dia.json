@@ -1,0 +1,326 @@
+{
+  "escenario": "resumen_dia",
+  "descripcion": "`GET /diary/{date}/summary`: hábitos marcados ese día (por fecha de la marca), sesiones completas y sus minutos (por `finished_at`), XP del día (suma de `xp_log`, también los 5 XP del check-in) y el check-in. Las incompletas no salen. El día sin nada: listas vacías, 0 y `null`.",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Lectura",
+        "category": "Otro",
+        "xp_reward": 20
+      },
+      "alias": "lectura",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 1,
+          "name": "Lectura",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 20,
+          "color": "#9b7fc4",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits",
+      "cuerpo": {
+        "name": "Correr",
+        "category": "Otro",
+        "xp_reward": 30,
+        "color": "#aa3344"
+      },
+      "alias": "correr",
+      "esperado": {
+        "status": 201,
+        "cuerpo": {
+          "id": 2,
+          "name": "Correr",
+          "category": "Otro",
+          "frequency": "daily",
+          "days": null,
+          "target_per_week": 1,
+          "xp_reward": 30,
+          "color": "#aa3344",
+          "active": true,
+          "notes": null,
+          "tags": null,
+          "created_at": "2026-03-02T12:00:00",
+          "streak": 0,
+          "best_streak": 0,
+          "total_xp": 0,
+          "completion_rate": 0.0,
+          "done_today": false,
+          "last_completed": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 20,
+          "new_xp": 20,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": "first_blood"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /habits/{lectura}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 20,
+          "new_xp": 40,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 2,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /habits/{correr}/complete",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 30,
+          "new_xp": 70,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": 1,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 25
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 85,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 25,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 50
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 15,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 75,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /pomodoro/sessions",
+      "cuerpo": {
+        "work_minutes": 10,
+        "completed": false
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 0,
+          "new_xp": 100,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": 75,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "POST /checkins/2026-03-03",
+      "cuerpo": {
+        "energy": 4,
+        "mood": 3,
+        "note": "Nota inventada."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "xp_earned": 5,
+          "new_xp": 105,
+          "new_level": 1,
+          "title": "Iniciado",
+          "leveled_up": false,
+          "streak": null,
+          "total_today_minutes": null,
+          "achievement_unlocked": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "PUT /diary/2026-03-03",
+      "cuerpo": {
+        "content": "Un día con de todo."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2026-03-03",
+          "content": "Un día con de todo.",
+          "tags": null,
+          "updated_at": "2026-03-03T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /diary/2026-03-03/summary",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "habits_done": [
+            {
+              "name": "Lectura",
+              "color": "#9b7fc4",
+              "category": "Otro"
+            },
+            {
+              "name": "Correr",
+              "color": "#aa3344",
+              "category": "Otro"
+            }
+          ],
+          "pomodoro_sessions": [
+            {
+              "work_minutes": 25,
+              "task_title": null,
+              "finished_at": "2026-03-03T12:00:00"
+            },
+            {
+              "work_minutes": 50,
+              "task_title": null,
+              "finished_at": "2026-03-03T12:00:00"
+            }
+          ],
+          "pomodoro_minutes": 75,
+          "xp_earned": 90,
+          "checkin": {
+            "id": 1,
+            "checkin_date": "2026-03-03",
+            "energy": 4,
+            "mood": 3,
+            "note": "Nota inventada."
+          }
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /diary/2026-03-02/summary",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "habits_done": [
+            {
+              "name": "Lectura",
+              "color": "#9b7fc4",
+              "category": "Otro"
+            }
+          ],
+          "pomodoro_sessions": [],
+          "pomodoro_minutes": 0,
+          "xp_earned": 20,
+          "checkin": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /diary/2026-03-04/summary",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "habits_done": [],
+          "pomodoro_sessions": [],
+          "pomodoro_minutes": 0,
+          "xp_earned": 0,
+          "checkin": null
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-03",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 110,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 110,
+          "xp_span": 400
+        }
+      }
+    }
+  ]
+}

@@ -81,6 +81,18 @@ Goldens en `api/crates/domain/tests/golden/pomodoro/` (6 escenarios, 341 pasos):
 5. `rango_dias`: el día es el de `finished_at`, orden de `today` y `range`, y rangos raros.
 6. `validacion_sesion`: lo que la API acepta sin mirar y lo que rechaza por tipo.
 
+## Escenarios del Diario
+
+Goldens en `api/crates/domain/tests/golden/diary/` (7 escenarios, 208 pasos):
+
+1. `xp_una_vez`: 5 XP la primera vez con texto; vaciar y reescribir no paga; días pasados y futuros.
+2. `get_no_crea`: un día sin entrada da `id: null` y no crea fila; `updated_at` conservado.
+3. `solo_espacios`: una entrada de espacios no paga, pero cuenta como escrita (fila 35).
+4. `logros_diario`: `archivist` (30) y `diary_century` (100), solo al pagar.
+5. `busqueda`: comodines literales, mayúsculas ASCII sí y con tilde no, orden y vacías fuera.
+6. `etiquetas_y_validacion`: etiquetas conservadas, borradas o con espacios; rechazos 422; `PATCH`.
+7. `resumen_dia`: hábitos, sesiones, minutos, XP del día y check-in.
+
 ## Cómo los usa la v2
 
 - `grimoire-domain` tiene un test que lee cada golden y reproduce la secuencia con las
@@ -133,6 +145,14 @@ ADR 0005, y las que dicen su fecha.
 | 32 | `streak` en la respuesta de una sesión | `null` | No se manda | No significa nada en una sesión. |
 | 33 | `GET /pomodoro/range` | Existe; lo usa el calendario | No existe todavía | Llega con Calendario (fase 5+). Los datos se migran igual. |
 | 34 | Sesión vencida detectada tarde | No se registra | Hasta 12 h tras `ends_at`, 12 h justas incluidas: completa. Después: incompleta, sin XP y fuera de horas y totales | Limita la fila 26. Del cliente: ningún golden lo cubre. |
+| 35 | Qué es una entrada escrita | XP con `strip()`; marcas, volumen, búsqueda y logros con `!= ""` (`solo_espacios`) | `trim` no vacío en todo | Una entrada de espacios cuenta para «Archivista» sin pagar. Aprobada por Johan el 2026-11-14, como las filas 36 a 42 (`fase-2-diario.md`). |
+| 36 | Check-in en el resumen del día | Energía y ánimo, y sus 5 XP en `xp_earned` (`resumen_dia`) | No se muestra el check-in; `xp_earned` suma lo que haya en `xp_log` | Los check-ins llegan en la fase 5+. Los datos se migran igual. |
+| 37 | `GET /diary/dates` | Todas las fechas escritas, sin orden (`xp_una_vez`) | No existe: las marcas salen de `GET /diary/volume` (12 meses) | El minicalendario solo muestra el mes en curso. |
+| 38 | Búsqueda | Texto completo de todas las coincidencias (`busqueda`) | Fragmento; las 50 más recientes | No mandar el diario entero por la red, y respuesta acotada. |
+| 39 | Guardar sobre una versión que el dispositivo no vio | Gana el último | Gana el último y lo pisado se guarda aparte | `fase-2-diario.md`, decisión 1, de Johan. Ningún golden lo cubre: la v1 tiene un solo cliente. |
+| 40 | Repetir el `PUT` | Idempotente por contenido | Idempotente por `save_id`; `PATCH` no existe | Contrato de la cola (ADR 0004). |
+| 41 | Exportar a Obsidian | `POST /diary/{date}/export-obsidian` | Se elimina | Decisión 9, de Johan: el diario es de la app, no del vault. |
+| 42 | Tamaño de la entrada | Sin límite | 422 sobre 200 000 caracteres | `fase-2-diario.md`, decisión 10. |
 
 ## Hallazgos
 
@@ -230,3 +250,22 @@ porta igual.
     pierde. Esto lo dice el código; ningún golden lo cubre, porque es del cliente.
   - **Cortar un bloque de menos de 1 minuto no registra nada** (`partialResult`), y la duración de la
     sesión sale de la configuración vigente al terminar, no de la que había al empezar.
+- **Diario** (2026-11-14): goldens en `api/crates/domain/tests/golden/diary/`. Al regenerar, los de
+  Hábitos, Tareas y Pomodoro salieron idénticos. Lo decidido sobre cada punto está en las filas 35 a 42.
+  - **Una entrada de solo espacios cuenta sin pagar** (`solo_espacios`): 0 XP, pero sale en las
+    marcas, en el volumen (longitud 6) y en la búsqueda, y suma para `archivist`: con ella, la 29.ª
+    entrada real lo desbloquea.
+  - **5 XP una vez por entrada, por id:** vaciarla y reescribirla no paga, y los logros solo se
+    evalúan al pagar (`xp_una_vez`, `logros_diario`). Se puede escribir cualquier fecha, pasada o
+    futura, y paga igual.
+  - **`GET` no crea filas** y devuelve `updated_at` = ahora para un día vacío. Una entrada vaciada
+    sigue existiendo, con su id, y no sale en marcas ni búsqueda (`get_no_crea`, `xp_una_vez`).
+  - **`GET /diary/dates` no ordena:** devuelve el orden de inserción (`xp_una_vez`: 03-02, 02-27,
+    03-10). `/volume` y `/search` sí ordenan, ascendente y descendente.
+  - **Búsqueda:** `%` y `_` son literales; las mayúsculas se ignoran solo en ASCII (`camelcase`
+    encuentra `CamelCase`, pero `café` no encuentra `CAFÉ`), porque `lower()` de SQLite no pliega
+    tildes. Con `q` vacío o sin `q`, lista todas las escritas.
+  - **Etiquetas sin normalizar:** se guardan tal cual (`" a ,,b , "`). Un `PUT` sin `tags` las
+    conserva y con `""` las borra. Sin `content`, o con `content` que no es texto, da 422.
+  - **El XP del día del resumen incluye los 5 XP del check-in**, porque suma todo `xp_log` del día
+    (`resumen_dia`: 20 + 30 + 15 + 15 + 5 + 5 = 90). Las sesiones incompletas no salen.

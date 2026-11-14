@@ -1,0 +1,878 @@
+{
+  "escenario": "solo_espacios",
+  "descripcion": "Incoherencia de la v1 (fila 35): una entrada de solo espacios no paga XP ni evalúa logros (`content.strip()`), pero cuenta como escrita en todo lo que usa `content != \"\"`: marcas, volumen, búsqueda y el conteo de `archivist`. Con ella, la 29.ª entrada real desbloquea `archivist` (30).",
+  "entrada": {
+    "v1_commit": "f85381f",
+    "zona": "America/Bogota",
+    "hora_local": "12:00:00"
+  },
+  "pasos": [
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2025-12-31",
+      "cuerpo": {
+        "content": "   \n\t "
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "entry_date": "2025-12-31",
+          "content": "   \n\t ",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 0,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 0,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-01",
+      "cuerpo": {
+        "content": "Entrada 1."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 2,
+          "entry_date": "2026-01-01",
+          "content": "Entrada 1.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-02",
+      "cuerpo": {
+        "content": "Entrada 2."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 3,
+          "entry_date": "2026-01-02",
+          "content": "Entrada 2.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-03",
+      "cuerpo": {
+        "content": "Entrada 3."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 4,
+          "entry_date": "2026-01-03",
+          "content": "Entrada 3.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-04",
+      "cuerpo": {
+        "content": "Entrada 4."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 5,
+          "entry_date": "2026-01-04",
+          "content": "Entrada 4.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-05",
+      "cuerpo": {
+        "content": "Entrada 5."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 6,
+          "entry_date": "2026-01-05",
+          "content": "Entrada 5.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-06",
+      "cuerpo": {
+        "content": "Entrada 6."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 7,
+          "entry_date": "2026-01-06",
+          "content": "Entrada 6.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-07",
+      "cuerpo": {
+        "content": "Entrada 7."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 8,
+          "entry_date": "2026-01-07",
+          "content": "Entrada 7.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-08",
+      "cuerpo": {
+        "content": "Entrada 8."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 9,
+          "entry_date": "2026-01-08",
+          "content": "Entrada 8.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-09",
+      "cuerpo": {
+        "content": "Entrada 9."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 10,
+          "entry_date": "2026-01-09",
+          "content": "Entrada 9.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-10",
+      "cuerpo": {
+        "content": "Entrada 10."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 11,
+          "entry_date": "2026-01-10",
+          "content": "Entrada 10.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-11",
+      "cuerpo": {
+        "content": "Entrada 11."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 12,
+          "entry_date": "2026-01-11",
+          "content": "Entrada 11.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-12",
+      "cuerpo": {
+        "content": "Entrada 12."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 13,
+          "entry_date": "2026-01-12",
+          "content": "Entrada 12.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-13",
+      "cuerpo": {
+        "content": "Entrada 13."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 14,
+          "entry_date": "2026-01-13",
+          "content": "Entrada 13.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-14",
+      "cuerpo": {
+        "content": "Entrada 14."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 15,
+          "entry_date": "2026-01-14",
+          "content": "Entrada 14.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-15",
+      "cuerpo": {
+        "content": "Entrada 15."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 16,
+          "entry_date": "2026-01-15",
+          "content": "Entrada 15.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-16",
+      "cuerpo": {
+        "content": "Entrada 16."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 17,
+          "entry_date": "2026-01-16",
+          "content": "Entrada 16.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-17",
+      "cuerpo": {
+        "content": "Entrada 17."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 18,
+          "entry_date": "2026-01-17",
+          "content": "Entrada 17.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-18",
+      "cuerpo": {
+        "content": "Entrada 18."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 19,
+          "entry_date": "2026-01-18",
+          "content": "Entrada 18.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-19",
+      "cuerpo": {
+        "content": "Entrada 19."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 20,
+          "entry_date": "2026-01-19",
+          "content": "Entrada 19.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-20",
+      "cuerpo": {
+        "content": "Entrada 20."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 21,
+          "entry_date": "2026-01-20",
+          "content": "Entrada 20.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-21",
+      "cuerpo": {
+        "content": "Entrada 21."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 22,
+          "entry_date": "2026-01-21",
+          "content": "Entrada 21.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-22",
+      "cuerpo": {
+        "content": "Entrada 22."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 23,
+          "entry_date": "2026-01-22",
+          "content": "Entrada 22.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-23",
+      "cuerpo": {
+        "content": "Entrada 23."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 24,
+          "entry_date": "2026-01-23",
+          "content": "Entrada 23.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-24",
+      "cuerpo": {
+        "content": "Entrada 24."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 25,
+          "entry_date": "2026-01-24",
+          "content": "Entrada 24.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-25",
+      "cuerpo": {
+        "content": "Entrada 25."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 26,
+          "entry_date": "2026-01-25",
+          "content": "Entrada 25.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-26",
+      "cuerpo": {
+        "content": "Entrada 26."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 27,
+          "entry_date": "2026-01-26",
+          "content": "Entrada 26.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-27",
+      "cuerpo": {
+        "content": "Entrada 27."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 28,
+          "entry_date": "2026-01-27",
+          "content": "Entrada 27.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-28",
+      "cuerpo": {
+        "content": "Entrada 28."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 29,
+          "entry_date": "2026-01-28",
+          "content": "Entrada 28.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": []
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "PUT /diary/2026-01-29",
+      "cuerpo": {
+        "content": "Entrada 29."
+      },
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 30,
+          "entry_date": "2026-01-29",
+          "content": "Entrada 29.",
+          "tags": null,
+          "updated_at": "2026-03-02T12:00:00"
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /achievements",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "archivist"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /user",
+      "esperado": {
+        "status": 200,
+        "cuerpo": {
+          "id": 1,
+          "name": "Grimoirista",
+          "xp": 145,
+          "level": 1,
+          "title": "Iniciado",
+          "lives": 3,
+          "obsidian_vault_path": null,
+          "weight_unit": "kg",
+          "xp_for_current_level": 0,
+          "xp_for_next_level": 400,
+          "xp_into_level": 145,
+          "xp_span": 400
+        }
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/dates",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          "2025-12-31",
+          "2026-01-01",
+          "2026-01-02",
+          "2026-01-03",
+          "2026-01-04",
+          "2026-01-05",
+          "2026-01-06",
+          "2026-01-07",
+          "2026-01-08",
+          "2026-01-09",
+          "2026-01-10",
+          "2026-01-11",
+          "2026-01-12",
+          "2026-01-13",
+          "2026-01-14",
+          "2026-01-15",
+          "2026-01-16",
+          "2026-01-17",
+          "2026-01-18",
+          "2026-01-19",
+          "2026-01-20",
+          "2026-01-21",
+          "2026-01-22",
+          "2026-01-23",
+          "2026-01-24",
+          "2026-01-25",
+          "2026-01-26",
+          "2026-01-27",
+          "2026-01-28",
+          "2026-01-29"
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/volume",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2025-12-31",
+            "length": 6
+          },
+          {
+            "entry_date": "2026-01-01",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-02",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-03",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-04",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-05",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-06",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-07",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-08",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-09",
+            "length": 10
+          },
+          {
+            "entry_date": "2026-01-10",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-11",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-12",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-13",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-14",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-15",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-16",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-17",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-18",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-19",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-20",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-21",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-22",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-23",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-24",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-25",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-26",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-27",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-28",
+            "length": 11
+          },
+          {
+            "entry_date": "2026-01-29",
+            "length": 11
+          }
+        ]
+      }
+    },
+    {
+      "hoy": "2026-03-02",
+      "llamada": "GET /diary/search?q=%20",
+      "esperado": {
+        "status": 200,
+        "cuerpo": [
+          {
+            "entry_date": "2026-01-29",
+            "content": "Entrada 29."
+          },
+          {
+            "entry_date": "2026-01-28",
+            "content": "Entrada 28."
+          },
+          {
+            "entry_date": "2026-01-27",
+            "content": "Entrada 27."
+          },
+          {
+            "entry_date": "2026-01-26",
+            "content": "Entrada 26."
+          },
+          {
+            "entry_date": "2026-01-25",
+            "content": "Entrada 25."
+          },
+          {
+            "entry_date": "2026-01-24",
+            "content": "Entrada 24."
+          },
+          {
+            "entry_date": "2026-01-23",
+            "content": "Entrada 23."
+          },
+          {
+            "entry_date": "2026-01-22",
+            "content": "Entrada 22."
+          },
+          {
+            "entry_date": "2026-01-21",
+            "content": "Entrada 21."
+          },
+          {
+            "entry_date": "2026-01-20",
+            "content": "Entrada 20."
+          },
+          {
+            "entry_date": "2026-01-19",
+            "content": "Entrada 19."
+          },
+          {
+            "entry_date": "2026-01-18",
+            "content": "Entrada 18."
+          },
+          {
+            "entry_date": "2026-01-17",
+            "content": "Entrada 17."
+          },
+          {
+            "entry_date": "2026-01-16",
+            "content": "Entrada 16."
+          },
+          {
+            "entry_date": "2026-01-15",
+            "content": "Entrada 15."
+          },
+          {
+            "entry_date": "2026-01-14",
+            "content": "Entrada 14."
+          },
+          {
+            "entry_date": "2026-01-13",
+            "content": "Entrada 13."
+          },
+          {
+            "entry_date": "2026-01-12",
+            "content": "Entrada 12."
+          },
+          {
+            "entry_date": "2026-01-11",
+            "content": "Entrada 11."
+          },
+          {
+            "entry_date": "2026-01-10",
+            "content": "Entrada 10."
+          },
+          {
+            "entry_date": "2026-01-09",
+            "content": "Entrada 9."
+          },
+          {
+            "entry_date": "2026-01-08",
+            "content": "Entrada 8."
+          },
+          {
+            "entry_date": "2026-01-07",
+            "content": "Entrada 7."
+          },
+          {
+            "entry_date": "2026-01-06",
+            "content": "Entrada 6."
+          },
+          {
+            "entry_date": "2026-01-05",
+            "content": "Entrada 5."
+          },
+          {
+            "entry_date": "2026-01-04",
+            "content": "Entrada 4."
+          },
+          {
+            "entry_date": "2026-01-03",
+            "content": "Entrada 3."
+          },
+          {
+            "entry_date": "2026-01-02",
+            "content": "Entrada 2."
+          },
+          {
+            "entry_date": "2026-01-01",
+            "content": "Entrada 1."
+          },
+          {
+            "entry_date": "2025-12-31",
+            "content": "   \n\t "
+          }
+        ]
+      }
+    }
+  ]
+}

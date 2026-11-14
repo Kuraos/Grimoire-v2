@@ -550,12 +550,161 @@ def validacion_sesion():
     ]
 
 
+# ---------- diario ----------
+
+def entry(hoy, fecha, content, **kw):
+    return step(hoy, f"PUT /diary/{fecha}", {"content": content, **kw})
+
+
+def xp_una_vez():
+    """5 XP la primera vez que una entrada se guarda con texto, sin multiplicador. Vaciarla y
+    reescribirla no paga de nuevo: la concesión se busca en `xp_log` por id de la entrada. Una
+    entrada de otro día paga aparte, también si es pasada o futura. Editar no cambia el XP.
+    `GET /diary/dates` no ordena: sale en orden de inserción."""
+    d = "2026-03-02"
+    return [
+        entry(d, d, "Primera entrada."),
+        step(d, "GET /user"),
+        entry(d, d, "Primera entrada, corregida."),
+        entry(d, d, ""),
+        step(d, "GET /diary/" + d),
+        entry(d, d, "Otra vez."),
+        step(d, "GET /user"),
+        entry(d, "2026-02-27", "Un día pasado."),
+        entry(d, "2026-03-10", "Un día futuro."),
+        step(d, "GET /user"),
+        step(d, "GET /diary/dates"),
+    ]
+
+
+def get_no_crea():
+    """`GET` de un día sin entrada devuelve `id: null`, texto vacío y `updated_at` = ahora, y no
+    crea la fila: un `GET` posterior sigue en `null`, y no aparece en marcas, volumen ni búsqueda.
+    Una entrada guardada conserva su `updated_at` aunque el reloj avance."""
+    return [
+        step("2026-03-02", "GET /diary/1888-01-01"),
+        step("2026-03-02", "GET /diary/1888-01-02"),
+        step("2026-03-03", "GET /diary/1888-01-01"),
+        step("2026-03-03", "GET /diary/dates"),
+        step("2026-03-03", "GET /diary/volume"),
+        step("2026-03-03", "GET /diary/search?q="),
+        entry("2026-03-03", "2026-03-03", "Con texto."),
+        step("2026-03-05", "GET /diary/2026-03-03"),
+    ]
+
+
+def solo_espacios():
+    """Incoherencia de la v1 (fila 35): una entrada de solo espacios no paga XP ni evalúa logros
+    (`content.strip()`), pero cuenta como escrita en todo lo que usa `content != ""`: marcas,
+    volumen, búsqueda y el conteo de `archivist`. Con ella, la 29.ª entrada real desbloquea
+    `archivist` (30)."""
+    d = "2026-03-02"
+    days = _days("2026-01-01", 29)
+    s = [entry(d, "2025-12-31", "   \n\t "), step(d, "GET /user")]
+    s += [entry(d, x, f"Entrada {i + 1}.") for i, x in enumerate(days[:28])]
+    s += [step(d, "GET /achievements"), entry(d, days[28], "Entrada 29."), step(d, "GET /achievements")]
+    s += [
+        step(d, "GET /user"),
+        step(d, "GET /diary/dates"),
+        step(d, "GET /diary/volume"),
+        step(d, "GET /diary/search?q=%20"),
+    ]
+    return s
+
+
+def logros_diario():
+    """`diary_entry`: `archivist` en la 30.ª entrada con texto y `diary_century` en la 100.ª. Solo
+    se evalúan al pagar: reescribir una entrada ya pagada no paga ni evalúa. 100 entradas = 500 XP,
+    nivel 2, sin logros de nivel."""
+    d = "2026-03-02"
+    days = _days("2025-11-01", 101)
+    s = [entry(d, x, f"Entrada {i + 1}.") for i, x in enumerate(days[:29])]
+    s += [step(d, "GET /achievements"), entry(d, days[29], "Entrada 30."), step(d, "GET /achievements")]
+    s += [entry(d, x, f"Entrada {i + 31}.") for i, x in enumerate(days[30:99])]
+    s += [step(d, "GET /achievements"), step(d, "GET /user")]
+    s += [entry(d, days[98], "Entrada 99, reescrita."), step(d, "GET /achievements")]
+    s += [entry(d, days[99], "Entrada 100."), step(d, "GET /achievements"), step(d, "GET /user")]
+    return s
+
+
+def busqueda():
+    """`LIKE` con comodines escapados: `%` y `_` literales. Sin mayúsculas para ASCII, pero no para
+    letras con tilde (`lower()` de SQLite). De la más reciente a la más antigua, con el texto
+    entero. `q` vacío o ausente lista todas las escritas; las vacías nunca salen."""
+    d = "2026-03-02"
+    return [
+        entry(d, "2026-02-01", "100% concentrado"),
+        entry(d, "2026-02-02", "sin simbolos"),
+        entry(d, "2026-02-03", "snake_case y CamelCase"),
+        entry(d, "2026-02-04", "Café con Ana"),
+        entry(d, "2026-02-05", "CAFÉ solo"),
+        entry(d, "2026-02-06", ""),
+        step(d, "GET /diary/search?q=%25"),
+        step(d, "GET /diary/search?q=_"),
+        step(d, "GET /diary/search?q=camelcase"),
+        step(d, "GET /diary/search?q=caf%C3%A9"),
+        step(d, "GET /diary/search?q=CAF%C3%89"),
+        step(d, "GET /diary/search?q=sin"),
+        step(d, "GET /diary/search?q="),
+        step(d, "GET /diary/search"),
+        step(d, "GET /diary/search?q=nada"),
+    ]
+
+
+def etiquetas_y_validacion():
+    """Etiquetas: texto libre separado por comas, sin normalizar. Un `PUT` sin `tags` las conserva;
+    con `""` las borra. Rechazos por tipo (422): sin `content`, `content` no texto, fecha inválida."""
+    d = "2026-03-02"
+    return [
+        entry(d, d, "Con etiquetas.", tags="reflexion, foco"),
+        entry(d, d, "Sin mandar etiquetas."),
+        step(d, "GET /diary/" + d),
+        entry(d, d, "Etiquetas vacías.", tags=""),
+        step(d, "GET /diary/" + d),
+        entry(d, d, "Espacios raros.", tags=" a ,,b , "),
+        step(d, "GET /diary/" + d),
+        step(d, "PUT /diary/" + d, {"tags": "x"}),
+        step(d, "PUT /diary/" + d, {"content": 5}),
+        step(d, "PUT /diary/" + d, {"content": None}),
+        entry(d, "2026-02-30", "Fecha que no existe."),
+        entry(d, "ayer", "Fecha que no es fecha."),
+        step(d, "PATCH /diary/" + d, {"content": "Por PATCH."}),
+        step(d, "GET /diary/" + d),
+        step(d, "GET /user"),
+    ]
+
+
+def resumen_dia():
+    """`GET /diary/{date}/summary`: hábitos marcados ese día (por fecha de la marca), sesiones
+    completas y sus minutos (por `finished_at`), XP del día (suma de `xp_log`, también los 5 XP del
+    check-in) y el check-in. Las incompletas no salen. El día sin nada: listas vacías, 0 y `null`."""
+    d = "2026-03-03"
+    return [
+        habit("2026-03-02", "lectura", xp_reward=20),
+        habit("2026-03-02", "correr", xp_reward=30, color="#aa3344"),
+        step("2026-03-02", "POST /habits/{lectura}/complete"),
+        step(d, "POST /habits/{lectura}/complete"),
+        step(d, "POST /habits/{correr}/complete"),
+        session(d, work_minutes=25),
+        session(d, work_minutes=50),
+        session(d, work_minutes=10, completed=False),
+        step(d, "POST /checkins/" + d, {"energy": 4, "mood": 3, "note": "Nota inventada."}),
+        entry(d, d, "Un día con de todo."),
+        step(d, "GET /diary/2026-03-03/summary"),
+        step(d, "GET /diary/2026-03-02/summary"),
+        step(d, "GET /diary/2026-03-04/summary"),
+        step(d, "GET /user"),
+    ]
+
+
 MODULES = {
     "habits": (diario_simple, diario_lv, racha_rota, dia_perfecto, semanal_2x, deshacer, logros),
     "tasks": (crear_y_validar, completar_xp, descompletar_piso, kanban_estado, checklist,
               proyectos, logros_tareas, logro_por_patch),
     "pomodoro": (sesion_xp, sesion_incompleta, tarea_y_proyecto, logros_pomodoro, rango_dias,
                  validacion_sesion),
+    "diary": (xp_una_vez, get_no_crea, solo_espacios, logros_diario, busqueda,
+              etiquetas_y_validacion, resumen_dia),
 }
 SCENARIOS = {f.__name__: f for fs in MODULES.values() for f in fs}
 
@@ -623,6 +772,7 @@ def run_child(backend: Path, name: str) -> None:
         assert c.get("/tasks").json() == [] and c.get("/projects").json() == [], \
             "la base del escenario no arranca vacía de tareas y proyectos"
         assert c.get("/pomodoro/today").json() == [], "la base del escenario trae sesiones"
+        assert c.get("/diary/dates").json() == [], "la base del escenario trae entradas de diario"
 
         ids: dict[str, int] = {}
         for s in steps:
