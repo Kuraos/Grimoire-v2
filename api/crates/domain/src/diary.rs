@@ -122,14 +122,25 @@ pub fn snippet(content: &str, q: &str) -> String {
             .find(&q.to_ascii_lowercase())
             .unwrap_or(0)
     };
+    let chars: Vec<char> = content.chars().collect();
     let before = content[..at].chars().count();
-    let total = content.chars().count();
+    let total = chars.len();
     // la coincidencia queda a un cuarto del fragmento, con contexto a la izquierda
-    let start = before
+    let mut start = before
         .saturating_sub(SNIPPET_CHARS / 4)
         .min(total.saturating_sub(SNIPPET_CHARS));
     let end = (start + SNIPPET_CHARS).min(total);
-    let body: String = content.chars().skip(start).take(end - start).collect();
+    // Sin empezar a mitad de palabra («…é y apuntes», de «Café»): se salta lo que quede de ella,
+    // sin pasar de la coincidencia. Una palabra que llega hasta la coincidencia se deja cortada.
+    if start > 0
+        && !chars[start - 1].is_whitespace()
+        && let Some(k) = chars[start..before.max(start)]
+            .iter()
+            .position(|c| c.is_whitespace())
+    {
+        start += k + 1;
+    }
+    let body: String = chars[start..end].iter().collect();
     let mut out = String::with_capacity(body.len() + 6);
     if start > 0 {
         out.push('…');
@@ -258,6 +269,22 @@ mod tests {
         assert_eq!(s.chars().count(), SNIPPET_CHARS + 2);
         // 20 caracteres de contexto antes de la coincidencia
         assert!(s.starts_with(&format!("…{}AGUJA", "á".repeat(20))), "{s}");
+    }
+
+    #[test]
+    fn the_snippet_does_not_start_mid_word() {
+        // la frase de las capturas de la 2.4.5, repetida para que el tope del final no mueva el
+        // corte: 20 caracteres antes de «álgebra» cae en «caf|é»
+        let text =
+            "Tarde de lluvia; café y apuntes. Repasé álgebra lineal: bases y dimensión. ".repeat(3);
+        let s = snippet(&text, "álgebra");
+        assert!(s.starts_with("…y apuntes"), "{s}");
+        let first = s.trim_start_matches('…').split_whitespace().next().unwrap();
+        assert!(
+            text.split_whitespace().any(|w| w == first),
+            "empieza a mitad de palabra: {s}"
+        );
+        assert!(s.contains("álgebra"));
     }
 
     #[test]

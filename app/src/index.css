@@ -487,5 +487,6 @@ input[type="range"]::-moz-range-thumb {
   }
   .input {
     font-size: 16px;
+    min-height: 44px;
   }
 }

@@ -22,10 +22,9 @@ const X1 = 268;
 const Y0 = 18;
 const ROW = 24;
 
-// TODO(fase-N): `points` viene de la API del diario (antes Api.diaryVolume); quien
-// use el gráfico lo recarga al guardar la entrada de hoy.
+/** `points` sale de `useDiaryVolume`, con la cola encima: lo recién escrito ya es estrella. */
 export function DiaryVolume({ today, points }: {
-  today: string; points: { entry_date: string; length: number }[];
+  today: string; points: { local_date: string; length: number }[];
 }) {
   const c = chartPalette();
 
@@ -44,22 +43,22 @@ export function DiaryVolume({ today, points }: {
   };
 
   const stars = points
-    .map((p) => ({ ...p, row: rowOf(p.entry_date) }))
+    .map((p) => ({ ...p, row: rowOf(p.local_date) }))
     .filter((p) => p.row >= 0)
     .map((p) => {
-      const day = Number(p.entry_date.slice(8, 10));
+      const day = Number(p.local_date.slice(8, 10));
       // 600 caracteres ≈ una entrada larga. Por encima ya no crece: si no,
       // un desahogo de cuatro mil se comía la fila.
       const long = p.length >= 600;
-      const isToday = p.entry_date === today;
+      const isToday = p.local_date === today;
       return {
-        key: p.entry_date,
+        key: p.local_date,
         cx: X0 + ((day - 1) / 30) * (X1 - X0),
         cy: Y0 + p.row * ROW,
         r: isToday ? 3.4 : long ? 2.6 : 1.7,
         fill: isToday ? c.gilded : c.ink,
         op: isToday ? 0.95 : long ? 0.85 : 0.45,
-        label: `${p.entry_date} · ${p.length} caracteres`,
+        label: `${p.local_date} · ${p.length} caracteres`,
       };
     });
 

@@ -14,6 +14,7 @@ import { motionTokens } from "./theme-tokens";
 import Habits from "./pages/Habits";
 import Tasks from "./pages/Tasks";
 import Pomodoro from "./pages/Pomodoro";
+import Diary from "./pages/Diary";
 import { usePomodoroClock, usePomodoroCtx, type PomodoroState } from "./pomodoro-context";
 import { TaskReminders } from "./reminders";
 import { useApp } from "./context";
@@ -42,7 +43,7 @@ function Pendiente({ titulo }: { titulo: string }) {
 
 const PENDIENTES: [string, string][] = [
   ["/", "Inicio"], ["/calendario", "Calendario"],
-  ["/diario", "Diario"], ["/entrenamiento", "Entrenamiento"], ["/erario", "Erario"],
+  ["/entrenamiento", "Entrenamiento"], ["/erario", "Erario"],
   ["/estadisticas", "Estadísticas"], ["/logros", "Logros"], ["/revision", "Revisión semanal"],
 ];
 
@@ -108,6 +109,7 @@ export default function App() {
                 <Route path="/habitos" element={<Habits />} />
                 <Route path="/tareas" element={<Tasks />} />
                 <Route path="/pomodoro" element={<Pomodoro />} />
+                <Route path="/diario" element={<Diary />} />
               </Routes>
             </motion.div>
           </ErrorBoundary>

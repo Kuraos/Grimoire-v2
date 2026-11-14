@@ -410,3 +410,39 @@ reescribir una entrada migrada no pague de nuevo.
 
   - Verificación: `typecheck`, 207 tests y `build` en verde. `oxlint` no agrega avisos de tipos
     nuevos: un `set-state-in-effect` (hay 13 más en el repo) y el patrón de sonda de los tests de hooks.
+
+- **2.4.5, vista Diario** (2026-11-14):
+  - Se porta `frontend/src/pages/Diary.tsx` de la v1 con los componentes ya portados (`Card`,
+    `PageHeader`, `MiniCalendar`, `TagInput`, `DiaryVolume`). Sin componentes nuevos: el aviso de
+    conflicto y la tarjeta de búsqueda son funciones locales de la vista.
+  - **Mobile-first:** una columna con la entrada primero (es la `rubric`), y el 1,9 : 1 de la v1 en
+    `lg:`. `text-[17px]` y `min-h-[340px]` pasan a la escala: `.font-prose` (16 px, también evita el
+    zoom al enfocar) y `min-h-80`.
+  - **Adaptaciones táctiles, vistas en la captura y medidas en el navegador:**
+    - Las celdas del minicalendario miden 44 px de alto en la base (densidad, no dibujo).
+    - `TagInput` es un `label` atado a su campo con `htmlFor`: tocar la caja lo enfoca. Sin `htmlFor`
+      apuntaba a la ✕ de la primera etiqueta, y tocar la caja la habría borrado.
+    - La ✕ lleva `gr-tactil`.
+    - `.input` mide al menos 44 px en teléfono, en la regla táctil de `index.css`. Afecta también los
+      formularios de Hábitos y Tareas, que medían 40 px.
+  - **Lo que solo salió al mirar las capturas:**
+    - El fragmento de búsqueda empezaba a mitad de palabra («…é y apuntes», de «Café»).
+      `diary::snippet` ahora salta lo que quede de la palabra cortada, sin pasar de la coincidencia.
+      Tiene test, con la mutación comprobada.
+    - Las listas de la vista previa no tienen viñetas. La v1 tampoco las tenía (`renderMarkdown` emite
+      `<ul>` y el reset de Tailwind quita el estilo): se deja igual, por paridad.
+  - **Fuera de lo porteado:**
+    - El minicalendario muestra el mes del día elegido; en la v1 siempre era el mes en curso.
+    - El buscador dice «Sin conexión» cuando la consulta queda en pausa.
+  - **Capturas** (`docs/capturas/fase-2.4.5-*`), con datos inventados sembrados por la API:
+    - En 393 × 852 táctil: edición con conflicto, resumen y calendario, vista previa, y búsqueda con
+      volumen.
+    - En 1280 × 800: la vista y el conflicto abierto.
+    - Revisado en las capturas: una sola `rubric`, oro solo en su nudo y en la estrella de hoy, nada
+      cortado y `scrollWidth` igual al ancho.
+    - Sin errores en consola.
+    - Tocar un resultado de búsqueda lleva a ese día.
+  - **`wrangler dev` no vigila `crates/domain`:** tras cambiar `snippet` siguió sirviendo el wasm
+    viejo hasta reiniciarlo.
+  - Verificación: `fmt`, `clippy`, 130 tests de Rust, `typecheck`, 207 de la app y `build` en verde.
+    Al cerrar, ningún `wrangler`, `workerd` ni `vite` vivo, y el 8787 y el 5173 libres.
