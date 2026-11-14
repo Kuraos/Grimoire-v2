@@ -2,6 +2,7 @@
 
 pub mod achievements;
 pub mod cadence;
+pub mod diary;
 pub mod habits;
 pub mod lives;
 pub mod pomodoro;

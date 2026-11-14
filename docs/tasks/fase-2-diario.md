@@ -264,3 +264,35 @@ reescribir una entrada migrada no pague de nuevo.
   `GET /diary/dates` no ordena, la búsqueda no pliega tildes (`café` no encuentra `CAFÉ`; la v2 hereda
   lo mismo de SQLite si no se decide otra cosa en la 2.4.2), las etiquetas se guardan sin normalizar y
   el XP del día del resumen incluye el del check-in.
+
+- **2.4.2, esquema y dominio** (2026-11-14):
+  - **`diary_entries.written`**, columna que no estaba en el plan. La calcula `diary::is_written` al
+    guardar, y los conteos (logros, marcas, volumen, búsqueda) filtran por ella. Con SQL no se puede:
+    `trim()` de SQLite solo quita espacios, y `"   \n\t "` contaría como escrita. Índice
+    `(written, local_date)`: el volumen de 12 meses es un `SEARCH` por índice.
+  - **`diary_conflicts.id` = `save_id` del guardado que la causó**, sin generar un UUID en el servidor:
+    cada guardado causa a lo sumo una copia, y repetirlo no la duplica.
+  - **`decide_save` no marca conflicto si no hay nada que perder:** si lo vigente no está escrito o es
+    igual a lo que llega, se guarda sin copia.
+  - **Límite conocido** (`ponytail:` en `decide_save`): solo se recuerda el último `save_id`. Si un
+    guardado ya aplicado se repite después de que otro dispositivo escribió encima, se toma por
+    conflicto y vuelve el texto viejo; el nuevo queda en `diary_conflicts`. No se pierde nada.
+  - **Búsqueda sin plegar tildes, como la v1:** `like_pattern` y `snippet` buscan igual que `LIKE`
+    (mayúsculas solo en ASCII). Plegar en Rust obliga a leer todas las entradas en el worker.
+  - `tests/golden_diary.rs` reproduce 6 escenarios; `resumen_dia` queda para la 2.4.3.
+  - **Mutaciones** (la suite de `grimoire-domain` con cada una; el archivo se restaura después):
+
+    | Mutación | Tests que caen |
+    |---|---|
+    | Escrita sin `trim` | `written_means_text_after_unicode_trim`, `nothing_to_lose…`, `xp_once…`, `solo_espacios` |
+    | Pisar texto vacío es conflicto | `nothing_to_lose_is_not_a_conflict` |
+    | Paga en cada guardado | `xp_once…`, `xp_una_vez`, `logros_diario`, `etiquetas_y_validacion` |
+    | Sin escapar `%` ni `_` | `like_pattern_escapes_wildcards_and_the_escape` |
+    | `archivist` en 31 | `logros_diario` |
+    | Fragmento sin contexto previo | `long_text_is_cut_around_the_match_on_char_boundaries` |
+    | Sin reintento | `same_save_id…` y los 6 goldens |
+    | Base ignorada | `writing_on_the_current_version…`, `xp_una_vez`, `logros_diario`, `etiquetas_y_validacion` |
+
+  - Verificación: `fmt`, `clippy -D warnings`, `grimoire-domain` (21 unitarios + goldens) y
+    `grimoire-worker` (28) en verde. Las 7 migraciones aplican en SQLite, con `UNIQUE` y `CHECK`
+    comprobados. El worker todavía no incluye la `0007` en sus tests: llega con la 2.4.3.

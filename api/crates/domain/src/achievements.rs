@@ -118,6 +118,29 @@ pub fn earned_on_pomodoro(f: PomodoroFacts) -> Vec<&'static str> {
         .collect()
 }
 
+/// Lo que hay que saber después de un guardado que pagó. Uno que no paga no revisa logros (v1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DiaryFacts {
+    /// Nivel con el XP de la entrada ya sumado.
+    pub level: u32,
+    /// Entradas escritas en total, con esta incluida (`diary::is_written`, fila 35).
+    pub written_entries: u32,
+}
+
+pub const ARCHIVIST: &str = "archivist";
+pub const DIARY_CENTURY: &str = "diary_century";
+const DIARY: [(u32, &str); 2] = [(30, ARCHIVIST), (100, DIARY_CENTURY)];
+
+/// Todos los logros que se cumplen, en el orden de la v1: nivel y luego diario.
+pub fn earned_on_diary(f: DiaryFacts) -> Vec<&'static str> {
+    LEVELS
+        .iter()
+        .filter(|(min, _)| f.level >= *min)
+        .chain(DIARY.iter().filter(|(min, _)| f.written_entries >= *min))
+        .map(|(_, key)| *key)
+        .collect()
+}
+
 const DISCIPLINE_DAYS: u64 = 7;
 
 /// Primer día que mira `total_discipline`.
