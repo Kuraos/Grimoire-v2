@@ -12,12 +12,14 @@ Limpiar, una sentencia por comando (las dos juntas fallaron en remoto con `incom
      npx wrangler d1 execute grimoire --local --command "DELETE FROM tasks WHERE title LIKE 'Bench tarea %'"
      npx wrangler d1 execute grimoire --local --command "DELETE FROM projects WHERE name LIKE 'Bench proyecto %'"
 """
+import os
 import random
 import sys
 import uuid
 from datetime import date, timedelta
 
-TODAY = date(2026, 11, 1)
+# BENCH_HOY=YYYY-MM-DD lleva el seed al día de la medición; sin ella, el de la 2.2
+TODAY = date.fromisoformat(os.environ.get('BENCH_HOY', '2026-11-01'))
 CREATED = "2024-01-01T05:00:00Z"
 rng = random.Random(20261031)
 

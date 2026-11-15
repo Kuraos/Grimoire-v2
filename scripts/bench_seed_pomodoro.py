@@ -10,13 +10,15 @@ Limpiar, una sentencia por comando:
      npx wrangler d1 execute grimoire --local --command "DELETE FROM pomodoro_sessions WHERE id LIKE 'b%'"
      npx wrangler d1 execute grimoire --local --command "DELETE FROM projects WHERE name LIKE 'Bench proyecto %'"
 """
+import os
 import random
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
 N_SESSIONS, N_PROJECTS, DAYS = 5000, 20, 730
-END = datetime(2026, 11, 1, 17, 0, tzinfo=timezone.utc)
+# BENCH_HOY=YYYY-MM-DD lleva el seed al día de la medición (mediodía en Bogotá); sin ella, el de la 2.3
+END = datetime.fromisoformat(os.environ.get('BENCH_HOY', '2026-11-01') + 'T17:00:00+00:00')
 rng = random.Random(20261105)
 
 

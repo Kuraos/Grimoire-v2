@@ -20,3 +20,20 @@ binding = "DB"
 database_name = "grimoire"
 database_id = "7295c42d-71fa-4b6c-a25a-906119dca367"
 migrations_dir = "../../migrations"
+
+# Entorno de medición (fase-2-transversal.md, 2.5.4): mismo código y runtime, su propio worker y su
+# propia D1, para cargar seeds sin tocar producción. `vars` y `d1_databases` no se heredan.
+[env.bench]
+name = "grimoire-bench"
+workers_dev = true
+preview_urls = false
+
+[env.bench.vars]
+GRIMOIRE_TZ = "America/Bogota"
+CORS_ORIGIN = "https://localhost"
+
+[[env.bench.d1_databases]]
+binding = "DB"
+database_name = "grimoire-bench"
+database_id = "a2723736-bceb-47f4-9827-3c5c363c2443"
+migrations_dir = "../../migrations"

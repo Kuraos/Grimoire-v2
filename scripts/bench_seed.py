@@ -7,13 +7,15 @@ hasta ayer (2026-10-28, Bogotá), 95 % de cumplimiento, y racha intacta los
 Uso: python scripts/bench_seed.py seed.sql
      npx wrangler d1 execute grimoire --remote --file seed.sql
 """
+import os
 import random
 import sys
 import uuid
 from datetime import date, timedelta
 
 rng = random.Random(20261029)
-YESTERDAY = date(2026, 10, 28)
+# BENCH_HOY=YYYY-MM-DD lleva el seed al día de la medición; sin ella, el de la 0.3
+YESTERDAY = date.fromisoformat(os.environ['BENCH_HOY']) - timedelta(days=1) if 'BENCH_HOY' in os.environ else date(2026, 10, 28)
 START = YESTERDAY - timedelta(days=3 * 365)
 CREATED = f"{START.isoformat()}T05:00:00Z"  # medianoche en Bogotá
 

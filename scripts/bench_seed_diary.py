@@ -9,13 +9,15 @@ Uso: python scripts/bench_seed_diary.py seed_diary.sql
 Limpiar:
      npx wrangler d1 execute grimoire --local --command "DELETE FROM diary_entries WHERE id LIKE 'b%'"
 """
+import os
 import random
 import sys
 import uuid
 from datetime import date, timedelta
 
 N_ENTRIES, CHARS = 1000, 2000
-END = date(2026, 11, 10)
+# BENCH_HOY=YYYY-MM-DD lleva el seed al día de la medición; sin ella, el de la 2.4
+END = date.fromisoformat(os.environ.get('BENCH_HOY', '2026-11-10'))
 WORDS = "luz piedra camino tinta vela norte hierro bruma sal raíz eco umbral ceniza río".split()
 rng = random.Random(20261114)
 

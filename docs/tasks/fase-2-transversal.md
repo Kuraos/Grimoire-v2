@@ -409,3 +409,72 @@ no apareció.
     | «sin conexión» con un 401 | `aviso: distingue sin red, cola sin subir…` |
 
   - Verificación: `typecheck`, 219 tests y `build` en verde.
+- **2.5.4, medición del Inicio** (2026-11-15, madrugada de Bogotá; con el «sí» de Johan):
+  - **Entorno `bench`** (`[env.bench]` en `wrangler.toml`): worker `grimoire-bench`
+    (`https://grimoire-bench.jbustosbriceno.workers.dev`, versión `7aba6c2d-4ae1-416b-bf09-3ca0fef65675`)
+    y D1 `grimoire-bench`, **`database_id` `a2723736-bceb-47f4-9827-3c5c363c2443`**, distinto del de
+    producción (`7295c42d-…`); las dos en la región ENAM. `--dry-run` enlaza `env.DB` a `grimoire-bench`
+    con `--env bench` y a `grimoire` sin él. Migraciones `0001`–`0007` aplicadas. Producción no recibió
+    ningún seed.
+  - **Seed** (los cuatro `bench_seed*.py`, con `BENCH_HOY=2026-11-15`, variable nueva: sin ella cada
+    script conserva su fecha original). Con las fechas viejas, las rachas de 400 días de la 0.3 estarían
+    rotas desde el 10-28 y `GET /habits` saldría más barato que el peor caso.
+
+    | Dato | Seed (peor caso) | Escala real de la v1 |
+    |---|---|---|
+    | Hábitos | 10, 9 383 marcas en 3 años, dos rachas intactas de 400 días hasta ayer | 15 hábitos, 70 marcas (2.1.3) |
+    | Tareas (`pesado`) | 500 (300 abiertas, 200 hechas), 1 015 ítems, 20 proyectos | 95 (90 abiertas), 320 ítems, 10 proyectos (2.2) |
+    | Pomodoro | 5 000 sesiones en 2 años (4 de hoy), 20 proyectos más | 22 sesiones (2.3) |
+    | Diario | 1 000 entradas de 2 000 caracteres, también la de hoy | sin dato anotado |
+
+  - **CPU** (`cpuTime` de `wrangler tail --env bench`, una request por segundo, token desechable
+    `GRIMOIRE_TOKEN_PC`; todas `ok`, y las 125 autorizadas con `dispositivo=pc`):
+
+    | Request | n | Mediana | Mín–máx | > 10 ms | Filas leídas |
+    |---|---|---|---|---|---|
+    | `GET /user`, apertura en frío (11 días por asentar) | 5 | 10 ms | 4–23 | 2 | 222 |
+    | `GET /user` | 20 | 3 ms | 1–18 | 1 | 220 |
+    | `GET /habits` | 20 | 6,5 ms | 3–14 | 4 | 2 959 |
+    | `GET /tasks` | 20 | 8 ms | 5–28 | 8 | 1 746 |
+    | `GET /pomodoro/today` | 20 | 1,5 ms | 1–4 | 0 | 8 |
+    | `GET /diary/{hoy}` | 20 | 1,5 ms | 1–5 | 0 | **9 395** |
+    | `GET /health` (sin auth) | 24 | 1 ms | 0–17 | 2 | 0 |
+    | `GET /nada` (auth, 404, sin D1) | 20 | 0 ms | 0–6 | 0 | 0 |
+
+    - Las aperturas en frío se prepararon con `UPDATE users SET settled_through = '2026-11-01'` en la D1
+      de bench antes de cada una. Serie: 10, 15, 23, 4, 7.
+    - **Ninguna mediana pasa de 10 ms.** La apertura en frío queda justo en 10 y `GET /tasks` es la que
+      más se pasa (8 de 20), con 500 tareas frente a las 95 reales. Los picos (17–28 ms) salen al
+      principio de cada tanda, como en la fase 0.
+    - **Autenticación:** `GET /nada` (dos SHA-256 y cuatro secretos) no cuesta más que `/health`; la
+      diferencia es ruido, por debajo de la resolución de 1 ms de `cpuTime`.
+  - **Filas por apertura normal: 14 328** (220 + 2 959 + 1 746 + 8 + 9 395). Con los 5 M diarios de
+    D1 caben unas **349 aperturas al día** con este seed.
+  - **Hallazgo, sin optimizar (se pregunta antes de la 2.5.5): `GET /diary/{hoy}` recorre todas las
+    marcas.** `HABITS_DONE` filtra `habit_logs` solo por `local_date`, y el único índice es
+    `(habit_id, local_date)`. `EXPLAIN QUERY PLAN` en bench: `SCAN l`. Son 9 383 de las 9 395 filas
+    de esa request. El CPU no lo nota (el recorrido es de D1), pero son dos tercios de las filas de
+    cada apertura y crece con cada marca. Con la escala real (70 marcas) no pesa hoy. Un índice por
+    `local_date` en una migración nueva lo dejaría en unas pocas filas.
+  - **Producción tiene el seed de la 0.3:** `habit_logs` tiene 9 429 filas, frente a las 70 marcas de
+    la v1. Es lo que decía Hermes: abrir el Inicio en producción hoy recorre esas marcas, y asentar
+    cobra contra hábitos `Bench`. Se va al vaciar la base en la fase 4.
+  - **Limpieza de bench:** se queda, sin datos. Tablas vaciadas (la migración deja el usuario, el
+    catálogo de logros y las categorías); usuario en `xp` 0, 3 vidas y `settled_through` NULL. Token
+    desechable borrado (`wrangler secret delete GRIMOIRE_TOKEN_PC --env bench`): `/user` da 401.
+    Ningún `wrangler`, `workerd` ni `tail` vivo.
+  - **Producción: deploy de la 2.5.2** (2026-11-15, con el «sí» de Johan). Worker `feebc627` →
+    **`67327d0c-84aa-4bf9-8970-85b5d4d2369e`**, código de `a427748`. Sin migraciones, sin seed y sin
+    secretos nuevos: el teléfono y la tablet siguen con `GRIMOIRE_TOKEN`.
+    - **Línea base antes del deploy:** `users.xp` 1094 = suma de `xp_log` (75 filas, la última de las
+      04:32:12Z), `settled_through` 2026-11-12.
+    - **Humo sin token:** `/health` 200; `/user`, `/habits` y bearer vacío, 401.
+    - **Humo con token**, desde el WebView del teléfono con su propio token (sin imprimirlo; solo
+      `GET`): `/health` 200; `/user` 200 con 1094 XP, nivel 3 «Escriba Errante», `xp_for_current_level`
+      900, `xp_for_next_level` 1600, `xp_into_level` 194 y `xp_span` 700; `/habits` 200 con 21 hábitos.
+      `wrangler tail`: `dispositivo=legacy` en las 4 requests autorizadas, más un `OPTIONS` 204.
+    - El deploy se hizo antes del humo con token: el teléfono no estaba conectado y Johan pidió
+      seguir. El camino de `GRIMOIRE_TOKEN` ya estaba probado en local (2.5.2), y con una falla la app
+      habría pedido el token sin perder su cola.
+    - **D1 después:** igual a la línea base (1094 = suma, 75 filas, ninguna nueva). Ningún `POST`.
+    - Al cerrar: ningún `wrangler`, `workerd`, `tail` ni `vite` vivo, sin `adb forward`.
