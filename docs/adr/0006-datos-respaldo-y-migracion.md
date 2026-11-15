@@ -43,8 +43,9 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
   para D1. Asigna UUID a cada fila, guarda un mapa id-viejo → UUID para mantener las
   relaciones, convierte las fechas naive (hora de Bogotá) a UTC y rellena `local_date`
   con la fecha local original (ADR 0004). El XP histórico se copia, no se recalcula.
-- **Backfill de logros:** además de copiar los ya desbloqueados, la migración calcula la
-  racha actual de cada hábito activo y desbloquea los logros de racha que falten. En la
+- **Backfill de logros:** se copian los desbloqueados en la v1 con su `unlocked_at`
+  original, y se desbloquean solo los de racha que falten según la racha actual de cada
+  hábito activo; ninguno se vuelve a bloquear ni cambia de fecha. En la
   v2, `complete` solo mira la racha del hábito que se marca
   (`docs/tasks/caracterizacion-v1.md`, fila 8), así que un logro pendiente no saltaría
   al marcar otro hábito.
@@ -67,8 +68,9 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
   del primer guardado desde la v2. `written` se calcula con `diary::is_written`; las filas vacías o
   de solo espacios se deciden al ver los datos reales (decisión 4). El XP histórico se copia con
   `mark_id` = id nuevo de la entrada, para que reescribir una entrada migrada no pague de nuevo.
-  Los logros de diario (`archivist`, `diary_century`) se recalculan con el conteo de escritas, como
-  el backfill de rachas.
+  Logros de diario (`archivist`, `diary_century`), con la regla del backfill de rachas: se copian
+  los desbloqueados en la v1 con su `unlocked_at` original, y se desbloquean solo los que falten
+  según el conteo de entradas escritas; ninguno se vuelve a bloquear ni cambia de fecha.
 - **Claves `rank` de las tareas:** las que genere la migración no terminan en `0`. Entre `x` y
   `x0` no cabe ninguna clave (nada ordena antes de `0`), así que una tarjeta soltada ahí no
   podría quedar entre las dos: `rankBetween` la deja después de ambas.
