@@ -252,7 +252,7 @@ Terminado: **se consulta D1 antes de darlo por bueno**: una fila por día, `user
 
 ## Migración
 
-Se agrega al ADR 0006 al cerrar el módulo: `entry_date` → `local_date`; `updated_at` naive de Bogotá
+Agregado al ADR 0006 el 2026-11-15: `entry_date` → `local_date`; `updated_at` naive de Bogotá
 a UTC; `save_id` nuevo por entrada; las filas vacías o de solo espacios se deciden al ver los datos
 reales (decisión 4); el XP histórico se copia con `mark_id` = id nuevo de la entrada, para que
 reescribir una entrada migrada no pague de nuevo.
@@ -312,7 +312,7 @@ reescribir una entrada migrada no pague de nuevo.
   - **XP del día sin suponer la zona:** se leen las filas de `xp_log` de un día antes a uno después
     (índice nuevo `xp_log_created` en la `0007`, que aún no se aplicó en remoto) y `local_date_of`
     decide el día de cada una.
-  - **Fila 43, nueva y pendiente de aprobar:** el XP cuenta el día en que se concedió. Una marca
+  - **Fila 43, aprobada por Johan el 2026-11-15:** el XP cuenta el día en que se concedió. Una marca
     tardía, o lo que se sincroniza al día siguiente, suma su XP al día en que llegó.
     En `resumen_dia`, la marca de ayer suma 20 a hoy.
   - **Tests contra SQLite** (`grimoire-worker`, 8 nuevos): el mismo `save_id` desde el mismo estado
@@ -489,6 +489,22 @@ reescribir una entrada migrada no pague de nuevo.
     SM-P620, Android 16; APK instalada por `adb`, token puesto por Johan). En D1 después: la entrada
     del 14-nov pasa a 111 caracteres sin copias (la tablet cargó la versión actual: base al día),
     `users.xp` 1094 = suma, una sola concesión.
-  - **CPU en producción: pendiente.**
+  - **CPU en producción** (2026-11-15; `cpuTime` de `wrangler tail`, todas 200 y `outcome: ok`).
+    Las peticiones salieron del WebView de la tablet con su token: `GET` del día, volumen y dos
+    búsquedas (con y sin coincidencias), y `PUT` del mismo texto del 14-nov con la base actual (sin
+    conflicto ni XP; solo cambian `save_id` y `updated_at`). Una primera tanda seguida perdió eventos
+    en `tail` (muestreo); la tabla es de la segunda, con 0,8 s entre peticiones:
+
+    | Request | n | Mediana | Mín–máx | Más de 10 ms |
+    |---|---|---|---|---|
+    | `PUT /diary/{día}` | 11 | 4 ms | 3–7 ms | 0 |
+    | `GET /diary/{día}` | 12 | 2 ms | 2–4 ms | 0 |
+    | `GET /diary/volume` | 11 | 3 ms | 2–3 ms | 0 |
+    | `GET /diary/search` con coincidencia | 12 | 2 ms | 1–4 ms | 0 |
+    | `GET /diary/search` sin coincidencia | 13 | 2 ms | 1–7 ms | 0 |
+
+    Con una sola entrada en producción: la búsqueda y el volumen crecen con los datos migrados
+    (ver las mediciones de la 2.4.3 con 1 000 entradas). `wrangler tail` sobrevivió a `TaskStop`
+    y se cerró con `taskkill /T`.
   - Verificación tras el arreglo: `typecheck`, 209 tests y `build` en verde. El worker no cambió: sin
     deploy nuevo. Al cerrar, ningún `wrangler` ni `workerd` vivo y sin `adb forward`.

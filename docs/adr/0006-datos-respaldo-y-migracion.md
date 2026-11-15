@@ -62,6 +62,13 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
   decide al ver los datos reales. `task_id` o `project_id` colgantes pasan a `NULL`, y sus horas
   dejan de contar para el proyecto borrado, que la v1 ya no muestra. El XP histórico se copia, y
   lo migrado no necesita `mark_id`, porque las sesiones no se deshacen.
+- **Entradas del diario** (`docs/tasks/fase-2-diario.md`): `entry_date` pasa a `local_date` y
+  `updated_at` naive (hora de Bogotá) a UTC. Cada entrada recibe un `save_id` nuevo, que es la base
+  del primer guardado desde la v2. `written` se calcula con `diary::is_written`; las filas vacías o
+  de solo espacios se deciden al ver los datos reales (decisión 4). El XP histórico se copia con
+  `mark_id` = id nuevo de la entrada, para que reescribir una entrada migrada no pague de nuevo.
+  Los logros de diario (`archivist`, `diary_century`) se recalculan con el conteo de escritas, como
+  el backfill de rachas.
 - **Claves `rank` de las tareas:** las que genere la migración no terminan en `0`. Entre `x` y
   `x0` no cabe ninguna clave (nada ordena antes de `0`), así que una tarjeta soltada ahí no
   podría quedar entre las dos: `rankBetween` la deja después de ambas.
