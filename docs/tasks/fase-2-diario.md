@@ -485,7 +485,10 @@ reescribir una entrada migrada no pague de nuevo.
       que el `PUT`. Una lectura de D1 cayó entre los dos y vio la entrada de 29 caracteres sin copia.
     - Estado final: una fila del día con 82 caracteres (lo del teléfono, línea en blanco y lo del
       «PC»), sin copias, cola del teléfono vacía, `users.xp` 1094 = suma, una sola concesión.
-  - **Prueba 4, teclado:** bien en el teléfono en horizontal. **Tablet: pendiente**, no tiene la APK.
+  - **Prueba 4, teclado:** bien en el teléfono en horizontal y en la tablet (Galaxy Tab S6 Lite
+    SM-P620, Android 16; APK instalada por `adb`, token puesto por Johan). En D1 después: la entrada
+    del 14-nov pasa a 111 caracteres sin copias (la tablet cargó la versión actual: base al día),
+    `users.xp` 1094 = suma, una sola concesión.
   - **CPU en producción: pendiente.**
   - Verificación tras el arreglo: `typecheck`, 209 tests y `build` en verde. El worker no cambió: sin
     deploy nuevo. Al cerrar, ningún `wrangler` ni `workerd` vivo y sin `adb forward`.
