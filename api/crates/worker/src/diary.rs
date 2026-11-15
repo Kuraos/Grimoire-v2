@@ -583,10 +583,33 @@ mod tests {
             include_str!("../../../migrations/0005_tasks.sql"),
             include_str!("../../../migrations/0006_pomodoro.sql"),
             include_str!("../../../migrations/0007_diary.sql"),
+            include_str!("../../../migrations/0008_habit_logs_local_date.sql"),
         ))
         .unwrap();
         c.pragma_update(None, "foreign_keys", true).unwrap();
         c
+    }
+
+    /// Las marcas del día del resumen salen por índice, no recorriendo todas las marcas (2.5.4: en
+    /// bench, `SCAN` de 9 383 filas por apertura del Inicio).
+    #[test]
+    fn day_summary_reads_marks_by_index() {
+        let c = db();
+        let mut plan = c
+            .prepare(&format!("EXPLAIN QUERY PLAN {HABITS_DONE}"))
+            .unwrap();
+        let details: Vec<String> = plan
+            .query_map([DAY], |r| r.get::<_, String>(3))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert!(
+            details
+                .iter()
+                .any(|d| d.contains("USING INDEX habit_logs_local_date")),
+            "{details:?}"
+        );
+        assert!(!details.iter().any(|d| d == "SCAN l"), "{details:?}");
     }
 
     /// Lo que el handler leyó: `save_id` vigente, texto y si ya pagó.

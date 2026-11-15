@@ -478,3 +478,13 @@ no apareció.
       habría pedido el token sin perder su cola.
     - **D1 después:** igual a la línea base (1094 = suma, 75 filas, ninguna nueva). Ningún `POST`.
     - Al cerrar: ningún `wrangler`, `workerd`, `tail` ni `vite` vivo, sin `adb forward`.
+- **Índice de `habit_logs` por día** (2026-11-15, decidido por Johan tras la 2.5.4): migración
+  `0008_habit_logs_local_date` (`CREATE INDEX habit_logs_local_date ON habit_logs (local_date)`).
+  - `day_summary_reads_marks_by_index` (`worker/src/diary.rs`) pide `EXPLAIN QUERY PLAN` de
+    `HABITS_DONE` contra el esquema de las migraciones y exige el índice nuevo. Sin la `0008` cae con
+    `SCAN l`, el mismo plan que dio bench.
+  - En la D1 local: aplicada, y el plan pasa a `SEARCH l USING INDEX habit_logs_local_date
+    (local_date=?)`.
+  - **Sin aplicar en remoto** (ni en producción ni en bench): pide el «sí» de Johan. Es solo un
+    índice: no cambia datos ni respuestas, y el worker desplegado funciona con o sin él.
+  - Verificación: `fmt`, `clippy -D warnings` y 140 tests de Rust en verde.
