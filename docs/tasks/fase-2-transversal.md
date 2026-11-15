@@ -592,5 +592,18 @@ no apareció.
       recupera. Guardarlos en un gestor de contraseñas.
     - Al borrar los datos de la app se pierde la configuración local del pomodoro y las
       notificaciones agendadas (se reagendan al cargar las tareas).
-  - Falta el resto de la 2.5.7 (Inicio con y sin señal, tres dispositivos a la vez, `LevelUpOverlay`,
-    revocación, los pendientes de la tablet y del PC) y la consulta a D1 del «Terminado».
+- **2.5.7, prueba en los tres dispositivos** (2026-11-15, Bogotá, contra producción):
+  - **Johan**, sin captura: marcó hábitos y completó tareas desde el Inicio en la tablet, con y sin
+    señal; el Inicio dice **160 XP hoy**. Confirma también `LevelUpOverlay` una vez, la revocación
+    (pide token solo el revocado), el aviso `notificationAccess` y Hábitos a 1280 × 800 en la tablet,
+    y el conflicto del Diario y los recordatorios web en el PC. Eso cierra los puntos 1–4 de «Van a la
+    2.5.7».
+  - **D1 remota**, consultada después:
+    - `users.xp` = 1254 = `SUM(xp_log.amount)`.
+    - Ningún `mark_id` con más de una concesión positiva. Los 40 movimientos sin `mark_id` (2026-10-30
+      y 31, anteriores a la `0004`) repiten `source_id` por hábito, pero en días distintos.
+    - Hoy: 5 marcas de hábito × 20 = 100 y 4 tareas (`Prueba rec A`–`D`) × 15 = 60, cada una con una
+      sola concesión: 160, igual al Inicio.
+    - Ninguna penalización ni vida cobrada: hoy no había nada que cobrar, así que el punto 5 de
+      «Abiertos» (la penalización en D1 remota) sigue abierto.
+  - Cola de la tablet (`grimoire-queue-v1`, leída con `run-as`) vacía al terminar.
