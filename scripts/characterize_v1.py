@@ -697,7 +697,54 @@ def resumen_dia():
     ]
 
 
+# ---------- usuario ----------
+
+def _chunks(n: int) -> list[int]:
+    """Montos de 10 a 100 (los que acepta `xp_reward`) que suman n, el último de 10."""
+    assert n >= 10 and n - 10 not in range(1, 10), n
+    out, rest = [], n - 10
+    while rest:
+        c = min(100, rest)
+        if 0 < rest - c < 10:
+            c = rest - 10
+        out.append(c)
+        rest -= c
+    return out + [10]
+
+
+def usuario_niveles():
+    """`GET /user` y los cuatro campos de progreso de `_enrich` (`xp_for_current_level`,
+    `xp_for_next_level`, `xp_into_level`, `xp_span`). Primero XP 0 en una base nueva. Después XP
+    en 0 tras una penalización: dos hábitos de 10 XP en días alternos del 02 al 15 (140 XP) y una
+    sola evaluación el 16 que cobra 13 días rotos (3 vidas y 10 × 15 XP, con piso en 0). Por
+    último, el 17, hábitos nuevos de una sola marca (racha 1, sin multiplicador) llevan el XP a
+    uno antes y justo en el umbral de los niveles 2, 3, 4, 5, 10 y 13 (nivel² · 100); el +1 del
+    umbral es una marca de 11 y el deshacer de la última de 10. El 13 tiene el título del 12."""
+    s = [step("2026-03-02", "GET /user")]
+    s += [habit("2026-03-02", "lectura", xp_reward=10), habit("2026-03-02", "agua", xp_reward=10)]
+    s += _marks({d: ["lectura" if i % 2 == 0 else "agua"] for i, d in enumerate(_days("2026-03-02", 14))})
+    s += [
+        step("2026-03-16", "GET /user"),
+        step("2026-03-16", "POST /user/evaluate-streaks"),
+        step("2026-03-16", "GET /user"),
+    ]
+    d, xp, n = "2026-03-17", 0, 0
+    for level in (2, 3, 4, 5, 10, 13):
+        target = level ** 2 * 100
+        for c in _chunks(target - 1 - xp):
+            n += 1
+            s += [habit(d, f"h{n:03}", xp_reward=c), step(d, "POST /habits/{h%03d}/complete" % n)]
+        last10 = n
+        s.append(step(d, "GET /user"))
+        n += 1
+        s += [habit(d, f"h{n:03}", xp_reward=11), step(d, "POST /habits/{h%03d}/complete" % n)]
+        s += [step(d, "DELETE /habits/{h%03d}/complete" % last10), step(d, "GET /user")]
+        xp = target
+    return s
+
+
 MODULES = {
+    "user": (usuario_niveles,),
     "habits": (diario_simple, diario_lv, racha_rota, dia_perfecto, semanal_2x, deshacer, logros),
     "tasks": (crear_y_validar, completar_xp, descompletar_piso, kanban_estado, checklist,
               proyectos, logros_tareas, logro_por_patch),

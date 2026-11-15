@@ -93,6 +93,70 @@ Goldens en `api/crates/domain/tests/golden/diary/` (7 escenarios, 208 pasos):
 6. `etiquetas_y_validacion`: etiquetas conservadas, borradas o con espacios; rechazos 422; `PATCH`.
 7. `resumen_dia`: hábitos, sesiones, minutos, XP del día y check-in.
 
+## Escenarios de usuario
+
+Golden en `api/crates/domain/tests/golden/user/` (1 escenario, 400 pasos):
+
+1. `usuario_niveles`: `GET /user` con los cuatro campos de progreso de `_enrich`
+   (`xp_for_current_level`, `xp_for_next_level`, `xp_into_level`, `xp_span`) en XP 0 (base nueva),
+   en XP 0 tras una penalización con piso, y uno antes y justo en el umbral de los niveles 2, 3, 4,
+   5, 10 y 13 (399/400, 899/900, 1 599/1 600, 2 499/2 500, 9 999/10 000, 16 899/16 900).
+
+## Casos del Inicio en el cliente de la v1
+
+No son goldens de backend: la v1 los calcula en `frontend/src/pages/Dashboard.tsx` (v1 en
+`f85381f`) con lo que devuelven `GET /habits` y `GET /tasks`. Son los casos de los tests de la 2.5.3
+(`fase-2-transversal.md`); el resultado esperado sale de leer el código, no de ejecutarlo.
+
+**Bono de racha** (`Dashboard.tsx:122-123`, `utils.ts:135-145`):
+`bestStreak = habits.reduce((m, h) => Math.max(m, h.streak), 0)` y
+`streakMultiplier(bestStreak)`: el último umbral alcanzado de 7 → 1,10, 14 → 1,20, 30 → 1,35,
+60 → 1,50 y 100 → 1,75. `XPBar` solo pinta el bono si es mayor que 1.
+
+| Hábitos (`streak`) | Mejor racha | Bono | `XPBar` |
+|---|---|---|---|
+| ninguno | 0 (valor inicial del `reduce`) | 1 | sin bono |
+| todos en 0 | 0 | 1 | sin bono |
+| 6 y 3 | 6 | 1 | sin bono |
+| 7 y 3 | 7 | 1,10 | «×1.10» |
+| 13, 14 y 2 | 14 | 1,20 | «×1.20» |
+| 29 y 30 | 30 | 1,35 | «×1.35» |
+| 100 | 100 | 1,75 | «×1.75» |
+
+- Entran **todos** los hábitos que devuelve `listHabits()` (activos, sin archivados), también los
+  semanales: la racha de un semanal cuenta semanas, y 7 semanas dan 1,10 aunque ningún diario lo
+  tenga.
+- El bono es solo informativo: el XP de cada marca lo multiplica el servidor con la racha de **ese**
+  hábito.
+
+**Tareas prioritarias** (`Dashboard.tsx:41` y `:46`): `GET /tasks?completed=false&sort=priority` y
+`slice(0, 4)`. El servidor (`routers/tasks.py:55-66`) filtra `completed == false` y ordena con
+`sorted` por (prioridad `high` 0, `medium` 1, `low` 2, otra 1; sin fecha al final; fecha
+ascendente). `sorted` es estable y la consulta no tiene `ORDER BY`, así que los empates quedan en el
+orden en que SQLite devuelve las filas, en la práctica el de creación (no garantizado por SQL).
+
+| Abiertas (en orden de creación) | Resultado |
+|---|---|
+| A low, B high, C medium, D high sin fecha, E high con fecha 03-05 | E, B, D, C |
+| B high, D high (sin fecha las dos) | B, D: el empate respeta el orden de creación |
+| A medium 03-10, B medium 03-02, C medium sin fecha | B, A, C |
+| A low, B low | A, B: menos de 4, se muestran las que hay |
+| ninguna abierta | lista vacía, «Nada pendiente. ✦» |
+| A high completada, B low abierta | B: las completadas no entran |
+
+**Grupos por categoría** (`Dashboard.tsx:127-132`): se recorren los hábitos y cada categoría nueva
+abre un grupo al final; los hábitos quedan en su grupo en el orden en que llegan. **Ese orden lo pone
+el servidor:** `routers/habits.py:71` ordena por `category, name` (orden binario de SQLite: mayúsculas
+antes que minúsculas, letras con tilde después de la «z»). El resultado es categorías y nombres en
+orden alfabético, no de creación.
+
+| Hábitos creados (categoría · nombre), en este orden | Grupos |
+|---|---|
+| Salud · Correr, Mente · Leer, Salud · Agua | Mente [Leer], Salud [Agua, Correr] |
+| Otro · B, Otro · A | Otro [A, B] |
+| ninguno | ningún grupo; «Sin hábitos. Créalos en la sección Hábitos.» |
+| Cuerpo · X, Ánimo · Y | Cuerpo [X], Ánimo [Y] (la «Á» va después de la «C») |
+
 ## Cómo los usa la v2
 
 - `grimoire-domain` tiene un test que lee cada golden y reproduce la secuencia con las
@@ -154,6 +218,13 @@ ADR 0005, y las que dicen su fecha.
 | 41 | Exportar a Obsidian | `POST /diary/{date}/export-obsidian` | Se elimina | Decisión 9, de Johan: el diario es de la app, no del vault. |
 | 42 | Tamaño de la entrada | Sin límite | 422 sobre 200 000 caracteres | `fase-2-diario.md`, decisión 10. |
 | 43 | Día del XP en el resumen del diario | El de la concesión, que en la v1 es siempre el de la marca (`resumen_dia`) | El de la concesión, que puede ser posterior al día marcado: marca tardía en la ventana de gracia o escritura sincronizada después | `xp_log` no guarda `local_date`. Solo cambia el «XP ganado» del resumen. Salió en la 2.4.3; aprobada por Johan el 2026-11-15. |
+| 44 | Refresco de `GET /user` | Cada 30 s, y `POST /user/evaluate-streaks` al abrir | Al volver a la app y tras cada lote de escrituras; `GET /user` asienta (ADR 0005) | Ya era así desde la 2.1.5. Aprobada por Johan el 2026-11-15, como las filas 45 a 50 (`fase-2-transversal.md`). |
+| 45 | Misiones en el Inicio | `QuestsCard` | No está | Misiones es fase 5+. |
+| 46 | Check-in en el Inicio | `EnergyCheckin` | No está | Check-ins es fase 5+, como la fila 36. |
+| 47 | Minicalendario del Inicio | Eventos y días con hábitos; lleva al calendario | No está | Calendario es fase 5+. Tampoco la versión con solo los días de hábitos. |
+| 48 | Aviso sin conexión | Franja global bajo `TopBar`: «Sin conexión con el servidor — reintentando…» | Aviso global pequeño: «sin conexión · N pendientes», o «N pendientes» con red y la cola sin subir | La v2 funciona sin conexión: el aviso dice cuánto falta por subir. |
+| 49 | Acceso | Sin autenticación (`127.0.0.1`) | Un bearer por dispositivo (teléfono, tablet, PC) en toda ruta de la API salvo `/health`, comparado en el worker sin D1 y revocable uno a uno; un 401 pide el token de nuevo | Invariante 6 de `AGENTS.md`; decisión C del plan. |
+| 50 | `PATCH /user` | Renombra y guarda `obsidian_vault_path` | No existe | Hasta Ajustes. La ruta del vault no tiene uso (fila 41). |
 
 ## Hallazgos
 
@@ -270,3 +341,34 @@ porta igual.
     conserva y con `""` las borra. Sin `content`, o con `content` que no es texto, da 422.
   - **El XP del día del resumen incluye los 5 XP del check-in**, porque suma todo `xp_log` del día
     (`resumen_dia`: 20 + 30 + 15 + 15 + 5 + 5 = 90). Las sesiones incompletas no salen.
+- **Usuario** (2026-11-15): golden en `api/crates/domain/tests/golden/user/`. Al regenerar, los 28
+  goldens anteriores salieron idénticos.
+  - **El nivel guardado es una caché del XP.** `_enrich` (`routers/user.py:16-25`) lee `user.level`,
+    una columna, no `xp_to_level(user.xp)`. Pero `award_xp` (`services.py:113-135`) es la única
+    función que escribe `users.xp` (14 llamadas; ningún `UPDATE users` fuera de los tests) y en cada
+    llamada recalcula `level` y `title`. En una base nueva el nivel es función del XP, y así lo
+    graban todos los goldens. **Para la migración (ADR 0006):** la base real podría tener un `level`
+    que no corresponda a su XP si alguna versión vieja escribió el XP de otra forma; la v2 lo calcula
+    del XP, así que conviene comprobar `level = xp_to_level(xp)` en la copia antes del cambio.
+  - **Progreso de nivel** (`usuario_niveles`): el nivel 1 empieza en 0 XP aunque
+    `xp_for_level(1)` = 100 (`cur = 0 if level <= 1`); los demás en nivel² · 100. `xp_span` es el
+    ancho del nivel (400, 500, 700, 900, 1 100…) y `xp_into_level` el XP desde su inicio. Al nivel 13
+    le toca el título del 12 («Oráculo Perpetuo»): el de umbral más alto que no lo pasa.
+  - **La evaluación responde la penalización nominal:** con 140 XP y 13 días rotos, `xp_penalty` es
+    150 (3 vidas y 10 × 15), pero `new_xp` es 0 y `xp_log` registra −140, lo aplicado. Igual que
+    `deshacer`.
+  - **`GET /user` no evalúa en la v1:** las vidas siguen en 3 el 03-16 hasta `evaluate-streaks`. La
+    v2 asienta en `GET /user` (fila 44), así que la 2.5.2 compara los campos de progreso, el nivel,
+    el título y el XP, no las vidas de los pasos previos a la evaluación.
+  - **Goldens que ya graban los cuatro campos sin que ningún test los compare** (35 pasos en 19
+    goldens; los compara la 2.5.2): `diary/` `etiquetas_y_validacion` (1), `logros_diario` (2),
+    `resumen_dia` (1), `solo_espacios` (2), `xp_una_vez` (3); `habits/` `deshacer` (3),
+    `dia_perfecto` (1), `diario_lv` (1), `diario_simple` (1), `logros` (1), `racha_rota` (2);
+    `pomodoro/` `logros_pomodoro` (3), `sesion_incompleta` (1), `sesion_xp` (2),
+    `validacion_sesion` (1); `tasks/` `completar_xp` (3), `descompletar_piso` (3),
+    `kanban_estado` (2), `logros_tareas` (2). Hoy solo los nombra `worker/src/user.rs`; los tests de
+    `domain` comparan `level` y `title`.
+  - **Empates de prioridad en la v2:** `GET /tasks` de la v2 ordena por `rank, id`, así que
+    `sortTasks` (estable) desempata por el orden del tablero, no por el de creación. Es una
+    diferencia posible para las tareas prioritarias del Inicio, sin fila todavía: se decide en la
+    2.5.3.

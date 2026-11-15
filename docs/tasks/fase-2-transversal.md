@@ -303,4 +303,13 @@ no apareció.
 
 ## Hallazgos
 
-(vacío)
+- **2.5.1, caracterización** (2026-11-15): `usuario_niveles`, 400 pasos, v1 en `f85381f`, grabado
+  con bases temporales; los 28 goldens anteriores salieron idénticos al regenerar. Detalle en
+  «Hallazgos» de `caracterizacion-v1.md`:
+  - El nivel de la v1 es una columna, pero `award_xp` la recalcula del XP en cada escritura: en los
+    goldens es función del XP. Para la migración, comprobar `level = xp_to_level(xp)` en la copia real.
+  - 35 pasos en 19 goldens ya graban los cuatro campos de progreso sin que nadie los compare: la
+    2.5.2 los empieza a comparar.
+  - Los grupos por categoría del Inicio salen en orden alfabético (lo ordena `GET /habits`), no de
+    creación. Los empates de prioridad pueden diferir de la v1 (`rank` frente a creación): se decide
+    en la 2.5.3.
