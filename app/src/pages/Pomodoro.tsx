@@ -274,7 +274,7 @@ function DayLine({ sessions }: { sessions: ApiPomodoroSession[] }) {
 
 /** La esfera lee el reloj aquí dentro: el segundo redibuja solo la esfera, no la vista con el log y
  *  la recta del día. Hasta restaurar no hay reloj, y la vista ya mostró el esqueleto. */
-function ClockedTimer(props: Omit<ComponentProps<typeof PomodoroTimer>, "secondsLeft" | "totalSeconds" | "progress">) {
+export function ClockedTimer(props: Omit<ComponentProps<typeof PomodoroTimer>, "secondsLeft" | "totalSeconds" | "progress">) {
   const clock = usePomodoroClock();
   return clock && <PomodoroTimer {...props} {...clock} />;
 }

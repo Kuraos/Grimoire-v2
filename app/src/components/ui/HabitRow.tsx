@@ -14,7 +14,7 @@ export function HabitRow({ habit, onComplete, onUndo, onClick }: {
       <button
         onClick={() => (habit.done_today ? onUndo?.(habit) : onComplete(habit))}
         title={habit.done_today ? "Deshacer" : "Marcar como completado"}
-        className={`group flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
+        className={`gr-tactil group flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
           habit.done_today
             ? "border-[var(--gr-gilded)] bg-[var(--gr-gilded-deep)]"
             : "border-[var(--border-accent)] hover:border-[var(--border-glow)]"

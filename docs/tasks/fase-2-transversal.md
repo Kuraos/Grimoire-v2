@@ -491,3 +491,41 @@ no apareció.
     Datos sin cambios: `users.xp` 1094 = suma de `xp_log` (75 filas), 9 429 marcas; `/health` 200.
     Bench: aplicada, mismo plan. El worker no cambió (sigue `67327d0c`).
   - Verificación: `fmt`, `clippy -D warnings` y 140 tests de Rust en verde.
+- **2.5.5, vista Inicio** (2026-11-15):
+  - `pages/Home.tsx` porta `Dashboard.tsx` de la v1 sin Misiones, Energía/Ánimo ni el minicalendario
+    (filas 45 a 47), con los componentes ya portados (`PageHeader`, `XPBar`, `Card`, `SectionBand`,
+    `HabitRow`, `TaskCard`, `DaySigil`) y la esfera del pomodoro (`ClockedTimer`, ahora exportado de
+    `pages/Pomodoro.tsx` en vez de duplicarlo). `/` deja de ser `Pendiente` y es donde arranca la app
+    (decisión D).
+  - **Componente nuevo, el único: `SyncNotice`** (`components/layout/`), el aviso global de la
+    decisión B, bajo `TopBar` en todas las vistas. Es visual y sin datos; `syncNotice.tsx`
+    (`SyncNoticeHost`) lee la cola y la red, para que un cambio en la cola redibuje el aviso y no
+    `App`. Tinta tenue y no la franja roja de la v1: la v2 funciona sin conexión.
+  - **Layout:** en el teléfono, una columna con la `rubric` (Hábitos de hoy) primero tras la barra:
+    Pomodoro, Tareas prioritarias, sigilo y resumen. En `lg:`, **dos columnas** y no las tres de la
+    v1: sin Misiones ni Energía, la del medio quedaba solo con el Pomodoro y un hueco (visto en la
+    captura). Hábitos a la izquierda (1,4), Pomodoro, Tareas y sigilo a la derecha.
+  - **Adaptación táctil:** el casillero de `HabitRow` (16 px) lleva `gr-tactil`: área de 44 × 44 px
+    medida en el navegador, sin cambiar el dibujo.
+  - **Lo que solo salió al mirar las capturas** (sin caché y sin conexión): la cabecera decía «Sin
+    hábitos todavía», la barra «Cargando…» para siempre, Tareas «Nada pendiente. ✦» y el resumen tres
+    ceros, todo como si fueran datos. Ahora: la cabecera dice «Sin conexión», cada tarjeta que espera
+    datos lo dice como en Hábitos y Tareas (`habitsOffline`, `tasksOffline` en `useHome`), y la
+    barra, la cifra de la `rubric` y el resumen no se muestran.
+  - **Capturas** (`docs/capturas/fase-2.5.5-*`), contra `wrangler dev` con una D1 local aparte
+    (`--persist-to`, borrada al terminar) y datos inventados: 6 hábitos en 4 categorías con rachas de
+    0 a 23, 5 tareas, 2 sesiones de hoy; 1130 XP. Navegador táctil (`hasTouch`) a 393 × 852 y
+    1280 × 800:
+    - Con datos (`inicio-*`, `inicio-abajo-*`): «3 de 6 hábitos · 90 XP · 50 min de foco», nivel 3,
+      230/700, bono ×1.20 (racha de 23), las 4 prioritarias en orden (alta con fecha, alta, media con
+      fecha, media).
+    - Sin conexión con un pendiente (`sin-conexion-pendiente-*`): tras marcar «Estiramientos», «4 de 6»
+      y Físico 2/2, con el XP en 90 y la barra igual (regla 1), y el aviso «sin conexión · 1 pendiente».
+    - Sin caché (`sin-cache-*`): contexto nuevo, API bloqueada y `navigator.onLine` falso; aviso «sin
+      conexión» y cada tarjeta esperando la señal.
+    - Revisado en cada una: una sola `rubric`, `scrollWidth` igual al ancho, oro solo en nivel, bono,
+      XP y rachas, nada cortado, sin errores en consola.
+  - `pomodoro-context.test.tsx` monta `App` sin `QueryClientProvider`: simula `pages/Home` y
+    `syncNotice` como ya simulaba las demás vistas.
+  - Verificación: `typecheck`, 219 tests y `build` en verde. Al cerrar, ningún `wrangler`, `workerd`
+    ni `vite` vivo, y el 8787 y el 5173 libres.

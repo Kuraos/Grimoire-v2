@@ -31,6 +31,7 @@ vi.mock("./sounds", () => ({ playChime: () => {} }));
 vi.mock("./pages/Tasks", () => ({ default: () => { renders.route++; return null; } }));
 vi.mock("./pages/Habits", () => ({ default: () => null }));
 vi.mock("./pages/Pomodoro", () => ({ default: () => null }));
+vi.mock("./pages/Home", () => ({ default: () => null }));
 vi.mock("./components/layout/PomodoroIsland", () => ({
   PomodoroIsland: () => { renders.island++; return null; },
 }));
@@ -41,6 +42,7 @@ vi.mock("./components/layout/CommandPalette", () => ({ CommandPalette: () => nul
 vi.mock("./components/layout/ToastAchievement", () => ({ ToastAchievement: () => null }));
 vi.mock("./components/layout/LevelUpOverlay", () => ({ LevelUpOverlay: () => null }));
 vi.mock("./reminders", () => ({ TaskReminders: () => null }));
+vi.mock("./syncNotice", () => ({ SyncNoticeHost: () => null }));
 vi.mock("./confirm", () => ({ ConfirmHost: () => null }));
 vi.mock("./hooks/useMediaQuery", () => ({ useIsDesktop: () => false }));
 vi.mock("./context", () => ({

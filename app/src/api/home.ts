@@ -109,11 +109,14 @@ export function useHome() {
     pendingHabitIds: habits.pendingIds,
     groups: groupByCategory(habits.habits),
     priorityTasks: priorityTasks(tasks.tasks),
+    pendingTaskIds: tasks.pendingIds,
+    /** Sin caché y sin conexión: la tarjeta lo dice, como la vista Hábitos. */
+    habitsOffline: habits.query.data === undefined && habits.query.fetchStatus === 'paused',
+    tasksOffline: tasks.query.data === undefined && tasks.query.fetchStatus === 'paused',
     /** Del servidor (`GET /diary/{hoy}`, decisión A1): no se adelanta con la cola. */
     xpToday: diary.summary?.xp_earned ?? null,
     /** Con las sesiones en cola, como la vista Pomodoro. */
     focusMinutes: pomodoro.totalMinutes,
     notice: syncNotice(link, queue),
-    loading: user.data === undefined && habits.query.data === undefined,
   }
 }

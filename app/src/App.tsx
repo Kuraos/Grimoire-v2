@@ -15,6 +15,8 @@ import Habits from "./pages/Habits";
 import Tasks from "./pages/Tasks";
 import Pomodoro from "./pages/Pomodoro";
 import Diary from "./pages/Diary";
+import Home from "./pages/Home";
+import { SyncNoticeHost } from "./syncNotice";
 import { usePomodoroClock, usePomodoroCtx, type PomodoroState } from "./pomodoro-context";
 import { TaskReminders } from "./reminders";
 import { useApp } from "./context";
@@ -42,7 +44,7 @@ function Pendiente({ titulo }: { titulo: string }) {
 }
 
 const PENDIENTES: [string, string][] = [
-  ["/", "Inicio"], ["/calendario", "Calendario"],
+  ["/calendario", "Calendario"],
   ["/entrenamiento", "Entrenamiento"], ["/erario", "Erario"],
   ["/estadisticas", "Estadísticas"], ["/logros", "Logros"], ["/revision", "Revisión semanal"],
 ];
@@ -98,6 +100,7 @@ export default function App() {
         {/* El borde superior (barra de estado, cámara) se pinta del color del cromo */}
         <div style={{ paddingTop: "env(safe-area-inset-top)", background: "var(--gr-chrome)" }}>
           <TopBar user={user} onOpenSettings={abrirAjustes} />
+          <SyncNoticeHost />
         </div>
         <main className="flex-1 overflow-y-auto p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-4">
           <ErrorBoundary key={location.pathname} scope={location.pathname}>
@@ -106,6 +109,7 @@ export default function App() {
                 {PENDIENTES.map(([path, titulo]) => (
                   <Route key={path} path={path} element={<Pendiente titulo={titulo} />} />
                 ))}
+                <Route path="/" element={<Home />} />
                 <Route path="/habitos" element={<Habits />} />
                 <Route path="/tareas" element={<Tasks />} />
                 <Route path="/pomodoro" element={<Pomodoro />} />
