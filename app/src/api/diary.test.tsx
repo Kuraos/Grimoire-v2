@@ -309,3 +309,54 @@ test('el editor guarda al cambiar de día, al pasar a segundo plano y tras 30 s 
   expect(saves()).toHaveLength(4)
   act(() => root.unmount())
 })
+
+test('la app muere tras guardar y antes de escribir la caché: al abrir con señal, el editor muestra lo del servidor y no lo pisa', async () => {
+  // 2.4.6, prueba 1: el PUT llegó, pero en disco quedó la caché vieja (se escribe 2 s después)
+  // y el borrador ya se había borrado al encolar.
+  server.set(DAY, { id: 'e1', content: 'Viejo, y lo de hoy', save_id: 's1', tags: null })
+  onlineManager.setOnline(true)
+  sharedClient.clear()
+  sharedClient.setQueryData(dayKey(DAY), day({ id: 'e1', content: 'Viejo', save_id: 's0' }), { updatedAt: 0 })
+  let ed: Editor | null = null
+  function Probe() {
+    ed = useDiaryEditor(DAY)
+    return null
+  }
+  const root = createRoot(document.createElement('div'))
+  await act(async () => root.render(<QueryClientProvider client={sharedClient}><Probe /></QueryClientProvider>))
+  await act(() => vi.advanceTimersByTimeAsync(10))
+  const editor = () => ed as unknown as Editor
+  expect(editor().content).toBe('Viejo, y lo de hoy')
+
+  // salir de la vista no manda la versión vieja encima de la nueva
+  act(() => root.unmount())
+  await vi.advanceTimersByTimeAsync(10)
+  expect(puts()).toEqual([])
+  expect(server.get(DAY)?.content).toBe('Viejo, y lo de hoy')
+})
+
+test('escribir sobre la caché vieja antes de que llegue lo del servidor: lo del servidor queda como copia', async () => {
+  server.set(DAY, { id: 'e1', content: 'Viejo, y lo de hoy', save_id: 's1', tags: null })
+  onlineManager.setOnline(false)
+  sharedClient.clear()
+  sharedClient.setQueryData(dayKey(DAY), day({ id: 'e1', content: 'Viejo', save_id: 's0' }), { updatedAt: 0 })
+  let ed: Editor | null = null
+  function Probe() {
+    ed = useDiaryEditor(DAY)
+    return null
+  }
+  const root = createRoot(document.createElement('div'))
+  await act(async () => root.render(<QueryClientProvider client={sharedClient}><Probe /></QueryClientProvider>))
+  const editor = () => ed as unknown as Editor
+  expect(editor().content).toBe('Viejo')
+  await act(async () => editor().setContent('Viejo, y otra cosa'))
+
+  // llega la señal: el refresco no pisa lo tecleado, y el guardado lleva la base sobre la que se escribió
+  await act(async () => onlineManager.setOnline(true))
+  await act(() => vi.advanceTimersByTimeAsync(10))
+  expect(editor().content).toBe('Viejo, y otra cosa')
+  act(() => root.unmount())
+  await vi.advanceTimersByTimeAsync(10)
+  expect(puts().map((c) => c.body)).toMatchObject([{ content: 'Viejo, y otra cosa', base_save_id: 's0' }])
+  expect(conflicts.map((c) => c.content)).toEqual(['Viejo, y lo de hoy'])
+})

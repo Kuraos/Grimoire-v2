@@ -446,3 +446,46 @@ reescribir una entrada migrada no pague de nuevo.
     viejo hasta reiniciarlo.
   - Verificación: `fmt`, `clippy`, 130 tests de Rust, `typecheck`, 207 de la app y `build` en verde.
     Al cerrar, ningún `wrangler`, `workerd` ni `vite` vivo, y el 8787 y el 5173 libres.
+
+- **2.4.6, prueba en el teléfono** (2026-11-14, noche de Bogotá; Infinix X6831, Android 13, contra
+  producción. Johan tocó el teléfono y el agente leyó por `adb`, CDP y D1):
+  - **Antes:** `fmt`, `clippy -D warnings`, `cargo test`, `typecheck`, 207 tests y `build` en verde.
+    En remoto solo faltaba la `0007`. Bookmark de time travel antes de migrar:
+    `00000051-00000002-00005124-ce97b7b2f7def305b6b3f4ff4ee1f29c`. Referencia: `users.xp` 1089 = suma
+    de `xp_log` (74 filas).
+  - **Migración y deploy, con el «sí» de Johan:** la `0007` se aplicó al primer intento. Worker
+    `26b417b5` → **`feebc627-e311-4e38-8550-3631b2d8bfe5`**. Humo desde el WebView con su token: los
+    `GET` de `/diary/{día}`, `/diary/volume`, `/diary/search`, `/habits`, `/tasks` y
+    `/pomodoro/today` dan 200; `/health` 200 y sin token 401.
+    - El plugin de almacenamiento seguro guarda el token serializado en JSON: leído con
+      `internalGetItem` hay que hacerle `JSON.parse`, o todo da 401.
+  - **Prueba 1, cerrar el proceso: falló y se corrigió.** Al pasar a segundo plano, el `PUT` se
+    encola y el borrador se borra; la caché en disco se escribe 2 s después. Matar la app en ese
+    intervalo la abría con la caché de antes del guardado, y el editor la tomaba sin volver a mirar el
+    servidor. **Peor que el síntoma:** al salir, mandaba ese texto viejo con la base nueva
+    (`currentView` ya traía el `save_id` del servidor) y el servidor lo aceptaba sin conflicto: se
+    perdía el texto nuevo también en D1. En la prueba no llegó a pasar.
+    - Corrección en `useDiaryEditor`: el editor recuerda la versión sobre la que se escribe (`base`)
+      y si hay cambios sin encolar (`edited`). Sin cambios, una versión más nueva del servidor se carga;
+      con cambios, el guardado lleva la base cargada y lo del servidor queda como copia (decisión 1).
+      `commitDiary` se parte en `queueDiary` (síncrona, devuelve la base siguiente) y `settleDraft`.
+    - 2 tests nuevos, los dos en rojo antes del arreglo. Mutaciones: quitar la adopción de la versión
+      nueva tumba `la app muere tras guardar…`; quitar la base del editor tumba `escribir sobre la
+      caché vieja…`.
+    - Johan repitió la prueba con la APK nueva: el texto sigue.
+  - **Prueba 2, modo avión:** un solo guardado y una concesión `diary` de +5 con `mark_id` = id de la
+    entrada; `users.xp` 1089 → 1094 = suma de `xp_log`. No hay dónde ver el XP: el Inicio aún no está
+    portado (Dashboard mínimo, fuera de este módulo).
+  - **Prueba 3, conflicto:** la v2 no corre en el PC (el worker no sirve la web y `CORS_ORIGIN` es solo
+    el WebView), y la v1 escribe en su propia base. El «PC» fue un `PUT` desde el WebView del teléfono
+    con su token, por `fetch` directo para que la caché de la app no se enterara: base = `save_id`
+    del servidor, texto con una línea `[PC]`.
+    - Johan, en modo avión, escribió sobre la versión anterior y volvió la señal. El servidor guardó
+      lo del «PC» como copia; Johan tocó «Agregar al final», que encola el `DELETE` de la copia antes
+      que el `PUT`. Una lectura de D1 cayó entre los dos y vio la entrada de 29 caracteres sin copia.
+    - Estado final: una fila del día con 82 caracteres (lo del teléfono, línea en blanco y lo del
+      «PC»), sin copias, cola del teléfono vacía, `users.xp` 1094 = suma, una sola concesión.
+  - **Prueba 4, teclado:** bien en el teléfono en horizontal. **Tablet: pendiente**, no tiene la APK.
+  - **CPU en producción: pendiente.**
+  - Verificación tras el arreglo: `typecheck`, 209 tests y `build` en verde. El worker no cambió: sin
+    deploy nuevo. Al cerrar, ningún `wrangler` ni `workerd` vivo y sin `adb forward`.

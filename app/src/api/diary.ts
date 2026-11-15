@@ -150,21 +150,33 @@ function currentView(day: string) {
 }
 
 /**
- * Encola el texto del día si difiere de lo guardado, espera a que la cola esté en disco y borra el
- * borrador, salvo que haya cambiado mientras tanto.
+ * Encola el texto del día si difiere de lo guardado y devuelve la base del siguiente guardado. `base`
+ * es la versión sobre la que se escribió; sin ella, la que el dispositivo cree actual. El editor pasa
+ * la suya: si el servidor cambió debajo, el otro texto queda como copia y no se pisa (decisión 1).
  */
-export async function commitDiary(day: string, text: DiaryText): Promise<void> {
+export function queueDiary(day: string, text: DiaryText, base?: string | null): string | null {
   const { entry } = currentView(day)
-  if (isDirty(text, entry)) {
-    enqueue(diaryRequests.save(day, entry.id ?? uuidv7(), entry.save_id, text))
-    await saveQueueNow()
-  }
+  const from = base === undefined ? entry.save_id : base
+  if (!isDirty(text, entry)) return from
+  const request = diaryRequests.save(day, entry.id ?? uuidv7(), from, text)
+  enqueue(request)
+  return (request.body as SaveBody).save_id
+}
+
+/** Espera a que la cola esté en disco y borra el borrador, salvo que haya cambiado mientras tanto. */
+export async function settleDraft(day: string, text: DiaryText): Promise<void> {
+  await saveQueueNow()
   if (drafts[day] && drafts[day].content === text.content && drafts[day].tags === text.tags) {
     const { [day]: _, ...rest } = drafts // eslint-disable-line @typescript-eslint/no-unused-vars
     drafts = rest
     clearTimeout(draftTimer)
     await writeDrafts()
   }
+}
+
+export async function commitDiary(day: string, text: DiaryText, base?: string | null): Promise<void> {
+  queueDiary(day, text, base)
+  await settleDraft(day, text)
 }
 
 /**
@@ -232,8 +244,10 @@ export function useDiarySearch(q: string) {
 export type DiaryStatus = 'loading' | 'editing' | 'queued' | 'saved'
 
 /**
- * El texto del día en edición. Se carga una vez por día, del borrador o de lo guardado, y desde ahí
- * manda lo que se teclea: un refresco no lo pisa. Sin conexión ni caché, arranca vacío.
+ * El texto del día en edición. Se carga del borrador o de lo guardado, y desde ahí manda lo que se
+ * teclea: un refresco no pisa cambios sin guardar. Sin cambios pendientes, una versión más nueva del
+ * servidor sí se carga: al abrir con señal, la caché de disco puede ser de antes del último guardado
+ * (2.4.6). Sin conexión ni caché, arranca vacío.
  */
 export function useDiaryEditor(day: string) {
   const view = useDiaryDay(day)
@@ -246,18 +260,28 @@ export function useDiaryEditor(day: string) {
   // teclear, no en el render: al cambiar de día, el render nuevo ya no tiene el texto del anterior,
   // y la limpieza que lo guarda corre después.
   const latest = useRef<(DiaryText & { day: string }) | null>(null)
+  // la versión sobre la que se escribe, y si hay cambios sin encolar
+  const base = useRef<string | null>(null)
+  const edited = useRef(false)
 
   useEffect(() => {
-    if (!ready || current) return
+    if (!ready) return
+    if (current && (edited.current || view.entry.save_id === base.current)) return
     const draft = draftFor(day)
     const loaded = { day, content: draft?.content ?? view.entry.content, tags: draft?.tags }
     latest.current = loaded
+    base.current = view.entry.save_id
+    edited.current = draft !== undefined
     setText(loaded)
-  }, [ready, current, day, view.entry.content])
+  }, [ready, current, day, view.entry.content, view.entry.save_id])
 
   const commit = useCallback(() => {
     const t = latest.current
-    return t ? commitDiary(t.day, { content: t.content, tags: t.tags }) : Promise.resolve()
+    if (!t) return Promise.resolve()
+    const text = { content: t.content, tags: t.tags }
+    base.current = queueDiary(t.day, text, base.current)
+    edited.current = false
+    return settleDraft(t.day, text)
   }, [])
 
   const idle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -266,6 +290,7 @@ export function useDiaryEditor(day: string) {
     if (!t) return
     const merged = { ...t, ...next }
     latest.current = merged
+    edited.current = true
     setText(merged)
     setDraft(t.day, { content: merged.content, tags: merged.tags })
     clearTimeout(idle.current)
