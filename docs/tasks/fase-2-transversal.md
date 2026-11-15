@@ -485,6 +485,9 @@ no apareció.
     `SCAN l`, el mismo plan que dio bench.
   - En la D1 local: aplicada, y el plan pasa a `SEARCH l USING INDEX habit_logs_local_date
     (local_date=?)`.
-  - **Sin aplicar en remoto** (ni en producción ni en bench): pide el «sí» de Johan. Es solo un
-    índice: no cambia datos ni respuestas, y el worker desplegado funciona con o sin él.
+  - **Aplicada en remoto** el 2026-11-15, con el «sí» de Johan. Producción: bookmark de time travel
+    antes de migrar `0000005e-00000000-00005124-8c8a9fa807971d7d863564ecb98cf0ce`; la `0008` entró
+    al primer intento y el plan de `HABITS_DONE` pasó a `SEARCH l USING INDEX habit_logs_local_date`.
+    Datos sin cambios: `users.xp` 1094 = suma de `xp_log` (75 filas), 9 429 marcas; `/health` 200.
+    Bench: aplicada, mismo plan. El worker no cambió (sigue `67327d0c`).
   - Verificación: `fmt`, `clippy -D warnings` y 140 tests de Rust en verde.
