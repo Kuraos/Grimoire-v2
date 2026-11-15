@@ -1,0 +1,183 @@
+# Fase 3 — Respaldo y ensayo de restauración
+
+**Estado: plan aprobado por Johan el 2026-11-15.** Falta una respuesta de Johan antes de la 3.2 y
+la 3.4: dónde viven las dos copias externas de las llaves (ver «Pendiente de Johan»).
+
+Depende de: la fase 2 cerrada (`fase-2-transversal.md`) y el ADR 0006. **La fase 4 (migración) no
+empieza sin esta** (`ROADMAP.md`).
+
+Objetivo: que perder la base de D1, el PC o un dispositivo no cueste datos. Sale cuando un dump de
+producción, descargado del repo privado y descifrado con la copia externa de la llave, se restaura
+en una D1 nueva y la API sobre él responde lo mismo que producción (3.3), y cuando la llave de
+firma de la APK y la base de la v1 tienen respaldo comprobado (3.4 y 3.5).
+
+Cada tarea es una sesión de agente. Al terminar: verificación de `AGENTS.md` en verde, un commit
+por tarea (`fase-3: <tarea>`) y una línea en «Hallazgos» si apareció algo. Si una tarea revela que
+una decisión no se sostiene, se para y se anota, en vez de rodearla. Nada remoto (Cloudflare,
+GitHub, dispositivos) sin el permiso de Johan en el punto marcado con ⛔.
+
+---
+
+## Lo comprobado al planear (2026-11-15)
+
+| Hecho | Fuente |
+|---|---|
+| `wrangler d1 export` **bloquea la base** mientras corre | Docs de D1, «Import and export data», Known limitations |
+| El export **no funciona con tablas virtuales** (FTS5). Hoy no hay ninguna en `api/migrations/` | Misma página; `grep` sobre las migraciones |
+| Plan gratis: time travel de **7 días** y **10 bases** por cuenta (en uso: `grimoire` y `grimoire-bench`) | Docs de D1, «Limits» y «Time Travel» |
+| La base de la v1 pesa **260 KB** (`%APPDATA%\Grimoire\grimoire.db`) | `ls`, 2026-11-15 |
+| No existen `Kuraos/grimoire-backups` ni `age` en el PC | `gh repo view`, `which age` |
+| La APK se firma con `~/.android/debug.keystore`, **sin respaldo**. No hay llave de release ni `signingConfig` | `ls ~/.android`, `build.gradle` |
+
+**Sin comprobar** (es la 3.1): el permiso mínimo de un token de Cloudflare para exportar; los minutos
+de Actions y el almacenamiento de artefactos en repos privados del plan gratis; si el dump trae
+`d1_migrations` y se importa tal cual en `sqlite3`; cuánto bloquea el export.
+
+---
+
+## Decisiones
+
+Tomadas por Johan el 2026-11-15, sobre la propuesta de Hermes.
+
+- **A. El respaldo corre en una GitHub Action de un repo privado aparte** (`Kuraos/grimoire-backups`),
+  como dice el ADR 0006. Descartado: Cloudflare Workflows con R2 (otra pieza que mantener, y R2
+  probablemente exige registrar un medio de pago; sin comprobar).
+- **B. Retención con lo que GitHub caduca solo:** el diario es un **artefacto** con 30 días de
+  retención y el del día 1 de cada mes va además a una **Release** (`mensual-AAAA-MM`), que no caduca.
+  Descartado: commits en git, porque la historia no se poda y la retención de 30 días no existiría.
+- **C. Cada respaldo se verifica el mismo día, antes de cifrar:** la Action importa el dump en
+  `sqlite3` y exige `PRAGMA integrity_check` = `ok`, las tablas esperadas con su conteo, `users.xp` =
+  `SUM(xp_log.amount)` y en `d1_migrations` la última migración del repo. Si algo falla, la Action
+  falla y no sube nada.
+- **D. El ensayo de restauración es un desastre simulado en Cloudflare**, no solo en D1 local: dump
+  descargado del repo, descifrado con la **copia externa** de la llave, importado en una D1 nueva,
+  el worker `bench` apuntando a ella, y la API comparada con producción. Queda un runbook con el
+  tiempo medido.
+- **E. La base de la v1 se respalda ya:** hasta el cambio, los datos reales viven en un solo disco.
+  Copia consistente (API de backup de SQLite, no copiar el archivo), cifrada con la misma llave, al
+  mismo repo privado.
+- **F. La llave de release de la APK se crea ahora,** y el teléfono y la tablet pasan a ella. Cambiar
+  de llave obliga a desinstalar, lo que borra el token del Keystore y la cola local: hoy cuesta poco,
+  porque producción solo tiene datos de prueba; después de la migración, no.
+- **G. Dos avisos si el respaldo deja de funcionar:** el correo de GitHub cuando la Action falla, y un
+  cron semanal de Hermes que revisa la fecha del último respaldo correcto (y del de la v1) y avisa a
+  Discord. El segundo cubre lo que el primero no ve: que la Action deje de correr.
+
+### Restricciones que salen de esto
+
+- **Sin tablas virtuales en D1** mientras el respaldo sea `wrangler d1 export`. Si la búsqueda del
+  Diario necesitara FTS5, primero se cambia el respaldo.
+- El texto plano del dump **solo existe en el runner**, en un directorio temporal. Al log van conteos,
+  nunca filas. Las acciones de terceros del workflow se fijan por SHA.
+- La llave privada de `age` y el keystore de release **nunca** entran a GitHub, ni a este repo ni al
+  privado. En la Action solo vive la llave pública (`AGE_RECIPIENT`).
+
+---
+
+## Pendiente de Johan
+
+**Dónde viven las dos copias externas** de la llave privada de `age`, del keystore de release y de su
+contraseña (ADR 0006: al menos dos lugares fuera del PC). Por ejemplo, un gestor de contraseñas y una
+memoria USB guardada aparte. Hace falta antes de la 3.2 y la 3.4. Si la única copia se pierde con el
+PC, los respaldos cifrados no sirven.
+
+---
+
+## 3.1 — Verificaciones previas
+
+Todo sobre `grimoire-bench` y en local; producción no se toca.
+
+- **Token mínimo:** Johan crea en el panel de Cloudflare un token con permisos de D1 solamente. Se
+  prueba `wrangler d1 export` primero con lectura de D1 y, si no alcanza, con edición. Se anota el
+  mínimo que funciona y si se puede limitar a una sola base. El token nunca se imprime.
+- **Tamaño y bloqueo:** con un seed sintético del tamaño de la v1 multiplicado por 10 (la v1 tiene
+  15 hábitos, 70 marcas y 22 sesiones; los scripts `bench_seed*.py` sirven de base), cuánto tarda el
+  export, cuánto pesa el dump y cuánto se demora un `GET /habits` lanzado durante el export.
+- **Contenido del dump:** si trae `d1_migrations`, si trae `_cf_KV`, y si se importa sin editar en
+  `sqlite3` (lo que usa la verificación de C) y en una D1 local con `wrangler d1 execute --local
+  --file`. Con la base importada, los conteos por tabla coinciden con los de bench.
+- **GitHub, con fuente:** minutos de Actions, almacenamiento de artefactos, retención máxima de
+  artefactos en repos privados y límite de tamaño de un asset de Release, en el plan de Johan.
+- **`age`:** cómo se instala en Windows (sin depender de que Hermes lo tenga) y en el runner
+  `ubuntu-latest`; que un archivo cifrado en uno se descifra en el otro.
+
+Terminado: tabla en «Hallazgos» con cada punto comprobado (fuente o comando) o marcado como no
+comprobado, y el seed de bench borrado. Si algo contradice A–G, se para.
+
+## 3.2 — Repo privado, llave y Action diaria
+
+Requiere la respuesta de «Pendiente de Johan».
+
+- **Johan:** crea `Kuraos/grimoire-backups` (privado), genera la llave con `age-keygen`, guarda la
+  privada en sus dos lugares, y pone los secretos `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` y
+  la variable `AGE_RECIPIENT` (pública).
+- **Workflow** en el repo privado: diario a las 08:00 UTC (03:00 en Bogotá) y `workflow_dispatch`.
+  `wrangler` fijado a la versión de este repo. Pasos: export de producción, verificación de C,
+  cifrado con `age -r`, artefacto con `retention-days: 30`, y el día 1 del mes, además, la Release.
+- **ADR 0006 actualizado** con B, C, D y las restricciones de arriba, y `ROADMAP.md` con la fase 3.
+
+Terminado:
+- Una ejecución manual y una programada en verde.
+- Un artefacto descargado y descifrado en el PC **con una copia externa de la llave**, cuyo contenido
+  pasa la misma verificación de C.
+- Una ejecución que tiene que fallar, falla: el workflow apuntado a `grimoire-bench` con un
+  `users.xp` alterado a propósito queda en rojo y no sube artefacto.
+
+## 3.3 — Ensayo de restauración
+
+- Johan no escribe en la app durante la ventana del ensayo (unos 30 min, se coordina). Un
+  `workflow_dispatch` produce el dump del ensayo.
+- Se descarga, se descifra con la copia externa, se crea una D1 temporal (`grimoire-restore`), se
+  importa, se apunta el worker `bench` a ella y se despliega.
+- Se compara, con los tokens de cada lado y sin imprimirlos: `GET /user`, `/habits`, `/tasks`,
+  `/projects`, `/pomodoro/today?date=` y `/diary/{día}` de los días con entrada, de producción frente
+  a la restaurada. Campos que dependen de la hora, excluidos y anotados.
+- **`docs/runbooks/restaurar.md`:** cuándo basta el time travel (menos de 7 días, base viva) y cuándo
+  hace falta el dump; los pasos con sus comandos; cómo se cambia el `database_id` de producción y se
+  despliega; qué se comprueba antes de volver a usar la app; y el tiempo medido en el ensayo.
+- Limpieza: `bench` vuelve a su base y `grimoire-restore` se borra.
+
+Terminado: las respuestas coinciden (o cada diferencia está explicada), y el runbook se siguió tal
+cual, sin pasos improvisados que no queden escritos. **Con esto se cumple la condición del
+`ROADMAP.md` para la fase 3.**
+
+## 3.4 — Llave de release de la APK
+
+Requiere la respuesta de «Pendiente de Johan».
+
+- Keystore de release generado una vez con el `keytool` del JDK de Android Studio, validez larga
+  (≥ 25 años), fuera del repo. `signingConfig` de release que lee la ruta y las contraseñas de
+  `~/.gradle/gradle.properties` o de variables de entorno, nunca del repo. El emulador sigue con la
+  llave debug.
+- Johan guarda el keystore y su contraseña en sus dos lugares.
+- **Prueba de que la copia sirve:** un segundo build firmado con el keystore **traído de la copia
+  externa** se instala encima del primero, sin desinstalar.
+- **Paso de los dispositivos:** con la cola vacía en el teléfono y la tablet (comprobado), se
+  desinstala la de debug, se instala la de release, se pone el token de cada dispositivo y se
+  vuelven a dar los permisos de notificaciones y alarma exacta. En el Infinix, el inicio automático
+  de XOS se vuelve a activar.
+- El ADR 0006 dice hoy que la llave de release solo firma lo que se publica: se corrige a «firma lo
+  que se instala en los dispositivos de Johan».
+- La huella SHA-256 del certificado (no es secreta) va a «Hallazgos».
+
+Terminado: los dos dispositivos con la app de release (huella comprobada con `apksigner`), la cola
+de los dos sincronizando contra producción, y la instalación desde la copia externa hecha.
+
+## 3.5 — Respaldo de la v1 y alertas
+
+- **v1:** script en `scripts/` que hace una copia consistente de `grimoire.db` con la API de backup
+  de SQLite (la v1 puede estar abierta), la cifra con `AGE_RECIPIENT` y la sube como asset a una
+  Release `v1-AAAA-MM-DD` del repo privado. Corre semanal con una tarea programada de Windows del
+  usuario de Johan (no elevada), y a mano el día del cambio. El texto plano no sale de un temporal.
+- **Alerta (la configura Hermes, no es del repo):** cron semanal en Haiku que, con `gh api`, revisa la
+  última ejecución correcta del workflow (más de 2 días, alerta) y la última Release `v1-…` (más de 8
+  días, alerta), y avisa a Discord.
+
+Terminado: una copia de la v1 descargada, descifrada con la copia externa y abierta en `sqlite3` con
+los mismos conteos que la original; la alerta probada una vez forzando la condición.
+
+---
+
+## Hallazgos
+
+(vacío)
