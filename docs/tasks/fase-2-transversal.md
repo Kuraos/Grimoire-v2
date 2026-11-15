@@ -271,20 +271,28 @@ no apareció.
 **Abiertos**
 
 5. **Hábitos, 2.1.2:** la penalización de XP no se ejercitó en producción; su `INSERT` solo lo cubren
-   los tests contra SQLite. Ningún hallazgo posterior la vio en D1 remota.
-6. **Pomodoro, 2.3.7:** una sesión que cruza la medianoche cuenta para el día de su `finished_at`, pero
-   la recta de la jornada la dibuja por su `started_at`. Anotado como «borde, sin arreglar».
-7. **Pomodoro, 2.3.7:** el «25 → 1 que quedó en 25» de la configuración no se reprodujo; el arreglo
-   cubrió el «1 → 3».
-8. **CPU:** los picos de 13–51 ms (fase 0, 2.1.2, 2.1.4) siguen sin explicar (hipótesis: arranque en
-   frío). `ROADMAP.md` ya dice vigilar los 1102 el primer mes.
-9. **Hábitos, 2.1.3**, de baja prioridad: el origen de las 6 marcas de hoy en los hábitos `Bench` y el
-   7403 de la `0003` («parece transitorio; no se investigó más»; la `0006` y la `0007` se aplicaron al
-   primer intento).
-10. **Pomodoro, 2.3.6:** el retraso de 45,8 s del foco encadenado tras el descanso largo (paso 3b)
-    «sigue sin explicar». Es el único de más de 1 s.
+   los tests contra SQLite. Ningún hallazgo posterior la vio en D1 remota. **Se cierra sola con datos
+   reales:** el 2026-11-15, D1 tenía `lives` = 1 y `settled_through` = 2026-11-12, y el 13 y el 14 de
+   noviembre sin marcas. Con `SETTLE_LAG_DAYS` = 3, el primer `GET /user` del 2026-11-16 asienta el
+   13 (vida 1 → 0) y el del 2026-11-17 asienta el 14 (sin vidas: `streak_penalty` −15). Ese día se
+   consulta D1: una sola fila `streak_penalty` de −15 y `users.xp` = `SUM(xp_log.amount)`.
 
 **Cerrados con un límite aceptado** (no se reabren salvo que reaparezca el problema)
+
+- **Pomodoro, 2.3.7:** una sesión que cruza la medianoche cuenta para el día de su `finished_at`, pero
+  la recta de la jornada la dibuja por su `started_at`. Límite: solo es visual; el XP y las
+  estadísticas usan `finished_at`. Johan lo cerró el 2026-11-15.
+- **Pomodoro, 2.3.7:** el «25 → 1 que quedó en 25» de la configuración no se reprodujo; el arreglo
+  cubrió el «1 → 3». Se reabre si reaparece.
+- **CPU:** los picos de 13–51 ms (fase 0, 2.1.2, 2.1.4) siguen sin explicar (hipótesis: arranque en
+  frío). Límite: pasa a vigilar los 1102 el primer mes de uso real (`ROADMAP.md`, fase 4), que mide el
+  riesgo real mejor que buscar la causa ahora.
+- **Hábitos, 2.1.3:** el origen de las 6 marcas de hoy en los hábitos `Bench` y el 7403 de la `0003`
+  («parece transitorio»). Límite: son datos de prueba que se van al vaciar la base en la fase 4, y la
+  `0006`, la `0007` y la `0008` se aplicaron al primer intento.
+- **Pomodoro, 2.3.6:** el retraso de 45,8 s del foco encadenado tras el descanso largo (paso 3b) sigue
+  sin explicar. Límite: es el único de más de 1 s y no pasa de 60 s, el umbral de la 2.3.1 para
+  reabrir la serie B.
 
 - **Tareas, 2.2.5:** la prueba en el teléfono contra producción está hecha (2026-10-31, D1 revisada,
   `users.xp` = 969 = suma de `xp_log`). Límite: la checklist y mover no dejan rastro en D1, y esos dos
