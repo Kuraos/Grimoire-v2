@@ -13,7 +13,25 @@ const CACHE_WRITE_DELAY_MS = 2000
 // eventos del navegador; arranca apagado para que el primer encendido reanude lo restaurado.
 let connected = false
 let authorized = false
-const applyOnline = () => onlineManager.setOnline(connected && authorized)
+
+/** Red y token por separado: el aviso global dice cuál falta (fase-2-transversal.md, decisión B). */
+export type Link = { connected: boolean; authorized: boolean }
+let link: Link = { connected, authorized }
+const linkListeners = new Set<() => void>()
+/** Para `useSyncExternalStore`: el mismo objeto mientras nada cambie. */
+export const getLink = (): Link => link
+export function subscribeLink(fn: () => void): () => void {
+  linkListeners.add(fn)
+  return () => linkListeners.delete(fn)
+}
+
+const applyOnline = () => {
+  onlineManager.setOnline(connected && authorized)
+  if (link.connected !== connected || link.authorized !== authorized) {
+    link = { connected, authorized }
+    linkListeners.forEach((fn) => fn())
+  }
+}
 onlineManager.setEventListener(() => () => {})
 onlineManager.setOnline(false)
 

@@ -365,3 +365,47 @@ no apareció.
     de `GRIMOIRE_TOKEN` no lo veía ningún test, porque pasan los secretos por posición: de ahí
     `the_secret_names_are_the_documented_ones`.
   - Verificación: `fmt`, `clippy -D warnings`, 139 tests de Rust y `cargo check` a wasm32 en verde.
+- **2.5.3, capa de datos del Inicio** (2026-11-15):
+  - `app/src/api/home.ts`: `useHome()` junta `useUser`, `useHabits(false)`, `useTasks`,
+    `usePomodoroToday` y `useDiaryDay(hoy)`; no lee nada nuevo. Funciones puras con su test:
+    `dayCount`, `streakBonus`, `groupByCategory`, `priorityTasks`, `syncNotice` y `msToMidnight`.
+  - **Regla 1, qué se adelanta:** hábitos, tareas y minutos de foco llevan la cola encima; el XP
+    (`user` y `xpToday`) es el del servidor hasta sincronizar. Un mismo test fija los dos lados: un
+    hábito marcado sin conexión sube «X de N» en el Inicio y en Hábitos, y deja `xp`, `xp_into_level`
+    y «XP hoy» como estaban.
+  - **Regla 2, la racha del bono: la del servidor.** Es la que muestra Hábitos: los dos usan
+    `useHabits(false)` (misma clave de caché) y `applyQueue` no adelanta la racha («racha, constancia
+    y XP no se predicen»). Con una marca en cola que llevaría una racha de 6 a 7, el bono sigue en 1 y
+    Hábitos sigue diciendo 6; al sincronizar, los dos cambian juntos.
+  - **Minutos de foco: de `usePomodoroToday`, con las sesiones en cola**, no del resumen de
+    `GET /diary/{hoy}`. Es lo mismo que muestra la vista Pomodoro y es algo que el dispositivo sabe
+    (regla 1). El resumen del diario solo da el «XP hoy». **Matiz frente a la decisión A1**, que
+    hablaba del resumen entero: no es una ruta nueva (`/pomodoro/today` ya está en disco), pero se
+    anota para que Johan o Hermes lo confirmen.
+  - **Regla 3, «hoy»:** `useToday()` agenda un temporizador hasta la próxima medianoche de Bogotá
+    (UTC−5 fijo) y recalcula; la clave `['diary', 'day', hoy]` cambia sola aunque nada redibuje.
+    `usePomodoroToday` y `useHabits` recalculan su día en el mismo render. `ponytail:` un
+    temporizador suspendido en segundo plano se dispara al volver; si eso falla en algún Android, se
+    agrega un recálculo en `visibilitychange`.
+  - **Regla 4, el aviso:** `sync.ts` expone la red y el token por separado (`getLink` y
+    `subscribeLink`, para `useSyncExternalStore`), sin cambiar `onlineManager`. Pendientes = estado
+    `pending` (también lo que va en vuelo); las rechazadas (`error`) no cuentan. Sin red y sin
+    pendientes, el aviso dice solo «sin conexión»; «1 pendiente» en singular.
+  - **«X de N» cuenta todos los hábitos activos**, también los que no tocan hoy, como la v1
+    (`Dashboard.tsx:121`).
+  - **Tests con módulos frescos:** los de integración importan React, `react-dom` y React Query
+    después de `vi.resetModules()`, en el mismo registro que `home.ts`; si no, los hooks serían de
+    otra instancia de React.
+  - **Mutaciones** (la suite completa de la app con cada una; el archivo se restaura después):
+
+    | Mutación | Test que cae |
+    |---|---|
+    | «XP hoy» adelantado con la cola | `un hábito marcado sin conexión desde el Inicio…` |
+    | XP de la barra adelantado con la cola | `un hábito marcado sin conexión desde el Inicio…` |
+    | Racha del bono adelantada por la cola | `un hábito marcado sin conexión desde el Inicio…` |
+    | Empates por creación (orden de `id`) | `empates de prioridad: el orden del tablero…` |
+    | Clave de hoy fija (sin temporizador) | `«hoy» cambia a medianoche…` |
+    | Rechazadas contadas como pendientes | `aviso: distingue sin red, cola sin subir…` |
+    | «sin conexión» con un 401 | `aviso: distingue sin red, cola sin subir…` |
+
+  - Verificación: `typecheck`, 219 tests y `build` en verde.
