@@ -12,7 +12,7 @@ use grimoire_domain::lives::{
     DailyHabit, DayEvent, Outcome, SCAN_WINDOW_DAYS, evaluate_days, provisional_range,
     settle_range, settle_through,
 };
-use grimoire_domain::xp::{title_for_level, xp_for_level, xp_to_level};
+use grimoire_domain::xp::level_progress;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use worker::query;
@@ -192,22 +192,19 @@ fn respond(st: &UserState, today: NaiveDate, mut events: Vec<EventOut>) -> UserO
         lives = l;
         events.extend(st.events_out(&ev, true));
     }
-    // v1 `_enrich`: el nivel 1 empieza en 0 XP, los demás en nivel² · 100
-    let level = xp_to_level(st.user.xp);
-    let cur = if level <= 1 { 0 } else { xp_for_level(level) };
-    let next = xp_for_level(level + 1);
+    let p = level_progress(st.user.xp);
     UserOut {
         id: st.user.id.clone(),
         name: st.user.name.clone(),
         xp: st.user.xp,
-        level,
-        title: title_for_level(level),
+        level: p.level,
+        title: p.title,
         lives,
         settled_through: st.user.settled_through.clone(),
-        xp_for_current_level: cur,
-        xp_for_next_level: next,
-        xp_into_level: (st.user.xp - cur).max(0),
-        xp_span: (next - cur).max(1),
+        xp_for_current_level: p.xp_for_current_level,
+        xp_for_next_level: p.xp_for_next_level,
+        xp_into_level: p.xp_into_level,
+        xp_span: p.xp_span,
         events,
     }
 }

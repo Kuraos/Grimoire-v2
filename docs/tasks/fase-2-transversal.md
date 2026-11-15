@@ -165,7 +165,8 @@ Terminado: goldens de usuario en verde y `cargo test -p grimoire-worker` con los
 - Tests, como `queue.test.ts`:
   - Marcar un hábito sin conexión desde el Inicio: aparece marcado en el Inicio y en Hábitos, y sale
     un solo `POST`.
-  - Bono de racha, las 4 prioritarias y los grupos, con los casos de la 2.5.1.
+  - Bono de racha, las 4 prioritarias y los grupos, con los casos de la 2.5.1. En las prioritarias,
+    los empates siguen el orden del tablero (`rank`), no el de creación de la v1 (fila 51).
   - Arranque sin señal con caché: el Inicio se pinta con lo de disco; el XP no se adelanta.
   - El aviso: sin red, «sin conexión · N pendientes»; con red y cola sin subir, «N pendientes»; con
     todo arriba, nada.
@@ -215,9 +216,13 @@ caché, revisadas con las reglas de `DESIGN_SYSTEM.md` (una sola `rubric`, oro s
   `localStorage` en el navegador del PC). Cómo se pone: el formulario de hoy. Cómo se rota: se cambia
   el secreto de ese dispositivo, el dispositivo recibe 401, pide el token nuevo y su cola espera sin
   perderse. Lo que cambia es el secreto en el worker; el cliente no necesita saber qué dispositivo es.
+- **Orden para pasar a los tokens por dispositivo sin cortar producción** (la 2.5.2 deja al worker
+  aceptando `GRIMOIRE_TOKEN` mientras exista): primero los tres secretos nuevos con
+  `wrangler secret put`; después cada dispositivo con el suyo (el log dice `dispositivo=phone`,
+  `tablet` o `pc`, y ya no `legacy`); al final, borrar `GRIMOIRE_TOKEN`.
 - **Procedimiento del día del cambio** en `ROADMAP.md` (fase 4): colas vacías en los tres
-  dispositivos, vaciar la base, rotar los tres tokens, escribir cada uno en su dispositivo y comprobar
-  que nada quedó en cola. Una cola con escrituras de antes de vaciar la base no puede llegar a la
+  dispositivos, vaciar la base, rotar los tres tokens, escribir cada uno en su dispositivo, comprobar
+  que nada quedó en cola y borrar `GRIMOIRE_TOKEN` si sigue existiendo. Una cola con escrituras de antes de vaciar la base no puede llegar a la
   base nueva.
 
 Terminado:
@@ -312,4 +317,51 @@ no apareció.
     2.5.2 los empieza a comparar.
   - Los grupos por categoría del Inicio salen en orden alfabético (lo ordena `GET /habits`), no de
     creación. Los empates de prioridad pueden diferir de la v1 (`rank` frente a creación): se decide
-    en la 2.5.3.
+    en la 2.5.3. **Decidido por Johan el 2026-11-15: orden del tablero, fila 51.**
+- **2.5.2, dominio y API** (2026-11-15):
+  - **Golden de niveles completado** (revisión de Hermes sobre `98f4f60`): `usuario_niveles` llega
+    ahora a 22 499/22 500 (nivel 15, «Arconte de la Voluntad»), 39 999/40 000 (20, «Ente del Éter
+    Puro») y 44 099/44 100 (21, conserva el del 20); 965 pasos, 586 KB. Se regeneraron los 29
+    escenarios completos y los 28 anteriores salieron idénticos. Una primera regeneración con la
+    salida cortada por `head` no valía (Python pudo morir por la tubería tras el segundo escenario y
+    los demás no se habrían reescrito); se repitió entera.
+  - **`xp::level_progress`** en `domain`: nivel, título y los cuatro campos de progreso. `respond`
+    la usa y el worker ya no calcula niveles. `tests/golden_user.rs` la compara en los 56 pasos que
+    los graban (21 de `usuario_niveles` y 35 de los 19 goldens de la lista), y falla si cambia ese
+    conteo. Todos coinciden con la v1.
+  - **Formato de los secretos: uno por dispositivo con nombre fijo**, `GRIMOIRE_TOKEN_PHONE`,
+    `_TABLET` y `_PC` (`worker/src/auth.rs`, `DEVICES`). Cada uno se rota o se borra con
+    `wrangler secret` sin tocar los otros. Costo: un cuarto dispositivo pide una línea de código y
+    un deploy. Se descartó un solo secreto con una lista: rotar uno obligaba a reescribirlos todos y
+    un error de formato dejaba fuera a los tres.
+  - **Comparación:** SHA-256 de cada lado (largo fijo) y `subtle` contra **todos** los secretos que
+    existen, eligiendo el primero que coincide con `conditional_select`, sin salida temprana. Un
+    secreto vacío o que no existe se salta y nunca autoriza; antes, `GRIMOIRE_TOKEN` ausente daba
+    500 y ahora es un secreto más que falta. Dependencia nueva: `sha2` 0.10 (sin `std`); compila a
+    `wasm32-unknown-unknown`.
+  - **`GRIMOIRE_TOKEN` se sigue aceptando mientras exista** (dispositivo `legacy`), para que el
+    deploy de esta tarea no deje fuera al teléfono ni a la tablet. Su borrado está en `ROADMAP.md`
+    (fase 4) y el orden de la transición en la 2.5.6. `AGENTS.md` (invariante 6) ya nombra los tres.
+  - **Log:** `dispositivo=phone`, `tablet`, `pc` o `legacy` en cada request autorizada; nunca el token.
+  - **En local** (`wrangler dev` con tokens desechables en un `--env-file`, `_TABLET` vacío): cada
+    token da 200 en `GET /user` y deja su `dispositivo=` en el log; bearer vacío, sin cabecera o
+    desconocido, 401; `/health`, 200. Ningún valor de token aparece en el log. Un error de `grep`
+    (un token desechable empezaba por `-`) imprimió parte de uno en la consola del agente; era de esta
+    prueba y se borró con el archivo. Al cerrar, ningún `wrangler` ni `workerd` vivo y el 8787 libre.
+  - **Mutaciones** (cada una con la suite del crate; el archivo se restaura después):
+
+    | Mutación | Tests que caen |
+    |---|---|
+    | Nivel 1 con `xp_for_current_level` 100 | `level_progress_matches_every_recorded_user` |
+    | El 15 con el título del 12 (el arreglo es de largo fijo; quitar la entrada no compila) | `level_progress_matches_every_recorded_user` |
+    | Salir en el primer token que coincide | `every_present_secret_is_compared_whatever_matches` |
+    | Aceptar un secreto vacío | `an_empty_secret_authorizes_nothing`, `every_present_secret_is_compared_whatever_matches` |
+    | `GRIMOIRE_TOKEN` con otro nombre | `the_secret_names_are_the_documented_ones` |
+    | Saltarse `GRIMOIRE_TOKEN` al comparar | `the_old_token_enters_while_it_exists`, `a_match_is_not_cut_short_by_order`, `every_present_secret_is_compared_whatever_matches` |
+
+    Dos habrían sobrevivido con la primera versión: la salida temprana devuelve el mismo resultado
+    (por eso `compare_all` cuenta las comparaciones y el test exige todas), y una guarda redundante
+    de bearer vacío tapaba la del secreto vacío (se quitó; queda una sola regla). El cambio de nombre
+    de `GRIMOIRE_TOKEN` no lo veía ningún test, porque pasan los secretos por posición: de ahí
+    `the_secret_names_are_the_documented_ones`.
+  - Verificación: `fmt`, `clippy -D warnings`, 139 tests de Rust y `cargo check` a wasm32 en verde.

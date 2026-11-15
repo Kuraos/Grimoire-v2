@@ -718,8 +718,9 @@ def usuario_niveles():
     en 0 tras una penalización: dos hábitos de 10 XP en días alternos del 02 al 15 (140 XP) y una
     sola evaluación el 16 que cobra 13 días rotos (3 vidas y 10 × 15 XP, con piso en 0). Por
     último, el 17, hábitos nuevos de una sola marca (racha 1, sin multiplicador) llevan el XP a
-    uno antes y justo en el umbral de los niveles 2, 3, 4, 5, 10 y 13 (nivel² · 100); el +1 del
-    umbral es una marca de 11 y el deshacer de la última de 10. El 13 tiene el título del 12."""
+    uno antes y justo en el umbral de los niveles 2, 3, 4, 5, 10, 13, 15, 20 y 21 (nivel² · 100); el
+    +1 del umbral es una marca de 11 y el deshacer de la última de 10. El 13 tiene el título del 12;
+    el 15 y el 20 son los últimos saltos de título, y el 21 conserva el del 20."""
     s = [step("2026-03-02", "GET /user")]
     s += [habit("2026-03-02", "lectura", xp_reward=10), habit("2026-03-02", "agua", xp_reward=10)]
     s += _marks({d: ["lectura" if i % 2 == 0 else "agua"] for i, d in enumerate(_days("2026-03-02", 14))})
@@ -729,7 +730,7 @@ def usuario_niveles():
         step("2026-03-16", "GET /user"),
     ]
     d, xp, n = "2026-03-17", 0, 0
-    for level in (2, 3, 4, 5, 10, 13):
+    for level in (2, 3, 4, 5, 10, 13, 15, 20, 21):
         target = level ** 2 * 100
         for c in _chunks(target - 1 - xp):
             n += 1

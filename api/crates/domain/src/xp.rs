@@ -38,6 +38,36 @@ pub fn title_for_level(level: u32) -> &'static str {
         .map_or(LEVEL_TITLES[0].1, |(_, t)| t)
 }
 
+/// Nivel, título y avance dentro del nivel para un XP total (v1: `_enrich` de
+/// `routers/user.py`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LevelProgress {
+    pub level: u32,
+    pub title: &'static str,
+    pub xp_for_current_level: i64,
+    pub xp_for_next_level: i64,
+    pub xp_into_level: i64,
+    pub xp_span: i64,
+}
+
+/// El nivel 1 empieza en 0 XP, no en `xp_for_level(1)` = 100; los demás en
+/// nivel² · 100. La v1 lee el nivel de una columna, pero `award_xp` la recalcula
+/// del XP en cada escritura, así que es función del XP
+/// (`caracterizacion-v1.md`, «Hallazgos», Usuario).
+pub fn level_progress(xp: i64) -> LevelProgress {
+    let level = xp_to_level(xp);
+    let cur = if level <= 1 { 0 } else { xp_for_level(level) };
+    let next = xp_for_level(level + 1);
+    LevelProgress {
+        level,
+        title: title_for_level(level),
+        xp_for_current_level: cur,
+        xp_for_next_level: next,
+        xp_into_level: (xp - cur).max(0),
+        xp_span: (next - cur).max(1),
+    }
+}
+
 /// Multiplicadores en puntos básicos (1.10 → 11 000) para no arrastrar float.
 const STREAK_BONUS_BP: [(u32, u32); 5] = [
     (7, 11_000),

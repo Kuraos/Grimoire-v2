@@ -7,11 +7,11 @@ use axum::http::{HeaderValue, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, patch, post};
 use chrono::NaiveDate;
-use subtle::ConstantTimeEq;
 use tower_service::Service;
 use worker::js_sys::{self, Object, Reflect};
 use worker::{D1Database, D1Result, Env, HttpRequest, console_error, console_log, event};
 
+mod auth;
 mod categories;
 mod diary;
 mod habits;
@@ -56,9 +56,7 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
             );
         }
         res
-    } else if req.uri().path() != "/health"
-        && !authorized(&req, &env.secret("GRIMOIRE_TOKEN")?.to_string())
-    {
+    } else if req.uri().path() != "/health" && !signed_in(&req, &env) {
         AppError::Unauthorized.into_response()
     } else {
         let state = AppState {
@@ -117,17 +115,21 @@ async fn fetch(req: HttpRequest, env: Env, _ctx: worker::Context) -> worker::Res
     Ok(res)
 }
 
-/// `Authorization: Bearer <token>` comparado en tiempo constante. Un secreto vacío
-/// no autoriza nada.
-fn authorized(req: &HttpRequest, secret: &str) -> bool {
-    let sent = req
+/// `Authorization: Bearer <token>` contra el secreto de cada dispositivo (`auth.rs`). Un
+/// secreto que no existe no autoriza nada. Al log va qué dispositivo entró, nunca el token.
+fn signed_in(req: &HttpRequest, env: &Env) -> bool {
+    let bearer = req
         .headers()
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "));
-    match sent {
-        Some(token) if !secret.is_empty() => token.as_bytes().ct_eq(secret.as_bytes()).into(),
-        _ => false,
+    let secrets = auth::DEVICES.map(|(_, name)| env.secret(name).ok().map(|s| s.to_string()));
+    match auth::device_for(bearer, &secrets.each_ref().map(|s| s.as_deref())) {
+        Some(device) => {
+            console_log!("dispositivo={device}");
+            true
+        }
+        None => false,
     }
 }
 

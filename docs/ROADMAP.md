@@ -21,8 +21,12 @@ La fase 3 puede ir en paralelo con la 2, pero **la 4 no empieza sin la 3**.
 
 Pasos del día de la migración (fase 4):
 
-- **Vaciar la base y rotar `GRIMOIRE_TOKEN`** con `wrangler secret put GRIMOIRE_TOKEN`, y
-  actualizar el token en la APK.
+- **Colas vacías en el teléfono, la tablet y el PC** antes de tocar la base: una escritura de
+  antes de vaciarla no puede llegar a la base nueva.
+- **Vaciar la base y rotar los tres tokens** (`GRIMOIRE_TOKEN_PHONE`, `_TABLET` y `_PC`) con
+  `wrangler secret put`, y escribir cada uno en su dispositivo.
+- **Borrar `GRIMOIRE_TOKEN`** (`wrangler secret delete GRIMOIRE_TOKEN`): el token único de antes de
+  la 2.5.2, que el worker acepta mientras exista.
 
 Pendientes de la fase 1 (salieron de la 1.1):
 

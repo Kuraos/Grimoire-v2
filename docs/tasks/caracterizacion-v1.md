@@ -95,12 +95,14 @@ Goldens en `api/crates/domain/tests/golden/diary/` (7 escenarios, 208 pasos):
 
 ## Escenarios de usuario
 
-Golden en `api/crates/domain/tests/golden/user/` (1 escenario, 400 pasos):
+Golden en `api/crates/domain/tests/golden/user/` (1 escenario, 965 pasos):
 
 1. `usuario_niveles`: `GET /user` con los cuatro campos de progreso de `_enrich`
    (`xp_for_current_level`, `xp_for_next_level`, `xp_into_level`, `xp_span`) en XP 0 (base nueva),
    en XP 0 tras una penalización con piso, y uno antes y justo en el umbral de los niveles 2, 3, 4,
-   5, 10 y 13 (399/400, 899/900, 1 599/1 600, 2 499/2 500, 9 999/10 000, 16 899/16 900).
+   5, 10, 13, 15, 20 y 21 (399/400, 899/900, 1 599/1 600, 2 499/2 500, 9 999/10 000,
+   16 899/16 900, 22 499/22 500, 39 999/40 000, 44 099/44 100). El 15 y el 20 son los dos últimos
+   saltos de título; se agregaron en la 2.5.2 por la revisión de Hermes sobre `98f4f60`.
 
 ## Casos del Inicio en el cliente de la v1
 
@@ -225,6 +227,7 @@ ADR 0005, y las que dicen su fecha.
 | 48 | Aviso sin conexión | Franja global bajo `TopBar`: «Sin conexión con el servidor — reintentando…» | Aviso global pequeño: «sin conexión · N pendientes», o «N pendientes» con red y la cola sin subir | La v2 funciona sin conexión: el aviso dice cuánto falta por subir. |
 | 49 | Acceso | Sin autenticación (`127.0.0.1`) | Un bearer por dispositivo (teléfono, tablet, PC) en toda ruta de la API salvo `/health`, comparado en el worker sin D1 y revocable uno a uno; un 401 pide el token de nuevo | Invariante 6 de `AGENTS.md`; decisión C del plan. |
 | 50 | `PATCH /user` | Renombra y guarda `obsidian_vault_path` | No existe | Hasta Ajustes. La ruta del vault no tiene uso (fila 41). |
+| 51 | Empates de prioridad en las tareas prioritarias del Inicio | Orden de creación (la consulta no tiene `ORDER BY` y `sorted` es estable) | Orden del tablero (`rank`, y `id` si empatan): `GET /tasks` viene así y `sortTasks` es estable | Es el orden que Johan eligió al arrastrar, y el Inicio coincide con Tareas. Decidido por Johan el 2026-11-15. |
 
 ## Hallazgos
 
@@ -353,7 +356,8 @@ porta igual.
   - **Progreso de nivel** (`usuario_niveles`): el nivel 1 empieza en 0 XP aunque
     `xp_for_level(1)` = 100 (`cur = 0 if level <= 1`); los demás en nivel² · 100. `xp_span` es el
     ancho del nivel (400, 500, 700, 900, 1 100…) y `xp_into_level` el XP desde su inicio. Al nivel 13
-    le toca el título del 12 («Oráculo Perpetuo»): el de umbral más alto que no lo pasa.
+    le toca el título del 12 («Oráculo Perpetuo»): el de umbral más alto que no lo pasa. Igual el 14
+    (12), el 19 (15, «Arconte de la Voluntad») y el 21 (20, «Ente del Éter Puro»).
   - **La evaluación responde la penalización nominal:** con 140 XP y 13 días rotos, `xp_penalty` es
     150 (3 vidas y 10 × 15), pero `new_xp` es 0 y `xp_log` registra −140, lo aplicado. Igual que
     `deshacer`.
@@ -369,6 +373,5 @@ porta igual.
     `kanban_estado` (2), `logros_tareas` (2). Hoy solo los nombra `worker/src/user.rs`; los tests de
     `domain` comparan `level` y `title`.
   - **Empates de prioridad en la v2:** `GET /tasks` de la v2 ordena por `rank, id`, así que
-    `sortTasks` (estable) desempata por el orden del tablero, no por el de creación. Es una
-    diferencia posible para las tareas prioritarias del Inicio, sin fila todavía: se decide en la
-    2.5.3.
+    `sortTasks` (estable) desempata por el orden del tablero, no por el de creación. Johan lo
+    aceptó el 2026-11-15: fila 51.

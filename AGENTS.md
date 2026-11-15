@@ -59,9 +59,10 @@ docs/tasks/        Tareas por fase, con criterio de terminado
    momento de marcar. Las rachas y cadencias trabajan solo con `local_date`.
 4. **Dinero en enteros** (centavos u otra unidad mínima), nunca float.
 5. **Esquema solo con migraciones nuevas.** Nunca editar una migración ya aplicada.
-6. **Autorización en el servidor.** Toda ruta salvo `/health` exige el token. El token
-   vive como secreto de wrangler (`wrangler secret put GRIMOIRE_TOKEN`) y en local en
-   `api/crates/worker/.dev.vars`, que está en `.gitignore`.
+6. **Autorización en el servidor.** Toda ruta salvo `/health` exige el token. Hay uno por
+   dispositivo, cada uno un secreto de wrangler (`GRIMOIRE_TOKEN_PHONE`, `_TABLET` y `_PC`;
+   `api/crates/worker/src/auth.rs`), y en local en `api/crates/worker/.dev.vars`, que está en
+   `.gitignore`. `GRIMOIRE_TOKEN`, el token único de antes, se acepta mientras exista.
 7. **El repo es público.** Nada de secretos, tokens, IDs de cuenta sensibles ni datos
    personales reales (diario, finanzas) en el código, seeds o tests.
 8. **Plan gratis de Cloudflare.** 10 ms de CPU por request, 100 000 requests/día,

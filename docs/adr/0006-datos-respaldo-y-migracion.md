@@ -74,6 +74,12 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
 - **Claves `rank` de las tareas:** las que genere la migración no terminan en `0`. Entre `x` y
   `x0` no cabe ninguna clave (nada ordena antes de `0`), así que una tarjeta soltada ahí no
   podría quedar entre las dos: `rankBetween` la deja después de ambas.
+- **Nivel guardado frente al XP, antes de migrar:** en la copia real de la v1 se cuentan las
+  filas de `users` con `level ≠ xp_to_level(xp)`. La v2 calcula el nivel del XP
+  (`xp::level_progress`), así que un nivel guardado que no cuadre no se arrastra, pero el nivel
+  que ve Johan podría cambiar de golpe el día del cambio. Se decide con ese conteo. En la v1,
+  `award_xp` recalcula el nivel en cada escritura de XP (`caracterizacion-v1.md`, «Hallazgos»,
+  Usuario), así que lo esperado es 0.
 - **Repetible:** se prueba contra una copia fresca de los datos reales cada vez que
   cambie el esquema, en una base D1 local, con verificación de conteos por tabla y de
   totales (XP, saldos). Los datos reales y el SQL generado nunca se commitean.
