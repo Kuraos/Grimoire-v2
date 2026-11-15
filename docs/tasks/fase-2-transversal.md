@@ -566,3 +566,31 @@ no apareció.
     como arriba y les toca a la 2.5.7 o a Johan.
   - Verificación: `typecheck`, 219 tests y `build` en verde. Rust sin cambios. Al cerrar, ningún
     `wrangler` ni `workerd` vivo, y el 8787 libre.
+- **2.5.7, deploy de la 2.5.6 y paso a los tokens por dispositivo** (2026-11-15, Bogotá, contra
+  producción, con `wrangler tail` abierto todo el cambio):
+  - **Deploy** tras `npm run build` (sin `.env`, así que la web usa la URL relativa): versión
+    `6b1ff77f`. Sin bearer: navegar a `/`, `/habitos` y `/pomodoro` da 200 `text/html`; `/habits`,
+    `/pomodoro/today` y `/user`, 401 JSON; `/health`, 200.
+  - **APK** recompilado (`cap sync` + `assembleDebug`) e instalado con `adb install -r` en el teléfono
+    (Infinix X6831) y la tablet (SM-P620): la que tenían era del 2026-11-14 y no traía el Inicio.
+  - **Orden seguido:** los tres secretos con `wrangler secret put`; cada dispositivo con el suyo (PC
+    borrando la clave del `localStorage`; teléfono y tablet con `adb shell pm clear` tras leer con
+    `run-as` que `grimoire-queue-v1`, la bandeja del pomodoro y los borradores del diario estaban
+    vacíos); el último `dispositivo=legacy` fue a las 12:16:36; después, `secret delete
+    GRIMOIRE_TOKEN`. Tras borrarlo, los tres siguieron entrando (`pc`, `phone`, `tablet`, todo 200 y
+    ningún 401). Quedan solo `GRIMOIRE_TOKEN_PC`, `_PHONE` y `_TABLET`.
+  - **Tropiezos, para la próxima rotación:**
+    - `wrangler secret put` interactivo no sirve con `!` desde Claude Code (sin entrada interactiva) y
+      pegar en su prompt oculto de PowerShell es frágil. Lo que funcionó, en una PowerShell propia:
+      `'<token>' | npx wrangler secret put GRIMOIRE_TOKEN_<DISPOSITIVO>` (wrangler quita el salto de
+      línea final), y comprobar con `curl.exe -H "Authorization: Bearer <token>" .../user` → 200
+      antes de pegarlo en el dispositivo.
+    - Pegar un token donde wrangler pide el *nombre* crea un secreto con el token como nombre, y los
+      nombres se ven en `secret list` y en el dashboard. Pasó cuatro veces; ninguno de esos valores
+      autorizaba (401) y se borraron.
+    - Cloudflare no devuelve el valor de un secreto: un token que no se guardó se regenera, no se
+      recupera. Guardarlos en un gestor de contraseñas.
+    - Al borrar los datos de la app se pierde la configuración local del pomodoro y las
+      notificaciones agendadas (se reagendan al cargar las tareas).
+  - Falta el resto de la 2.5.7 (Inicio con y sin señal, tres dispositivos a la vez, `LevelUpOverlay`,
+    revocación, los pendientes de la tablet y del PC) y la consulta a D1 del «Terminado».
