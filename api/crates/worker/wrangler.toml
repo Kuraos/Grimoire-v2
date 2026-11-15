@@ -14,6 +14,16 @@ GRIMOIRE_TZ = "America/Bogota"
 # hostname "localhost" por defecto. Un solo origen, sin comodín.
 CORS_ORIGIN = "https://localhost"
 
+# La web del PC (fase-2-transversal.md, 2.5.6), en el mismo origen que la API. Un archivo que existe
+# se sirve sin pasar por el worker ni por el bearer: es el código público del repo. Sin archivo, una
+# navegación (`Sec-Fetch-Mode: navigate`) recibe index.html y lo demás va al worker; así `fetch`
+# de `/pomodoro/today` llega a la API aunque `/pomodoro` sea ruta de la app. Lo hace
+# `assets_navigation_prefers_asset_serving`, activo por la compatibility_date (>= 2025-04-01).
+# Hay que construir `app/` (`npm run build`) antes de `wrangler dev` o `deploy`.
+[assets]
+directory = "../../../app/dist"
+not_found_handling = "single-page-application"
+
 # database_id no es una credencial: sin un token de API de la cuenta no da acceso.
 [[d1_databases]]
 binding = "DB"

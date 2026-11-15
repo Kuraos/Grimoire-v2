@@ -1,6 +1,10 @@
 import { SecureStorage } from '@aparajita/capacitor-secure-storage'
+import { Capacitor } from '@capacitor/core'
 
-export const API_URL: string = import.meta.env.VITE_API_URL ?? 'https://grimoire.jbustosbriceno.workers.dev'
+// La APK llama al worker desde https://localhost (CORS). La web la sirve el propio worker: mismo
+// origen, URL relativa, sin CORS, y en `wrangler dev` apunta a la API local y no a producción.
+export const API_URL: string =
+  import.meta.env.VITE_API_URL ?? (Capacitor.isNativePlatform() ? 'https://grimoire.jbustosbriceno.workers.dev' : '')
 
 const TOKEN_KEY = 'grimoire-token'
 

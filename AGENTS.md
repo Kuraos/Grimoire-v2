@@ -108,7 +108,8 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test -p grimoire-domain
 cargo test -p grimoire-worker   # SQL de escrituras concurrentes contra SQLite (rusqlite)
 # el worker compila a wasm (target wasm32-unknown-unknown ya instalado)
-cd crates/worker && npx wrangler dev        # API local con D1 local en http://localhost:8787
+cd crates/worker && npx wrangler dev        # API y web local con D1 local en http://localhost:8787
+                                            # (sirve app/dist: antes, `npm run build` en app/)
 npx wrangler d1 migrations apply grimoire --local
 ```
 

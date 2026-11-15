@@ -529,3 +529,40 @@ no apareció.
     `syncNotice` como ya simulaba las demás vistas.
   - Verificación: `typecheck`, 219 tests y `build` en verde. Al cerrar, ningún `wrangler`, `workerd`
     ni `vite` vivo, y el 8787 y el 5173 libres.
+- **2.5.6, web en el PC y tokens por dispositivo** (2026-11-15):
+  - **Assets, verificado contra la versión fijada** (wrangler 4.156, el asset worker de su miniflare):
+    `[assets]` con `app/dist` y `not_found_handling = "single-page-application"`, **sin
+    `run_worker_first`** y sin binding. Un archivo que existe se sirve sin pasar por el worker. Sin
+    archivo, `canFetch` solo aplica el respaldo de SPA si la petición trae `Sec-Fetch-Mode: navigate`
+    (`assets_navigation_prefers_asset_serving`, activo desde `compatibility_date` 2025-04-01; la
+    nuestra es 2026-10-29). Cualquier otra petición va al worker con `not_found_handling` en `none`.
+    Así se resuelve `/pomodoro` sin listar rutas: navegar ahí da la app y `fetch('/pomodoro/today')`
+    llega a la API. Si se escribe una ruta de la API en la barra del navegador, aparece la app, no
+    JSON; no se filtra nada.
+  - **`API_URL`:** en la APK sigue siendo la absoluta de `workers.dev` (CORS desde `https://localhost`).
+    En la web es `''`, la URL relativa del mismo origen, así que no usa CORS, y en `wrangler dev` habla
+    con la API local y no con producción. `VITE_API_URL` sigue mandando cuando está puesta, como en
+    Vite sobre 5173. Para distinguir los dos casos se usa `Capacitor.isNativePlatform()`.
+  - **`TokenGate` no cambió.** En el navegador, `SecureStorage` guarda en `localStorage`
+    (`capacitor-storage_grimoire-token`, confirmado en su `web.js` y en el navegador). El worker no
+    necesita saber qué dispositivo es cada uno: ya lo deduce del secreto (2.5.2).
+  - **Pruebas en local** (`wrangler dev --env-file` con tres tokens desechables, sin `GRIMOIRE_TOKEN`,
+    y una D1 aparte con `--persist-to`, borrada al terminar):
+    - Navegación a `/`, `/habitos`, `/pomodoro` y `/diario/2026-11-15`: 200 `text/html`.
+      `/favicon.svg` y un `.js` de `/assets/` sin bearer: 200.
+    - `GET /habits`, `/pomodoro/today` (con y sin `Sec-Fetch-Mode: cors`) y `/user` sin bearer: 401
+      JSON. Con cualquiera de los tres tokens: 200 JSON. Con un token desconocido: 401. `/health`: 200.
+    - **Rotación con una escritura en cola**, en el navegador a 1280 × 800: entrar con el token del
+      PC; cortar la red; marcar «Estiramientos» (aviso «sin conexión · 1 pendiente»); reiniciar
+      `wrangler dev` con `GRIMOIRE_TOKEN_PC` cambiado. El token viejo del PC da 401, y los del
+      teléfono y la tablet, 200. Al volver la red, **un solo** 401 sobre `/complete`: se borra el token,
+      aparece el formulario y la cola queda `pending` sin reintentar. Una recarga en ese estado
+      conserva la cola. Con el token nuevo se envía una vez, con respuesta 200, y la cola queda vacía.
+    - D1 al final: 1 marca, 1 concesión, `SUM(xp_log.amount)` = 20 = `users.xp`. El log de
+      `wrangler dev` muestra `dispositivo=pc`, `phone` y `tablet` y nunca `legacy`.
+  - **Para el deploy:** `wrangler dev` y `wrangler deploy` suben `app/dist`, así que hay que correr
+    `npm run build` en `app/` antes; si no, se publica la web vieja. Lo dice el comentario de
+    `wrangler.toml` y `AGENTS.md`. El orden de los secretos y el borrado de `GRIMOIRE_TOKEN` siguen
+    como arriba y les toca a la 2.5.7 o a Johan.
+  - Verificación: `typecheck`, 219 tests y `build` en verde. Rust sin cambios. Al cerrar, ningún
+    `wrangler` ni `workerd` vivo, y el 8787 libre.
