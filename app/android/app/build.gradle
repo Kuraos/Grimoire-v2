@@ -16,8 +16,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // ADR 0006 y fase-3-respaldo.md, 3.4: keystore y contraseña fuera del repo, en variables de
+    // entorno o en ~/.gradle/gradle.properties (el entorno manda). Sin ellos, el release sale sin firmar.
+    def secret = { String k -> System.getenv(k) ?: findProperty(k) }
+    signingConfigs {
+        release {
+            if (secret('GRIMOIRE_RELEASE_STORE_FILE')) {
+                storeFile file(secret('GRIMOIRE_RELEASE_STORE_FILE'))
+                storePassword secret('GRIMOIRE_RELEASE_STORE_PASSWORD')
+                keyAlias 'grimoire'
+                keyPassword secret('GRIMOIRE_RELEASE_STORE_PASSWORD') // PKCS12: la misma
+            }
+        }
+    }
     buildTypes {
         release {
+            if (secret('GRIMOIRE_RELEASE_STORE_FILE')) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

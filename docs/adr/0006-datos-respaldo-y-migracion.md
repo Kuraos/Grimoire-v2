@@ -32,8 +32,9 @@ llave propia. La v1 tiene meses de datos en `%APPDATA%\Grimoire\grimoire.db`.
 - Copia en al menos dos lugares fuera del PC (p. ej. gestor de contraseñas y una unidad
   aparte), junto con su contraseña. Perderla obliga a desinstalar la app en cada
   dispositivo para instalar una versión nueva.
-- Las APK de desarrollo usan la llave debug; la de release solo se usa para lo que se
-  publica en GitHub Releases.
+- Las APK de desarrollo (emulador) usan la llave debug; la de release firma lo que se instala
+  en los dispositivos de Johan (corregido en la fase 3, 3.4: Android no deja pasar de una
+  firma a otra sin desinstalar, y eso borra la cola).
 
 ### Migración desde la v1
 

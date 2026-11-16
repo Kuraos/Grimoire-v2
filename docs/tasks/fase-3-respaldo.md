@@ -273,3 +273,22 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
     conteos de la ejecución `43817141203`: 21 hábitos, 9 434 marcas, `users.xp` 1 254 = `xp_log`,
     `0008` presente. El texto plano vivió en un `mktemp -d` borrado al terminar.
   - **3.2 terminada.**
+
+- **3.4, keystore y primer build** (2026-11-16).
+  - Keystore PKCS12 generado con el `keytool` de Android Studio: alias `grimoire`, RSA 4096,
+    `CN=Grimoire, O=Kuraos`, válido del 2026-11-16 al 2054-04-03 (10 000 días). Vive en
+    `~/.gradle/grimoire-release.jks`; la contraseña, aleatoria y nunca impresa, en
+    `~/.gradle/gradle.properties` (`GRIMOIRE_RELEASE_STORE_FILE` y `_STORE_PASSWORD`). Las
+    variables de entorno con el mismo nombre mandan sobre el archivo: así se firma con la copia
+    externa sin tocar nada más.
+  - **Huella SHA-256 del certificado:**
+    `e744e9a0b1f5d53889347f35e391717c1035fe33fe100ef0c7f77c3f48bf8cc9`.
+  - `assembleRelease` con el JDK 21 (`JAVA_HOME='C:\Program Files\Java\jdk-21'`; Gradle 8.14.3
+    no corre con el JDK 25 de Android Studio, como en la fase 0). `apksigner verify
+    --print-certs` da esa huella. Sin las dos variables, el release sale sin firmar.
+  - Ojo: el release no es `debuggable`, así que `adb shell run-as` deja de servir para mirar la cola
+    o los borradores en los dispositivos. Antes de desinstalar la debug se mira con `run-as` por
+    última vez.
+  - Faltan: copia de Johan en sus dos lugares, el build firmado con la copia externa instalado
+    encima y el paso de los dos dispositivos.
+
