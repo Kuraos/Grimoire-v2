@@ -302,3 +302,7 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
     invalida lo hidratado sin pedirlo (`refetchType: 'none'`); se pide al montar la vista o al
     volver la red, y sin señal se sigue viendo. Test nuevo en `queue.test.ts`; en local, recarga a
     los pocos segundos de una marca del «teléfono»: «2 cumplidos hoy».
+    Desplegado con el «sí» de Johan: versión `1609cb0c` (2026-11-16, 19:29 UTC). `/health` 200,
+    `/` y `/habitos` navegando 200 `text/html`, `/habits` sin bearer 401, y el `index-*.js`
+    publicado trae el `refetchType: 'none'`. El release del teléfono se recompiló con el arreglo y
+    se instaló encima (misma huella).
