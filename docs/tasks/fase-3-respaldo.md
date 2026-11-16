@@ -1,7 +1,7 @@
 # Fase 3 — Respaldo y ensayo de restauración
 
-**Estado: plan aprobado por Johan el 2026-11-15.** Falta una respuesta de Johan antes de la 3.2 y
-la 3.4: dónde viven las dos copias externas de las llaves (ver «Pendiente de Johan»).
+**Estado: plan aprobado por Johan el 2026-11-15. 3.1 y 3.2 terminadas el 2026-11-16.** Siguen la
+3.3, la 3.4 y la 3.5.
 
 Depende de: la fase 2 cerrada (`fase-2-transversal.md`) y el ADR 0006. **La fase 4 (migración) no
 empieza sin esta** (`ROADMAP.md`).
@@ -74,7 +74,11 @@ Tomadas por Johan el 2026-11-15, sobre la propuesta de Hermes.
 
 ---
 
-## Pendiente de Johan
+## Pendiente de Johan (resuelto el 2026-11-16)
+
+Johan confirmó dos copias de la llave `age` fuera del PC. Dónde están no se escribe aquí: el repo es
+público. Queda a su criterio guardarlas cifradas con frase de paso (`age -p`); el keystore de la 3.4
+va a los mismos dos lugares.
 
 **Dónde viven las dos copias externas** de la llave privada de `age`, del keystore de release y de su
 contraseña (ADR 0006: al menos dos lugares fuera del PC). Por ejemplo, un gestor de contraseñas y una
@@ -263,4 +267,9 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
     el workflow con `database=grimoire-bench`. Ejecución `43932854303` en rojo en el paso de
     verificación (`users.xp: 7  SUM(xp_log.amount): 0`, «dump RECHAZADO»), con 0 artefactos.
     Después `users.xp` volvió a 0, comprobado, y no quedaron `wrangler` ni `workerd` vivos.
-  - Falta solo el descifrado con la copia externa, que depende de «Pendiente de Johan».
+  - Descifrado con la copia externa: el artefacto `grimoire-2026-11-16` (1 876 212 bytes) se
+    descargó con `gh run download` y se descifró con la llave traída de una de las dos copias
+    externas (su recipiente coincide con `AGE_RECIPIENT`). Pasó `verify_dump.py` con los mismos
+    conteos de la ejecución `43817141203`: 21 hábitos, 9 434 marcas, `users.xp` 1 254 = `xp_log`,
+    `0008` presente. El texto plano vivió en un `mktemp -d` borrado al terminar.
+  - **3.2 terminada.**
