@@ -30,3 +30,5 @@ Thumbs.db
 # Mediciones locales (wrangler tail, seeds generados)
 tail*.json
 seed_*.sql
+# Python
+__pycache__/

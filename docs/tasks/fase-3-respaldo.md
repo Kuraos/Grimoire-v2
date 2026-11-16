@@ -180,4 +180,51 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
 
 ## Hallazgos
 
-(vacío)
+- **3.1, verificaciones previas** (2026-11-15, con el «sí» de Johan). Seed: los cuatro
+  `bench_seed*.py` sin cambios con `BENCH_HOY=2026-11-15` (9 383 marcas, 500 tareas y 1 015 ítems,
+  5 000 sesiones, 1 000 entradas): más de 10 veces la v1 en marcas, sesiones y diario, menos en
+  hábitos y tareas. Peor caso de tamaño, no réplica exacta de la forma.
+
+  | Punto | Resultado | Fuente o comando |
+  |---|---|---|
+  | Token mínimo | **D1 · Read no alcanza**: `GET …/d1/database/grimoire-bench` pasa y `POST …/export` da `Authentication error [code: 10000]`. **D1 · Edit sí.** Si se puede limitar a una base: **no comprobado** | log de `wrangler d1 export`, token de cuenta creado por Johan en el panel |
+  | Tiempo del export | 14,3 / 13,3 / 11,9 s de punta a punta (incluye arrancar `npx`) | `wrangler d1 export grimoire-bench --remote --output …`, 3 corridas |
+  | Tamaño del dump | 5 904 769 bytes, idéntico en las tres (mismo SHA-256) | `stat`, `sha256sum` |
+  | Bloqueo | No hay lentitud: hay **500**. En cada export, 2 `GET /habits` seguidos fallan (~1–1,5 s); las 200 tienen la mediana de siempre (0,50–0,52 s contra 0,51 s sin export, desde Bogotá) | `curl` a bench, 20 sin export y 15 durante cada export |
+  | `d1_migrations` | Viene, como `CREATE TABLE IF NOT EXISTS`, con las 8 migraciones | `grep` sobre el dump |
+  | `_cf_KV` | No viene | `grep` → 0 |
+  | Import en `sqlite3` | Sin editar; `verify_dump.py` pasa (`integrity_check` ok, 12 tablas, xp 0 = 0, `0008` presente) | `python -I scripts/verify_dump.py` |
+  | Import en D1 local | Sin editar (17 024 comandos); conteos de las 13 tablas iguales a bench | `wrangler d1 execute --local --persist-to <temporal> --file` |
+  | Actions (Free, privado) | Crédito de 12 USD/mes; Linux 2-core a 0,006 USD/min (≈ 2 000 min) | docs.github.com/en/billing/concepts/product-billing/github-actions |
+  | Artefactos | 500 MB de almacenamiento (compartido con Packages) | misma página |
+  | Retención de artefactos (privado) | 90 días por defecto, configurable de 1 a 400 | docs.github.com, «Configuring the retention period for GitHub Actions artifacts and logs» |
+  | Asset de Release | < 2 GiB por archivo; sin límite de tamaño total ni de ancho de banda | docs.github.com, «About releases» |
+  | Plan de la cuenta de Johan | **No comprobado** (`gh` sin scope `user`; `gh api user` da `plan: null`). Se asume Free | — |
+  | `age` en Windows | `winget install FiloSottile.age` → v1.3.2 (zip portable de los releases de FiloSottile) | `age --version` |
+  | `age` en `ubuntu-latest` | `apt install age` → 1.1.1 (`universe`) | packages.ubuntu.com/noble/age; contenedor `ubuntu:24.04` |
+  | Windows → Linux | Dump cifrado con `age -r` en Windows (1.3.2), descifrado en `ubuntu:24.04` (1.1.1): mismo SHA-256 | Docker |
+
+  - **Contra el ADR 0006:** pedía un token de «solo lectura/export de D1»; exportar exige **D1 ·
+    Edit**. Johan lo acepta así por ahora y revisa los permisos después. Si el token no se puede
+    limitar a una base, el de la Action puede escribir y borrar en producción. No contradice A–G.
+  - **El log del export trae un enlace firmado de R2, válido una hora, al dump en texto plano.** En
+    la 3.2 la salida de `wrangler d1 export` no puede ir al log de la Action tal cual (restricción
+    «al log van conteos, nunca filas»).
+  - **Los 500 durante el export** los absorbe el cliente: un 5xx es transitorio y la cola reintenta
+    sin descartar (`app/src/api/queryClient.ts`, test `un 5xx persistente avisa una vez y sigue en
+    cola`). A las 03:00 de Bogotá no debería pasar nada.
+  - **Incidente: límite diario de filas escritas de D1 agotado.** El seed de la 2.5.4 y el de esta
+    tarea cayeron en el mismo día UTC, y el borrado del seed dio `code: 7500` («exceeded D1's free
+    tier daily row write limit»). El límite (100 000 filas al día, índices incluidos) es **de la
+    cuenta**: producción quedó sin escrituras desde ~18:58 UTC hasta las 00:00 UTC (19:00 de
+    Bogotá). La cola del cliente retiene lo marcado. Regla: antes de sembrar o limpiar bench, sumar
+    las filas a escribir y las ya gastadas ese día UTC. El invariante 8 de `AGENTS.md` no lo lista.
+  - **Limpieza** (2026-11-16, ~06:00 UTC, con el «sí» de Johan). La del 15-nov quedó a medias por
+    el límite: seguían 10 `habits`, 9 383 `habit_logs`, 40 `projects` y 5 000 `pomodoro_sessions`.
+    `DELETE FROM pomodoro_sessions` → 5 000 filas escritas; `DELETE FROM habits` (la cascada borra
+    `habit_logs`) → 9 393; `DELETE FROM projects` → 40. **`meta.rows_written` de un `DELETE` cuenta
+    filas de tabla, no entradas de índice**: había estimado ≈ 58 000 suponiendo cuatro escrituras
+    por fila. Queda pendiente confirmar si el cobro real del límite sigue a ese `meta`. Además,
+    `wrangler d1 info` da `rows_written_24h` en ventana móvil, no por día UTC. Bench queda con
+    las 12 tablas sin datos, el usuario en `xp` 0, 3 vidas y `settled_through` NULL, sin secretos
+    (`wrangler secret list --env bench` → `[]`) y sin `wrangler` ni `workerd` vivos.
