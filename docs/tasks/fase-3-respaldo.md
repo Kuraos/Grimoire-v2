@@ -324,3 +324,19 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
   - **3.4 terminada.** Para el XOS del Infinix, el inicio automático lo reactiva Johan a mano (no
     se puede comprobar con `adb`).
 
+
+- **3.5, respaldo de la v1** (2026-11-16, Bogotá).
+  - `backup_v1.py` a mano: Release `v1-2026-11-16` en `Kuraos/grimoire-backups` con
+    `grimoire-v1-2026-11-16.db.age` (266 504 bytes). Descargado con `gh release download`,
+    descifrado con la llave traída de una copia externa y abierto con el módulo `sqlite3` de Python
+    (no hay CLI `sqlite3` en el PC): `integrity_check` = `ok`, 29 tablas y 897 filas, conteos
+    idénticos tabla por tabla a la `grimoire.db` original. Temporal borrado.
+  - **Tarea programada** «Grimoire respaldo v1», del usuario de Johan, sin elevar (`Limited`,
+    `Interactive`): domingos a las 10:00, `StartWhenAvailable` (si el PC estaba apagado, corre al
+    encenderlo) y límite de 15 min. Ejecuta `python -I scripts\backup_v1.py --recipient age1…` con
+    el repo como directorio de trabajo; `age` y `gh` salen del PATH del usuario. Lanzada una vez con
+    `Start-ScheduledTask`: resultado 0 y el asset reemplazado (`--clobber`) a las 19:38:01 UTC.
+    Próxima: 2026-11-22.
+  - Falta la **alerta**, que configura Hermes (no es del repo): cron semanal que con `gh api` revise
+    la última ejecución correcta de `respaldo` (más de 2 días, alerta) y la última Release `v1-…`
+    (más de 8 días, alerta), avise a Discord y se pruebe una vez forzando la condición.
