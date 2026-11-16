@@ -1,0 +1,66 @@
+# Se copia tal cual a Kuraos/grimoire-backups (privado) como .github/workflows/respaldo.yml.
+# fase-3-respaldo.md, 3.2. La lógica está en scripts/backup_d1.sh de este repo, que el workflow
+# clona de `main`: así toma las migraciones vigentes para la verificación de C.
+#
+# Secretos: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID. Variable: AGE_RECIPIENT (llave pública).
+# La llave privada de age no entra nunca a GitHub.
+name: respaldo
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # 03:00 en Bogotá
+  workflow_dispatch:
+    inputs:
+      database:
+        description: "Base de D1. grimoire-bench sirve para la prueba que tiene que fallar."
+        default: grimoire
+
+permissions:
+  contents: write # la Release mensual
+
+concurrency: respaldo
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DB: ${{ inputs.database || 'grimoire' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Kuraos/Grimoire-v2
+          ref: main
+          persist-credentials: false
+
+      - run: sudo apt-get install -y --no-install-recommends age
+
+      - name: Export, verificación y cifrado
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AGE_RECIPIENT: ${{ vars.AGE_RECIPIENT }}
+        run: |
+          stamp=$(date -u +%F)
+          out="$RUNNER_TEMP/$DB-$stamp.sql.age"
+          envflag=()
+          [ "$DB" = grimoire-bench ] && envflag=(--env bench)
+          bash scripts/backup_d1.sh "$out" "$DB" "${envflag[@]}" --remote
+          { echo "STAMP=$stamp"; echo "OUT=$out"; } >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ env.DB }}-${{ env.STAMP }}
+          path: ${{ env.OUT }}
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Release mensual (día 1)
+        if: env.DB == 'grimoire' && endsWith(env.STAMP, '-01')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="mensual-${STAMP:0:7}"
+          gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
+            gh release create "$tag" -R "$GITHUB_REPOSITORY" --title "$tag" --notes "Respaldo cifrado de D1 del $STAMP."
+          gh release upload "$tag" "$OUT" -R "$GITHUB_REPOSITORY" --clobber

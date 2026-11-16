@@ -228,3 +228,19 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
     `wrangler d1 info` da `rows_written_24h` en ventana móvil, no por día UTC. Bench queda con
     las 12 tablas sin datos, el usuario en `xp` 0, 3 vidas y `settled_through` NULL, sin secretos
     (`wrangler secret list --env bench` → `[]`) y sin `wrangler` ni `workerd` vivos.
+
+- **3.2 y 3.5, adelanto sin la llave real** (2026-11-16). Probado con una llave `age` desechable en
+  un temporal, que ya no existe.
+  - `scripts/backup_d1.sh`: export, `verify_dump.py` y cifrado. La salida de wrangler no va al log
+    (si falla, sale con las URL tapadas) y el texto plano vive en un `mktemp -d` que se borra al
+    salir. Contra bench vacío: 8,3 s, dump verificado y cifrado de 14 382 bytes; descifrado, vuelve
+    a pasar la verificación. Contra la D1 local, que tiene seeds sin tocar `users` (`xp` 190 frente
+    a 641 en `xp_log`), lo rechaza y no deja archivo: es el camino de falla.
+  - `scripts/grimoire-backups.yml`: el workflow que se copia al repo privado. Clona `main` de este
+    repo, así que **`backup_d1.sh` tiene que estar en `main` antes de la primera ejecución**.
+    `actions/checkout` v7.0.1 y `actions/upload-artifact` v7.0.2 fijadas por SHA; `actionlint`
+    1.7.7 (con `shellcheck`) sin hallazgos.
+  - `scripts/backup_v1.py`: copia con `sqlite3.backup` de una conexión de solo lectura,
+    `integrity_check`, cifrado y Release `v1-AAAA-MM-DD`. Con `--out`: 266 504 bytes cifrados;
+    descifrada, 29 tablas con los mismos conteos que la original e `integrity_check` = `ok`. Faltan
+    la subida, la tarea programada y el descifrado con la copia externa.
