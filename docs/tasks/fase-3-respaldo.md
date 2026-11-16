@@ -1,7 +1,7 @@
 # Fase 3 — Respaldo y ensayo de restauración
 
-**Estado: plan aprobado por Johan el 2026-11-15. 3.1 y 3.2 terminadas el 2026-11-16.** Siguen la
-3.3, la 3.4 y la 3.5.
+**Estado: plan aprobado por Johan el 2026-11-15. 3.1, 3.2 y 3.4 terminadas el 2026-11-16.** Siguen
+la 3.3 y la 3.5.
 
 Depende de: la fase 2 cerrada (`fase-2-transversal.md`) y el ADR 0006. **La fase 4 (migración) no
 empieza sin esta** (`ROADMAP.md`).
@@ -289,8 +289,7 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
   - Ojo: el release no es `debuggable`, así que `adb shell run-as` deja de servir para mirar la cola
     o los borradores en los dispositivos. Antes de desinstalar la debug se mira con `run-as` por
     última vez.
-  - Faltan: copia de Johan en sus dos lugares, el build firmado con la copia externa instalado
-    encima y el paso de los dos dispositivos.
+  - Johan copió el keystore y la contraseña a sus dos lugares.
 
   - **Bug encontrado al probar el teléfono** (2026-11-16): marcas hechas en el teléfono no salían
     al recargar la web del PC; aparecieron solo después de marcar desde el PC, que además mostró un
@@ -306,3 +305,22 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
     `/` y `/habitos` navegando 200 `text/html`, `/habits` sin bearer 401, y el `index-*.js`
     publicado trae el `refetchType: 'none'`. El release del teléfono se recompiló con el arreglo y
     se instaló encima (misma huella).
+
+- **3.4, dispositivos** (2026-11-16, Bogotá).
+  - **Teléfono (Infinix X6831):** con `run-as`, la cola, la bandeja del pomodoro y los borradores
+    del diario no existían (vacíos); el pomodoro, detenido. Se desinstaló la debug y se instaló la
+    de release (14:04). **Prueba de la copia externa:** con el original apartado (renombrado) y
+    `GRIMOIRE_RELEASE_STORE_FILE` apuntando a la copia de una de las dos ubicaciones (idéntica byte
+    a byte), un segundo `assembleRelease` se instaló con `adb install -r` encima (14:08): misma
+    `firstInstallTime`, sin pedir token otra vez. Notificaciones y alarma exacta concedidas.
+  - **Tablet (SM-P620, Android 16):** cola vacía, sin bandeja ni borradores; se perdió solo un
+    pomodoro pausado de la 2.5.7 (18 s de trabajo, sin tarea), que no había llegado al servidor. Se
+    desinstaló la debug y se instaló la release (14:31). En Android 16 la alarma exacta no se concede
+    al instalar y el ajuste de Johan no quedó registrado: se concedió con `adb shell appops set
+    dev.kuraos.grimoire SCHEDULE_EXACT_ALARM allow`. El APK instalado, sacado con `adb pull`, da en
+    `apksigner` la huella `e744e9a0…8bf8cc9`.
+  - Sincronización contra producción: marcas del teléfono (19:19:40 UTC) y de la tablet (19:33:17
+    UTC) en `xp_log`.
+  - **3.4 terminada.** Para el XOS del Infinix, el inicio automático lo reactiva Johan a mano (no
+    se puede comprobar con `adb`).
+
