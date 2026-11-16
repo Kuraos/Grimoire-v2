@@ -127,6 +127,18 @@ test('la cola se restaura tras reiniciar, con el día de la marca y en orden', a
   expect(calls[0].body).toMatchObject({ local_date: '2026-10-31' })
 })
 
+test('lo restaurado de disco se pide de nuevo al abrir, aunque tenga menos de 30 s', async () => {
+  // Otro dispositivo pudo escribir mientras tanto: recargar tiene que traer lo del servidor.
+  stubFetch(ok)
+  const first = await start()
+  first.q.queryClient.setQueryData(['user'], { xp: 1 })
+  await vi.advanceTimersByTimeAsync(2500) // la caché se guarda 2 s después del último cambio
+  const second = await start()
+  const restored = second.q.queryClient.getQueryCache().find({ queryKey: ['user'] })
+  expect(restored?.state.data).toEqual({ xp: 1 })
+  expect(restored?.isStale()).toBe(true)
+})
+
 test('lo que iba en vuelo al cerrar también se restaura', async () => {
   // la respuesta nunca llega
   vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))

@@ -292,3 +292,13 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
   - Faltan: copia de Johan en sus dos lugares, el build firmado con la copia externa instalado
     encima y el paso de los dos dispositivos.
 
+  - **Bug encontrado al probar el teléfono** (2026-11-16): marcas hechas en el teléfono no salían
+    al recargar la web del PC; aparecieron solo después de marcar desde el PC, que además mostró un
+    error. El teléfono enviaba al instante (marca y desmarca del 19:19:40 UTC en producción). La
+    causa estaba en la web: la caché restaurada de disco conservaba su `dataUpdatedAt` y, con el
+    `staleTime` de 30 s, una recarga dentro de ese plazo no le preguntaba al servidor. Reproducido
+    en local (recarga a los 25 s: «0 cumplidos» y ninguna petición). El error fue marcar en el PC un
+    hábito que el teléfono ya había marcado; ese rechazo forzó el refresco. Arreglo: `restore()`
+    invalida lo hidratado sin pedirlo (`refetchType: 'none'`); se pide al montar la vista o al
+    volver la red, y sin señal se sigue viendo. Test nuevo en `queue.test.ts`; en local, recarga a
+    los pocos segundos de una marca del «teléfono»: «2 cumplidos hoy».

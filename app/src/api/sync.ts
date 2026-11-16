@@ -137,6 +137,9 @@ async function restore() {
     queries: JSON.parse(cache.value ?? '[]'),
   }
   hydrate(queryClient, state)
+  // Lo de disco se muestra ya, pero vencido: otro dispositivo pudo escribir, y con el `staleTime`
+  // de 30 s una recarga recién guardada no le preguntaba al servidor. Sin red, se sigue viendo.
+  await queryClient.invalidateQueries({ refetchType: 'none' })
 }
 
 let booted: Promise<void> | null = null
