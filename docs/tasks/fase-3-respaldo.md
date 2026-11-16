@@ -244,3 +244,13 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
     `integrity_check`, cifrado y Release `v1-AAAA-MM-DD`. Con `--out`: 266 504 bytes cifrados;
     descifrada, 29 tablas con los mismos conteos que la original e `integrity_check` = `ok`. Faltan
     la subida, la tarea programada y el descifrado con la copia externa.
+
+- **3.2, primera ejecución manual** (2026-11-16, 06:30 UTC, con el «sí» de Johan). En
+  `Kuraos/grimoire-backups` están los secretos `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`, que
+  puso Johan, y la variable `AGE_RECIPIENT` = `age1wglc3x…eavzsp3jn0j`. La llave se creó el
+  2026-11-16 a las 01:27 de Bogotá; la del 01:19 se borró sin usarse. El workflow está en
+  `.github/workflows/respaldo.yml`. Ejecución `43817141203` en verde contra producción: 21 hábitos,
+  9 434 marcas (el seed de la 0.3 sigue ahí), `users.xp` 1 254 = `SUM(xp_log.amount)` y `0008`
+  presente. Cifrado de 1 876 212 bytes; artefacto `grimoire-2026-11-16`, que vence el 2026-12-16. El
+  log trae solo conteos y ninguna URL de R2. La Release se saltó porque no era día 1.
+  Faltan la programada, el descifrado con la copia externa y la ejecución que tiene que fallar.
