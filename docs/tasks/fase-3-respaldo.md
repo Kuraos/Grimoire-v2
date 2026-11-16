@@ -1,7 +1,7 @@
 # Fase 3 — Respaldo y ensayo de restauración
 
-**Estado: plan aprobado por Johan el 2026-11-15. 3.1, 3.2 y 3.4 terminadas el 2026-11-16.** Siguen
-la 3.3 y la 3.5.
+**Estado: 3.1 a 3.4 terminadas el 2026-11-16; la condición del `ROADMAP.md` para la fase 3 se
+cumple.** De la 3.5 falta solo la alerta, que configura Hermes.
 
 Depende de: la fase 2 cerrada (`fase-2-transversal.md`) y el ADR 0006. **La fase 4 (migración) no
 empieza sin esta** (`ROADMAP.md`).
@@ -340,3 +340,25 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
   - Falta la **alerta**, que configura Hermes (no es del repo): cron semanal que con `gh api` revise
     la última ejecución correcta de `respaldo` (más de 2 días, alerta) y la última Release `v1-…`
     (más de 8 días, alerta), avise a Discord y se pruebe una vez forzando la condición.
+
+- **3.3, ensayo de restauración** (2026-11-16, ventana de Johan desde las 19:40:48 UTC).
+  - `workflow_dispatch` `43941849981` en verde: 9 439 marcas, `users.xp` 1 354 = `xp_log`, 1 entrada
+    de diario. Artefacto descargado, descifrado con la llave traída de una copia externa y pasado
+    por `verify_dump.py`.
+  - D1 `grimoire-restore` creada; import de 9 622 `INSERT` en 8 s, con `rows_written` 38 501 (los
+    índices cuentan). `bench` apuntado a ella (`wrangler.toml` sin commitear), con un
+    `GRIMOIRE_TOKEN_PC` desechable, y desplegado.
+  - `scripts/compare_restore.py` (nuevo: diferencias por ruta JSON, sin tokens ni valores) entre
+    producción, con el token del teléfono, y la restaurada: `/user`, `/habits`, `/tasks`,
+    `/projects`, `/pomodoro/today?date=2026-11-16` y `/diary/2026-11-14` (el único día con
+    entrada), **todo igual**. No hizo falta excluir ningún campo por la hora.
+  - Tiempo, del dispatch a la comparación en verde: 5 min 19 s (unos 2 de ellos esperando un token
+    de producción válido: el primero dio 401).
+  - Limpieza: `wrangler.toml` revertido y `bench` redesplegado sobre `grimoire-bench` (versión
+    `373709c2`), su secreto borrado (`secret list` → `[]`, `/user` → 401), `grimoire-restore`
+    borrada (`d1 list`: `grimoire` y `grimoire-bench`), y el dump y los tokens del temporal borrados.
+  - **`docs/runbooks/restaurar.md`** con los pasos tal como se hicieron. Escrito al terminar, a
+    partir de los comandos ejecutados; la parte de time travel se verificó solo contra la ayuda de
+    wrangler 4.156 (`time-travel info` y `restore`), no se ejecutó.
+  - **3.3 terminada.**
+
