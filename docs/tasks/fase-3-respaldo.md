@@ -254,3 +254,13 @@ los mismos conteos que la original; la alerta probada una vez forzando la condic
   presente. Cifrado de 1 876 212 bytes; artefacto `grimoire-2026-11-16`, que vence el 2026-12-16. El
   log trae solo conteos y ninguna URL de R2. La Release se saltó porque no era día 1.
   Faltan la programada, el descifrado con la copia externa y la ejecución que tiene que fallar.
+
+- **3.2, programada y ejecución que tiene que fallar** (2026-11-16).
+  - Programada: ejecución `43922185186` en verde, pero arrancó a las 17:48 UTC y no a las 08:00.
+    GitHub retrasa los `schedule` en repos nuevos o con poca actividad. Se vigila unos días; mientras
+    sea diaria, cumple.
+  - Falla a propósito: en bench (un usuario, `xp_log` vacío), `users.xp` pasó de 0 a 7 y se disparó
+    el workflow con `database=grimoire-bench`. Ejecución `43932854303` en rojo en el paso de
+    verificación (`users.xp: 7  SUM(xp_log.amount): 0`, «dump RECHAZADO»), con 0 artefactos.
+    Después `users.xp` volvió a 0, comprobado, y no quedaron `wrangler` ni `workerd` vivos.
+  - Falta solo el descifrado con la copia externa, que depende de «Pendiente de Johan».
